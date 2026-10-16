@@ -2,6 +2,8 @@
 
 Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame.
 
+Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: https://github.com/klanarongz2009-sketch/terai-router
+
 TER-AI reads one Thai (or Thai-English) message and tells you what the user wants: one of 15 intents, a confidence score, and the message with common typos fixed. It runs fully offline on CPU, so it fits phones, Raspberry Pi, IoT devices and chat bots that should not send every message to a large model.
 
 ```

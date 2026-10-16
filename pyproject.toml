@@ -21,6 +21,11 @@ classifiers = [
     "Intended Audience :: Developers",
 ]
 
+[project.urls]
+Homepage = "https://github.com/klanarongz2009-sketch/terai-router"
+Repository = "https://github.com/klanarongz2009-sketch/terai-router"
+Demo = "https://klanarongz2009-sketch.github.io/terai-router/"
+
 [project.optional-dependencies]
 train = ["numpy", "scipy"]
 dev = ["pytest"]
