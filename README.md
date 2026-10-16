@@ -144,6 +144,45 @@ terai> สิ่งที่ผมจำเกี่ยวกับคุณ: �
 
 The knowledge pack (`src/terai_router/data/knowledge_th.json`, 11.9 MB, 8,192 articles) is installed with the package. It has no live data: questions about prices, news or today's results get an honest "no data" reply.
 
+## Web search (opt-in, v0.9.0)
+
+Chat is offline by default. With `--web` it can look up questions that the bundled knowledge pack cannot answer:
+
+```
+terai chat --web
+terai chat --web --searx https://searx.example.org   # also ask your own SearXNG instance
+```
+
+```python
+from terai_router import Chat
+c = Chat(web=True)                                   # or Chat(web=True, searx='https://searx.example.org')
+```
+
+How it decides:
+
+- The knowledge pack answers first when it has a confident match. The web is used only when the pack has no answer, or when the question asks for something current ("ปัจจุบัน", "ล่าสุด", "ตอนนี้", "latest"), where the pack may be out of date.
+- Sources, in order: Thai Wikipedia, then English Wikipedia (MediaWiki API, search plus article intro, free, no API key, with a descriptive User-Agent), then the SearXNG instance if you set one.
+- The sources are data only. TER-AI ranks the results and picks the passage itself (character-trigram coverage of the question). A result that does not cover the question well enough is dropped, so a made-up word still gets "I don't know".
+- Every web answer starts with `[ค้นเว็บ]` and names the source: article title, URL and license (Wikipedia text is CC BY-SA 4.0).
+- Timeout 5 seconds. Responses are cached on disk in `~/.terai/webcache` for 24 hours (at most 200 files).
+- Offline or an error: Chat falls back to the knowledge pack and says that the web search failed. It never guesses.
+
+Real output (v0.9.0, 2026-10-16):
+
+```
+$ printf 'ซาบาริโนวาลิกซ์คืออะไร\nใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น\n' | terai chat --web --session /tmp/w.json
+you> ซาบาริโนวาลิกซ์คืออะไร
+terai> ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย 8,192 บทความ) ไม่มีข้อมูลที่ตอบคำถามนี้ได้ ค้น Wikipedia ไทยและอังกฤษแล้วก็ไม่พบบทความที่ตรงพอ ผมเลยไม่เดา
+you> ใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น
+terai> [ค้นเว็บ] นายกรัฐมนตรีญี่ปุ่น (อังกฤษ: Prime Minister of Japan) ๆ จะดำรงตำแหน่งตามอัธยาศัยของนายกรัฐมนตรี นายกรัฐมนตรีคนปัจจุบัน คือ ซานาเอะ ทากาอิจิ ดำรงตำแหน่งตั้งแต่ 21 ตุลาคม พ.ศ. 2568 (ที่มา: Wikipedia ภาษาไทย "นายกรัฐมนตรีญี่ปุ่น", https://th.wikipedia.org/wiki/นายกรัฐมนตรีญี่ปุ่น, CC BY-SA 4.0)
+```
+
+The answer is only as current as the Wikipedia article at the time of the search, and the passage cut is not always clean (the second answer starts mid-sentence).
+
+**Privacy:** without `--web` TER-AI never opens a network connection. With `--web` on, the question (minus question words) is sent to th.wikipedia.org and en.wikipedia.org, and to your SearXNG instance if you set one. Nothing else is sent: no session, no name, no history.
+
+The browser demo does not have web search yet; it comes in the next part of v0.9.
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
