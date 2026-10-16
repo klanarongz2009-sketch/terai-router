@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>TER-AI demo: offline Thai intent router</title>
+<title>TER-AI demo: offline Thai chat and intent router</title>
 <style>
   :root { --bg:#0b0d10; --panel:#14181d; --line:#232a32; --text:#e6e9ee; --muted:#8b95a3; --accent:#5eead4; --warn:#fbbf24; }
   * { box-sizing:border-box; }
@@ -30,14 +30,54 @@
   .top div { display:grid; grid-template-columns:90px 1fr 54px; gap:10px; align-items:center; font-size:14px; padding:3px 0; }
   footer { color:var(--muted); font-size:13px; margin-top:28px; }
   code { color:var(--text); }
+.tabs{display:flex;gap:8px;margin:14px 0 12px}
+.tab{flex:1;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:10px;padding:10px;font-size:16px}
+.tab.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.log{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:10px;height:56vh;min-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.b{max-width:86%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.5;font-size:16px}
+.b.user{align-self:flex-end;background:#1f6feb;color:#fff;border-bottom-right-radius:4px}
+.b.bot{align-self:flex-start;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-bottom-left-radius:4px}
+.b.err{border-color:#da3633;color:#ffa198}
+.empty{color:#8b949e;margin:auto;text-align:center;font-size:14px}
+.kbload{margin-top:8px;color:#d29922;font-size:14px}
+.chatform{display:flex;gap:8px;margin-top:10px}
+.chatform input{flex:1;min-width:0;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:12px;font-size:16px}
+.chatform button{background:#238636;color:#fff;border:0;border-radius:10px;padding:0 18px;font-size:16px}
+.chatform button:disabled{opacity:.5}
+.mem{margin-top:12px;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px 12px}
+.mem summary{cursor:pointer;color:#c9d1d9}
+#facts{margin:8px 0;font-size:14px;color:#c9d1d9}
+#facts div{padding:3px 0;border-bottom:1px solid #21262d}
+#facts b{color:#8b949e;font-weight:normal;display:inline-block;min-width:84px}
+.reset{background:#21262d;color:#ffa198;border:1px solid #30363d;border-radius:8px;padding:8px 12px;font-size:14px}
+@media (max-width:600px){.log{height:52vh}.b{max-width:92%}}
 </style>
 </head>
 <body>
 <main>
   <h1>TER-AI</h1>
-  <p class="sub">Offline Thai intent router that tolerates typos. Runs fully in your browser, nothing is sent anywhere. Made with Sesame.</p>
+  <p class="sub">Offline Thai chat and typo-tolerant intent router. Runs fully in your browser, nothing is sent anywhere. Made with Sesame.</p>
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab on" id="tab-chat" role="tab" aria-selected="true">Chat</button>
+    <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
+  </div>
+  <section id="pane-chat">
+    <div id="log" class="log" aria-live="polite"></div>
+    <div id="kbload" class="kbload" hidden></div>
+    <form id="chatform" class="chatform" autocomplete="off">
+      <input id="msg" type="text" enterkeyhint="send" placeholder="พิมพ์ข้อความ เช่น ดาวอังคารคืออะไร" aria-label="Message">
+      <button type="submit" id="send">Send</button>
+    </form>
+    <div class="chips" id="cchips"></div>
+    <details id="mem" class="mem" open>
+      <summary>Memory: facts stored in this browser</summary>
+      <div id="facts"></div>
+      <button type="button" id="reset" class="reset">Clear session</button>
+    </details>
+  </section>
+  <section id="pane-router" hidden>
 
-  <textarea id="in" placeholder="Type Thai here, typos welcome" autofocus></textarea>
+  <textarea id="in" placeholder="Type Thai here, typos welcome"></textarea>
   <div class="chips" id="chips"></div>
 
   <div class="card" id="out" aria-live="polite">
@@ -49,7 +89,8 @@
     <div class="top" id="top"></div>
   </div>
 
-  <footer>Model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
+  </section>
+  <footer>Chat __CHAT_VERSION__: rules, tools, session memory and Thai Wikipedia (__KB_COUNT__ articles, CC BY-SA 4.0). The knowledge pack (__KB_MB__ MB, about __KB_GZ_MB__ MB compressed) downloads only when a question needs it. Router model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
 </main>
 <script>__TERAI_JS__</script>
 <script>
@@ -76,6 +117,90 @@ function run() {
 }
 $('in').addEventListener('input', run);
 EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = x; b.onclick = () => { $('in').value = x; run(); $('in').focus(); }; $('chips').appendChild(b); });
+</script>
+<script>__CHAT_JS__</script>
+<script>
+(function () {
+  const CHITCHAT = __CHITCHAT_JSON__;
+  const KB_META = __KB_META__;
+  const STORE = 'terai.chat.session.v1';
+  const $ = id => document.getElementById(id);
+  const log = $('log'), kbload = $('kbload'), msg = $('msg'), send = $('send');
+  function loadState() { try { const s = localStorage.getItem(STORE); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function saveState(s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
+  async function fetchPack() {
+    const r = await fetch('knowledge_th.json', { cache: 'force-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.body || !r.body.getReader || typeof TextDecoder === 'undefined') return r.json();
+    const rd = r.body.getReader(); const parts = []; let got = 0;
+    for (;;) {
+      const x = await rd.read();
+      if (x.done) break;
+      parts.push(x.value); got += x.value.length;
+      kbload.textContent = 'Loading Thai Wikipedia knowledge pack: ' + Math.min(100, Math.round(100 * got / KB_META.bytes)) + '% (only the first time)';
+    }
+    const buf = new Uint8Array(got); let o = 0;
+    for (const p of parts) { buf.set(p, o); o += p.length; }
+    kbload.textContent = 'Building the search index...';
+    await new Promise(res => setTimeout(res, 20));
+    return JSON.parse(new TextDecoder().decode(buf));
+  }
+  const kb = new TERAI_CHAT.Knowledge(null, KB_META, fetchPack);
+  const chat = new TERAI_CHAT.Chat({ router: R, chitchat: CHITCHAT, knowledge: kb, state: loadState(), onSave: saveState });
+  function bubble(text, who, err) {
+    const e = log.querySelector('.empty'); if (e) e.remove();
+    const d = document.createElement('div');
+    d.className = 'b ' + who + (err ? ' err' : '');
+    d.textContent = text;
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
+  function emptyNote() { log.innerHTML = ''; const d = document.createElement('div'); d.className = 'empty'; d.textContent = 'Say hello, tell me your name, ask a sum or a question about anything in Thai Wikipedia.'; log.appendChild(d); }
+  function renderFacts() {
+    const f = chat.facts, box = $('facts'); box.innerHTML = '';
+    const rows = [];
+    if (f.name) rows.push(['name', f.name]);
+    if (f.age) rows.push(['age', f.age]);
+    if (f.grade) rows.push(['grade', f.grade]);
+    if (f.location) rows.push(['lives in', f.location]);
+    if (f.likes.length) rows.push(['likes', f.likes.join(', ')]);
+    if (f.dislikes.length) rows.push(['dislikes', f.dislikes.join(', ')]);
+    for (const p of f.plans) rows.push(['plan', chat._planText(p)]);
+    for (const kv of f.kv) rows.push([kv[0], kv[1]]);
+    rows.push(['turns', String(chat.state.turns)]);
+    if (rows.length === 1) rows.unshift(['facts', 'none yet']);
+    for (const [k, v] of rows) { const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = k; d.appendChild(b); d.appendChild(document.createTextNode(' ' + v)); box.appendChild(d); }
+  }
+  let busy = false;
+  async function ask(text) {
+    text = (text || '').trim();
+    if (!text || busy) return;
+    busy = true; send.disabled = true; msg.value = '';
+    bubble(text, 'user');
+    try {
+      const out = await chat.replyAsync(text, on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; });
+      bubble(out, 'bot');
+    } catch (e) {
+      bubble('Could not load the knowledge pack (' + (e && e.message ? e.message : e) + '). Check the connection and send again.', 'bot', true);
+    }
+    kbload.hidden = true; busy = false; send.disabled = false; renderFacts();
+  }
+  $('chatform').addEventListener('submit', ev => { ev.preventDefault(); ask(msg.value); });
+  $('reset').addEventListener('click', () => { chat.forget(); emptyNote(); renderFacts(); });
+  ['สวัสดี', 'ผมชื่อบอส', '12*7', 'แล้ว 5 ล่ะ', 'ผมชื่ออะไร', 'ผมอยู่ ม.4', 'ดาวอังคารคืออะไร', 'เล่าต่อ', '100 กิโลเมตรเป็นกี่ไมล์', 'จำอะไรเกี่ยวกับผมได้บ้าง'].forEach(t => {
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.addEventListener('click', () => ask(t)); $('cchips').appendChild(c);
+  });
+  if (chat.state.history.length) { for (const h of chat.state.history) { bubble(h.user, 'user'); bubble(h.bot, 'bot'); } } else emptyNote();
+  renderFacts();
+  function show(which) {
+    const chatOn = which !== 'router';
+    $('pane-chat').hidden = !chatOn; $('pane-router').hidden = chatOn;
+    $('tab-chat').classList.toggle('on', chatOn); $('tab-router').classList.toggle('on', !chatOn);
+    $('tab-chat').setAttribute('aria-selected', String(chatOn)); $('tab-router').setAttribute('aria-selected', String(!chatOn));
+  }
+  $('tab-chat').addEventListener('click', () => { history.replaceState(null, '', '#chat'); show('chat'); });
+  $('tab-router').addEventListener('click', () => { history.replaceState(null, '', '#router'); show('router'); });
+  show(location.hash === '#router' ? 'router' : 'chat');
+})();
 </script>
 </body>
 </html>
