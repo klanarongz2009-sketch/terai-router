@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>TER-AI demo: offline Thai intent router</title>
+<style>
+  :root { --bg:#0b0d10; --panel:#14181d; --line:#232a32; --text:#e6e9ee; --muted:#8b95a3; --accent:#5eead4; --warn:#fbbf24; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:32px 18px 48px; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  textarea { width:100%; min-height:84px; resize:vertical; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px; font:inherit; font-size:18px; }
+  textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 22px; }
+  .chip { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:6px 12px; font:inherit; font-size:14px; cursor:pointer; }
+  .chip:hover { color:var(--text); border-color:var(--accent); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .intent { font-size:30px; font-weight:700; color:var(--accent); letter-spacing:.3px; }
+  .intent.low { color:var(--warn); }
+  .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-top:1px solid var(--line); }
+  .row:first-of-type { border-top:0; }
+  .k { color:var(--muted); }
+  .v { text-align:right; word-break:break-word; }
+  .bar { height:6px; background:var(--line); border-radius:4px; overflow:hidden; margin-top:4px; }
+  .bar > i { display:block; height:100%; background:var(--accent); }
+  .top { margin-top:14px; }
+  .top div { display:grid; grid-template-columns:90px 1fr 54px; gap:10px; align-items:center; font-size:14px; padding:3px 0; }
+  footer { color:var(--muted); font-size:13px; margin-top:28px; }
+  code { color:var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <h1>TER-AI</h1>
+  <p class="sub">Offline Thai intent router that tolerates typos. Runs fully in your browser, nothing is sent anywhere. Made with Sesame.</p>
+
+  <textarea id="in" placeholder="Type Thai here, typos welcome" autofocus></textarea>
+  <div class="chips" id="chips"></div>
+
+  <div class="card" id="out" aria-live="polite">
+    <div class="intent" id="intent">-</div>
+    <div class="row"><span class="k">Confidence</span><span class="v" id="conf">-</span></div>
+    <div class="row"><span class="k">Normalized text</span><span class="v" id="norm">-</span></div>
+    <div class="row"><span class="k">Feature coverage</span><span class="v" id="cov">-</span></div>
+    <div class="row"><span class="k">Time</span><span class="v" id="ms">-</span></div>
+    <div class="top" id="top"></div>
+  </div>
+
+  <footer>Model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
+</main>
+<script>__TERAI_JS__</script>
+<script>
+const MODEL = __MODEL_JSON__;
+const TYPO = __TYPO_JSON__;
+const R = TERAI.create(MODEL, TYPO);
+const EXAMPLES = ["เส็ดหรือยัง", "ช้วยบวก 2+3", "ทำต่อ", "หวัดดีคับ", "ตอนนี้กี่โมงแล้ว", "สุ่มเลขให้หน่อย", "ลืมทั้งหมด", "ขอบคุนนะ"];
+const $ = id => document.getElementById(id);
+const LOW = 0.5;
+function run() {
+  const text = $('in').value.trim();
+  if (!text) { $('intent').textContent = '-'; ['conf','norm','cov','ms'].forEach(k => $(k).textContent = '-'); $('top').innerHTML = ''; return; }
+  const t0 = performance.now();
+  const r = R.predict(text, 3);
+  const ms = performance.now() - t0;
+  const el = $('intent');
+  el.textContent = r.confidence < LOW ? r.intent + ' (low confidence)' : r.intent;
+  el.className = 'intent' + (r.confidence < LOW ? ' low' : '');
+  $('conf').textContent = (r.confidence * 100).toFixed(1) + '%';
+  $('norm').textContent = r.normalized;
+  $('cov').textContent = (r.coverage * 100).toFixed(0) + '%';
+  $('ms').textContent = ms.toFixed(2) + ' ms';
+  $('top').innerHTML = r.ranking.map(([c, p]) => `<div><span>${c}</span><span class="bar"><i style="width:${(p*100).toFixed(1)}%"></i></span><span>${(p*100).toFixed(1)}%</span></div>`).join('');
+}
+$('in').addEventListener('input', run);
+EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = x; b.onclick = () => { $('in').value = x; run(); $('in').focus(); }; $('chips').appendChild(b); });
+</script>
+</body>
+</html>

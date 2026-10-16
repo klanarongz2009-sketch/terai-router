@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+*.log
+!bench/typhoon_run*.log
+.DS_Store
+.idea/
+.vscode/
+# large generated training rows; rebuild with: python training/gen_data.py
+training/train_v07.json
+bench/*.partial.json

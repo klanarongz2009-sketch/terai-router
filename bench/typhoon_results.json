@@ -1,0 +1,1926 @@
+{
+ "meta": {
+  "model_id": "typhoon-ai/llama3.2-typhoon2-1b-instruct",
+  "revision": "7513a054da229b9dde7c8cd1a7da57baa36ac59b",
+  "dtype": "float32",
+  "params": 1235814400,
+  "download_bytes": 2488910116,
+  "torch": "2.14.1+cpu",
+  "transformers": "5.19.0",
+  "python": "3.13.7",
+  "threads": 8,
+  "cpu": "AMD EPYC (lscpu)",
+  "load_s": 73.7,
+  "decoding": "greedy, max_new_tokens=6, chat template, system prompt lists the 15 intents with Thai descriptions"
+ },
+ "results": {
+  "test": {
+   "n": 124,
+   "correct": 55,
+   "acc": 0.4435,
+   "unparsed": 14,
+   "latency_ms_mean": 2325.1,
+   "latency_ms_p50": 2568.4,
+   "rows": [
+    {
+     "subset": "old_clean",
+     "text": "หาผลรวม 1+2+3",
+     "gold": "calc",
+     "raw": "calc: 1 + ",
+     "pred": "calc",
+     "sec": 2.5847
+    },
+    {
+     "subset": "old_clean",
+     "text": "บวกเลขให้หน่อย 5+7",
+     "gold": "calc",
+     "raw": "calc: 5 + ",
+     "pred": "calc",
+     "sec": 2.661
+    },
+    {
+     "subset": "old_clean",
+     "text": "คิดเลขให้หน่อย",
+     "gold": "calc",
+     "raw": "calc: คิดเลข ",
+     "pred": "calc",
+     "sec": 2.572
+    },
+    {
+     "subset": "old_clean",
+     "text": "12 คูณ 8 ได้เท่าไร",
+     "gold": "calc",
+     "raw": "calc: 12 คู",
+     "pred": "calc",
+     "sec": 2.6973
+    },
+    {
+     "subset": "old_clean",
+     "text": "forget everything",
+     "gold": "forget",
+     "raw": "คำสั่ง \"ล",
+     "pred": null,
+     "sec": 3.2715
+    },
+    {
+     "subset": "old_clean",
+     "text": "ลืมทั้งหมด",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 2.2287
+    },
+    {
+     "subset": "old_clean",
+     "text": "what is my name",
+     "gold": "get_name",
+     "raw": "set_name: กรุณาบ",
+     "pred": "set_name",
+     "sec": 2.62
+    },
+    {
+     "subset": "old_clean",
+     "text": "do you know my name",
+     "gold": "get_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.7091
+    },
+    {
+     "subset": "old_clean",
+     "text": "เราชื่ออะไร",
+     "gold": "get_name",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.7632
+    },
+    {
+     "subset": "old_clean",
+     "text": "หวัดดีจ้า",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7207
+    },
+    {
+     "subset": "old_clean",
+     "text": "hi",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.6196
+    },
+    {
+     "subset": "old_clean",
+     "text": "ว่าไงเพื่อน",
+     "gold": "greet",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.6695
+    },
+    {
+     "subset": "old_clean",
+     "text": "สวัสดีค่ะ",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7367
+    },
+    {
+     "subset": "old_clean",
+     "text": "hello there",
+     "gold": "greet",
+     "raw": "greet: สวัสด",
+     "pred": "greet",
+     "sec": 2.6447
+    },
+    {
+     "subset": "old_clean",
+     "text": "ใช้งานยังไง",
+     "gold": "help",
+     "raw": "คำสั่ง: \"",
+     "pred": null,
+     "sec": 2.5237
+    },
+    {
+     "subset": "old_clean",
+     "text": "ขอดูคำสั่ง",
+     "gold": "help",
+     "raw": "get_name: ถามว",
+     "pred": "get_name",
+     "sec": 3.2259
+    },
+    {
+     "subset": "old_clean",
+     "text": "ช่วย",
+     "gold": "help",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6095
+    },
+    {
+     "subset": "old_clean",
+     "text": "คู่มือ",
+     "gold": "help",
+     "raw": "greet: ทักทาย",
+     "pred": "greet",
+     "sec": 2.5665
+    },
+    {
+     "subset": "old_clean",
+     "text": "ทอยลูกเต๋า",
+     "gold": "random",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6485
+    },
+    {
+     "subset": "old_clean",
+     "text": "เสี่ยงทาย",
+     "gold": "random",
+     "raw": "greet: ทักทาย",
+     "pred": "greet",
+     "sec": 2.6606
+    },
+    {
+     "subset": "old_clean",
+     "text": "pick a number",
+     "gold": "random",
+     "raw": "random",
+     "pred": "random",
+     "sec": 1.7549
+    },
+    {
+     "subset": "old_clean",
+     "text": "เรียกผมว่าบอส",
+     "gold": "set_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6947
+    },
+    {
+     "subset": "old_clean",
+     "text": "จำชื่อผมไว้ว่าเอก",
+     "gold": "set_name",
+     "raw": "set_name: เอก",
+     "pred": "set_name",
+     "sec": 2.6608
+    },
+    {
+     "subset": "old_clean",
+     "text": "call me alex",
+     "gold": "set_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6207
+    },
+    {
+     "subset": "old_clean",
+     "text": "stats",
+     "gold": "stats",
+     "raw": "คำสั่ง: stats",
+     "pred": "stats",
+     "sec": 2.6131
+    },
+    {
+     "subset": "old_clean",
+     "text": "คุยไปกี่ครั้งแล้ว",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 3.0978
+    },
+    {
+     "subset": "old_clean",
+     "text": "เก่งมาก",
+     "gold": "thanks",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.6126
+    },
+    {
+     "subset": "old_clean",
+     "text": "ดีมาก",
+     "gold": "thanks",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9531
+    },
+    {
+     "subset": "old_clean",
+     "text": "ขอบคุณค่ะ",
+     "gold": "thanks",
+     "raw": "thanks: ขอบคุณ",
+     "pred": "thanks",
+     "sec": 2.595
+    },
+    {
+     "subset": "old_clean",
+     "text": "what time is it",
+     "gold": "time",
+     "raw": "time: 26 Jul ",
+     "pred": "time",
+     "sec": 2.5866
+    },
+    {
+     "subset": "old_clean",
+     "text": "วันนี้วันที่เท่าไร",
+     "gold": "time",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7351
+    },
+    {
+     "subset": "old_clean",
+     "text": "เวลาเท่าไร",
+     "gold": "time",
+     "raw": "time: ถามเวลา",
+     "pred": "time",
+     "sec": 2.6993
+    },
+    {
+     "subset": "old_clean",
+     "text": "ดึกแล้วหรือยัง",
+     "gold": "time",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9966
+    },
+    {
+     "subset": "old_clean",
+     "text": "มาจากไหน",
+     "gold": "who",
+     "raw": "greet",
+     "pred": "greet",
+     "sec": 1.9587
+    },
+    {
+     "subset": "old_clean",
+     "text": "เธอเป็นใคร",
+     "gold": "who",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.5853
+    },
+    {
+     "subset": "old_clean",
+     "text": "คุณเป็นใคร",
+     "gold": "who",
+     "raw": "who",
+     "pred": "who",
+     "sec": 1.665
+    },
+    {
+     "subset": "new_clean",
+     "text": "ผิดอีกแล้ว",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.8165
+    },
+    {
+     "subset": "new_clean",
+     "text": "แก้",
+     "gold": "fix",
+     "raw": "fix",
+     "pred": "fix",
+     "sec": 1.6848
+    },
+    {
+     "subset": "new_clean",
+     "text": "อันเมื่อกี้ผิด",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.5751
+    },
+    {
+     "subset": "new_clean",
+     "text": "แก้ใหม่",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.5654
+    },
+    {
+     "subset": "new_clean",
+     "text": "เอาอันเมื่อกี้ออก",
+     "gold": "fix",
+     "raw": "refuse: ปฏิ",
+     "pred": "refuse",
+     "sec": 3.3965
+    },
+    {
+     "subset": "new_clean",
+     "text": "ต่อเลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 3.0192
+    },
+    {
+     "subset": "new_clean",
+     "text": "เอาเลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.911
+    },
+    {
+     "subset": "new_clean",
+     "text": "ไปต่อ",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0104
+    },
+    {
+     "subset": "new_clean",
+     "text": "ทำเลยไม่ต้องถาม",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.8613
+    },
+    {
+     "subset": "new_clean",
+     "text": "go",
+     "gold": "go_on",
+     "raw": "go on",
+     "pred": null,
+     "sec": 1.9066
+    },
+    {
+     "subset": "new_clean",
+     "text": "หยุด",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9119
+    },
+    {
+     "subset": "new_clean",
+     "text": "ไม่ต้องทำต่อ",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9229
+    },
+    {
+     "subset": "new_clean",
+     "text": "ไม่ทำแล้ว",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.8973
+    },
+    {
+     "subset": "new_clean",
+     "text": "เลิกทำ",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9011
+    },
+    {
+     "subset": "new_clean",
+     "text": "ผมไม่ทำนะ",
+     "gold": "refuse",
+     "raw": "refuse: ไม่ทำ",
+     "pred": "refuse",
+     "sec": 2.5721
+    },
+    {
+     "subset": "new_clean",
+     "text": "งานค้างมีอะไร",
+     "gold": "status",
+     "raw": "status: ดู log",
+     "pred": "status",
+     "sec": 2.5819
+    },
+    {
+     "subset": "new_clean",
+     "text": "เมื่อกี้ทำอะไรไป",
+     "gold": "status",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.8697
+    },
+    {
+     "subset": "new_clean",
+     "text": "คืบหน้าเท่าไร",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.5698
+    },
+    {
+     "subset": "new_clean",
+     "text": "งานเสร็จยัง",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.5026
+    },
+    {
+     "subset": "new_clean",
+     "text": "มีงานค้างไหม",
+     "gold": "status",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9826
+    },
+    {
+     "subset": "real_bogus",
+     "text": "แก้ใหม่เดียวนี้เลย",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.5746
+    },
+    {
+     "subset": "real_bogus",
+     "text": "แก้ skill เลย",
+     "gold": "fix",
+     "raw": "fix",
+     "pred": "fix",
+     "sec": 1.7271
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ผมชื่ออะไร",
+     "gold": "get_name",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.6049
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ขออีก",
+     "gold": "go_on",
+     "raw": "refuse: ปฏิ",
+     "pred": "refuse",
+     "sec": 2.7394
+    },
+    {
+     "subset": "real_bogus",
+     "text": "Next steps",
+     "gold": "go_on",
+     "raw": "next steps",
+     "pred": null,
+     "sec": 1.9652
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ได้",
+     "gold": "go_on",
+     "raw": "greet: ทักทาย",
+     "pred": "greet",
+     "sec": 2.612
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ทำเลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.901
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ทำ",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.8897
+    },
+    {
+     "subset": "real_bogus",
+     "text": "สวัสดี",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.688
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ไม่ทำ",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9192
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ไม่ตอบ",
+     "gold": "refuse",
+     "raw": "refuse",
+     "pred": "refuse",
+     "sec": 1.9497
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ผมชื่อ bogus",
+     "gold": "set_name",
+     "raw": "who: บอทชื่",
+     "pred": "who",
+     "sec": 2.5732
+    },
+    {
+     "subset": "real_bogus",
+     "text": "ดูการบันทึก",
+     "gold": "status",
+     "raw": "stats: ดูสถิต",
+     "pred": "stats",
+     "sec": 2.5886
+    },
+    {
+     "subset": "profile_typo",
+     "text": "12คูณ8ใด้เท่าไร",
+     "gold": "calc",
+     "raw": "calc: 12 คู",
+     "pred": "calc",
+     "sec": 2.5734
+    },
+    {
+     "subset": "profile_typo",
+     "text": "สวัสดีข่ะ",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.6708
+    },
+    {
+     "subset": "profile_typo",
+     "text": "ใช่งานยังไง",
+     "gold": "help",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6003
+    },
+    {
+     "subset": "profile_typo",
+     "text": "ช้วย",
+     "gold": "help",
+     "raw": "ช้วย",
+     "pred": null,
+     "sec": 1.9964
+    },
+    {
+     "subset": "profile_typo",
+     "text": "เห่งมาก",
+     "gold": "thanks",
+     "raw": "เห่งมาก",
+     "pred": null,
+     "sec": 2.1398
+    },
+    {
+     "subset": "profile_typo",
+     "text": "ขอบคุนข้ะ",
+     "gold": "thanks",
+     "raw": "ขอบคุณค่ะ",
+     "pred": null,
+     "sec": 2.6055
+    },
+    {
+     "subset": "profile_typo",
+     "text": "มาจากใหน",
+     "gold": "who",
+     "raw": "greet",
+     "pred": "greet",
+     "sec": 1.8852
+    },
+    {
+     "subset": "profile_typo",
+     "text": "เธอป็นใคร",
+     "gold": "who",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.5684
+    },
+    {
+     "subset": "profile_typo",
+     "text": "คุนป็นใคร",
+     "gold": "who",
+     "raw": "who: คุนป็น",
+     "pred": "who",
+     "sec": 2.5181
+    },
+    {
+     "subset": "profile_typo",
+     "text": "ทำเลยไม่ต้องทาม",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9224
+    },
+    {
+     "subset": "profile_typo",
+     "text": "งานเส็ดยัง",
+     "gold": "status",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9028
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "บวกเลขให้หน้อย 5+7",
+     "gold": "calc",
+     "raw": "calc: 5 + ",
+     "pred": "calc",
+     "sec": 2.8918
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "คิดเลขให้หนอย",
+     "gold": "calc",
+     "raw": "random",
+     "pred": "random",
+     "sec": 1.6851
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "12 คูณ 8 ได้เทาไร",
+     "gold": "calc",
+     "raw": "calc: 12 คู",
+     "pred": "calc",
+     "sec": 2.6127
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ลืมทั่งหมด",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 1.6813
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เราชื่ออไร",
+     "gold": "get_name",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.6968
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "วัดดีจ้า",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.6437
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ว่าใงเพื่อน",
+     "gold": "greet",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.5599
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "สวัสดีคะ",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.6891
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ใฉ้งานยังไง",
+     "gold": "help",
+     "raw": "คำตอบของคุณมี",
+     "pred": null,
+     "sec": 2.6292
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ขอดูคำสั้ง",
+     "gold": "help",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.5536
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ช่วญ",
+     "gold": "help",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6815
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "คูมือ",
+     "gold": "help",
+     "raw": "คำสั่ง: ค",
+     "pred": null,
+     "sec": 2.7133
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ถอยลูกเต๋า",
+     "gold": "random",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0084
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เสี้ยงทาย",
+     "gold": "random",
+     "raw": "greet: ทักทาย",
+     "pred": "greet",
+     "sec": 2.6198
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เรียกผมวาบอส",
+     "gold": "set_name",
+     "raw": "who: บอทชื่",
+     "pred": "who",
+     "sec": 2.655
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "จำชื่อผมใว้ว่าเอก",
+     "gold": "set_name",
+     "raw": "set_name: ชื่อ",
+     "pred": "set_name",
+     "sec": 2.5747
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "คุยใปกี่ครั้งแล้ว",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 2.7157
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เกงมาก",
+     "gold": "thanks",
+     "raw": "กงมาก",
+     "pred": null,
+     "sec": 2.268
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ขอบคุณค่",
+     "gold": "thanks",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.714
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "วันนี้วันทีเท่าไร",
+     "gold": "time",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.75
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เวลาเทาไร",
+     "gold": "time",
+     "raw": "time",
+     "pred": "time",
+     "sec": 1.7092
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ดึกแล้วหรือญัง",
+     "gold": "time",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.6756
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "มาจากไน",
+     "gold": "who",
+     "raw": "greet: สวัสด",
+     "pred": "greet",
+     "sec": 2.6815
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เธอเป็ณใคร",
+     "gold": "who",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.6347
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "คุณเป็ณใคร",
+     "gold": "who",
+     "raw": "who",
+     "pred": "who",
+     "sec": 1.7011
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ผีดอีกแล้ว",
+     "gold": "fix",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.5845
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "แก",
+     "gold": "fix",
+     "raw": "fix",
+     "pred": "fix",
+     "sec": 1.7249
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "อันเมื่อกี้ผีด",
+     "gold": "fix",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.6126
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "แก้ใหม",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.5581
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เอาอัณเมื่อกี้ออก",
+     "gold": "fix",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6481
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ต่อเลญ",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9562
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เอาเลญ",
+     "gold": "go_on",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6033
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ไปต้อ",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9407
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ทำเลยไม่ตองถาม",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9815
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "หยูด",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9499
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ไม่ต้องถำต่อ",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9256
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ใม่ทำแล้ว",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.959
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เลีกทำ",
+     "gold": "refuse",
+     "raw": "random",
+     "pred": "random",
+     "sec": 1.7634
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "ผมไม่ทำณะ",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9642
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "งานคางมีอะไร",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6296
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "เมื่อกี้ธำอะไรไป",
+     "gold": "status",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.5851
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "คืบหนาเท่าไร",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.5426
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "งานเสร็จญัง",
+     "gold": "status",
+     "raw": "status: ดู log",
+     "pred": "status",
+     "sec": 2.5958
+    },
+    {
+     "subset": "pattern_typo",
+     "text": "มีงานค่างไหม",
+     "gold": "status",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.8985
+    }
+   ]
+  },
+  "heldout": {
+   "n": 112,
+   "correct": 62,
+   "acc": 0.5536,
+   "unparsed": 14,
+   "latency_ms_mean": 2445.8,
+   "latency_ms_p50": 2601.8,
+   "rows": [
+    {
+     "subset": "clean",
+     "text": "ช่วยบวก 15 กับ 27 ให้หน่อย",
+     "gold": "calc",
+     "raw": "calc: บวก 15",
+     "pred": "calc",
+     "sec": 2.7097
+    },
+    {
+     "subset": "clean",
+     "text": "48 หาร 6 ได้เท่าไหร่",
+     "gold": "calc",
+     "raw": "fix: 48 หาร",
+     "pred": "fix",
+     "sec": 2.6993
+    },
+    {
+     "subset": "clean",
+     "text": "รากที่สองของ 81",
+     "gold": "calc",
+     "raw": "รากที่สองของ",
+     "pred": null,
+     "sec": 2.6754
+    },
+    {
+     "subset": "clean",
+     "text": "คิดเลขในใจไม่ไหว 13 คูณ 17",
+     "gold": "calc",
+     "raw": "calc: 13 คู",
+     "pred": "calc",
+     "sec": 2.6752
+    },
+    {
+     "subset": "clean",
+     "text": "what's 9 times 9",
+     "gold": "calc",
+     "raw": "9 * 9 = ",
+     "pred": null,
+     "sec": 2.6415
+    },
+    {
+     "subset": "clean",
+     "text": "ล้างข้อมูลที่จำไว้ทั้งหมด",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 1.6943
+    },
+    {
+     "subset": "clean",
+     "text": "ลืมทุกอย่างที่ผมเคยบอก",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 2.3778
+    },
+    {
+     "subset": "clean",
+     "text": "รีเซ็ตความจำหน่อย",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 1.7225
+    },
+    {
+     "subset": "clean",
+     "text": "wipe your memory",
+     "gold": "forget",
+     "raw": "forget",
+     "pred": "forget",
+     "sec": 1.7892
+    },
+    {
+     "subset": "clean",
+     "text": "ยังจำชื่อผมได้อยู่ไหม",
+     "gold": "get_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6782
+    },
+    {
+     "subset": "clean",
+     "text": "คุณเรียกผมว่าอะไรนะ",
+     "gold": "get_name",
+     "raw": "who: บอทของคุณ",
+     "pred": "who",
+     "sec": 2.6301
+    },
+    {
+     "subset": "clean",
+     "text": "what is my name",
+     "gold": "get_name",
+     "raw": "set_name: กรุณาบ",
+     "pred": "set_name",
+     "sec": 2.575
+    },
+    {
+     "subset": "clean",
+     "text": "ผมบอกชื่อไปว่าอะไร",
+     "gold": "get_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6121
+    },
+    {
+     "subset": "clean",
+     "text": "สวัสดีตอนเช้า",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.601
+    },
+    {
+     "subset": "clean",
+     "text": "หวัดดีจ้า",
+     "gold": "greet",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7117
+    },
+    {
+     "subset": "clean",
+     "text": "hi there",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.5467
+    },
+    {
+     "subset": "clean",
+     "text": "ดีครับ AI",
+     "gold": "greet",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9589
+    },
+    {
+     "subset": "clean",
+     "text": "มีคำสั่งไหนให้ใช้บ้าง",
+     "gold": "help",
+     "raw": "get_name",
+     "pred": "get_name",
+     "sec": 1.9253
+    },
+    {
+     "subset": "clean",
+     "text": "ใช้งานแอปนี้ยังไง",
+     "gold": "help",
+     "raw": "คำตอบ: ใช้งานแ",
+     "pred": null,
+     "sec": 2.7968
+    },
+    {
+     "subset": "clean",
+     "text": "ขอดูรายการคำสั่ง",
+     "gold": "help",
+     "raw": "stats",
+     "pred": "stats",
+     "sec": 6.8872
+    },
+    {
+     "subset": "clean",
+     "text": "how do I use this",
+     "gold": "help",
+     "raw": "get_name",
+     "pred": "get_name",
+     "sec": 1.9182
+    },
+    {
+     "subset": "clean",
+     "text": "สุ่มเลขระหว่าง 1 ถึง 100",
+     "gold": "random",
+     "raw": "random: สุ่มเลข",
+     "pred": "random",
+     "sec": 2.5665
+    },
+    {
+     "subset": "clean",
+     "text": "ทอยลูกเต๋าให้หน่อย",
+     "gold": "random",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 3.1912
+    },
+    {
+     "subset": "clean",
+     "text": "ขอตัวเลขสุ่มหนึ่งตัว",
+     "gold": "random",
+     "raw": "random",
+     "pred": "random",
+     "sec": 1.8921
+    },
+    {
+     "subset": "clean",
+     "text": "pick a random number",
+     "gold": "random",
+     "raw": "random: เลือกหมายเลข",
+     "pred": "random",
+     "sec": 3.0675
+    },
+    {
+     "subset": "clean",
+     "text": "ต่อไปนี้เรียกผมว่าโบกัส",
+     "gold": "set_name",
+     "raw": "set_name: โบกัส",
+     "pred": "set_name",
+     "sec": 2.7753
+    },
+    {
+     "subset": "clean",
+     "text": "ผมชื่อเล่นว่าต้น",
+     "gold": "set_name",
+     "raw": "set_name: ต้น",
+     "pred": "set_name",
+     "sec": 2.5993
+    },
+    {
+     "subset": "clean",
+     "text": "call me Max",
+     "gold": "set_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.5406
+    },
+    {
+     "subset": "clean",
+     "text": "ชื่อของฉันคือมิว",
+     "gold": "set_name",
+     "raw": "set_name: มิว",
+     "pred": "set_name",
+     "sec": 2.5984
+    },
+    {
+     "subset": "clean",
+     "text": "เราคุยกันไปกี่ข้อความแล้ว",
+     "gold": "stats",
+     "raw": "stats",
+     "pred": "stats",
+     "sec": 2.2569
+    },
+    {
+     "subset": "clean",
+     "text": "ขอดูสถิติการใช้งาน",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 2.9175
+    },
+    {
+     "subset": "clean",
+     "text": "ใช้งานไปนานแค่ไหนแล้ว",
+     "gold": "stats",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.3927
+    },
+    {
+     "subset": "clean",
+     "text": "how many messages so far",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 2.5637
+    },
+    {
+     "subset": "clean",
+     "text": "ขอบคุณมากครับ",
+     "gold": "thanks",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7128
+    },
+    {
+     "subset": "clean",
+     "text": "ขอบใจมาก",
+     "gold": "thanks",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7194
+    },
+    {
+     "subset": "clean",
+     "text": "thanks a lot",
+     "gold": "thanks",
+     "raw": "ขอบคุณมากคร",
+     "pred": null,
+     "sec": 2.6156
+    },
+    {
+     "subset": "clean",
+     "text": "ดีมาก ขอบคุณนะ",
+     "gold": "thanks",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.738
+    },
+    {
+     "subset": "clean",
+     "text": "ตอนนี้เวลาเท่าไหร่",
+     "gold": "time",
+     "raw": "time: ถามเวลา ว",
+     "pred": "time",
+     "sec": 2.578
+    },
+    {
+     "subset": "clean",
+     "text": "วันนี้วันที่เท่าไร",
+     "gold": "time",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7541
+    },
+    {
+     "subset": "clean",
+     "text": "what time is it",
+     "gold": "time",
+     "raw": "time: 26 Jul ",
+     "pred": "time",
+     "sec": 2.6322
+    },
+    {
+     "subset": "clean",
+     "text": "วันนี้วันอะไรนะ",
+     "gold": "time",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.6917
+    },
+    {
+     "subset": "clean",
+     "text": "คุณเป็นใคร",
+     "gold": "who",
+     "raw": "who",
+     "pred": "who",
+     "sec": 1.6662
+    },
+    {
+     "subset": "clean",
+     "text": "ใครเป็นคนสร้างบอทนี้",
+     "gold": "who",
+     "raw": "who",
+     "pred": "who",
+     "sec": 1.6981
+    },
+    {
+     "subset": "clean",
+     "text": "บอกหน่อยว่าคุณคืออะไร",
+     "gold": "who",
+     "raw": "who: บอทคือ",
+     "pred": "who",
+     "sec": 2.6658
+    },
+    {
+     "subset": "clean",
+     "text": "are you a bot",
+     "gold": "who",
+     "raw": "yes",
+     "pred": null,
+     "sec": 1.6532
+    },
+    {
+     "subset": "clean",
+     "text": "คำตอบเมื่อกี้ไม่ถูก แก้ที",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6919
+    },
+    {
+     "subset": "clean",
+     "text": "ผิดอีกแล้ว ทำใหม่",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6556
+    },
+    {
+     "subset": "clean",
+     "text": "แก้ไฟล์นั้นใหม่",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6276
+    },
+    {
+     "subset": "clean",
+     "text": "ย้อนกลับไปแบบเดิม",
+     "gold": "fix",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9516
+    },
+    {
+     "subset": "clean",
+     "text": "ทำต่อได้เลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0156
+    },
+    {
+     "subset": "clean",
+     "text": "โอเค ลุย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0384
+    },
+    {
+     "subset": "clean",
+     "text": "ทำให้ครบทุกข้อเลย",
+     "gold": "go_on",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6943
+    },
+    {
+     "subset": "clean",
+     "text": "go ahead",
+     "gold": "go_on",
+     "raw": "go on",
+     "pred": null,
+     "sec": 2.0994
+    },
+    {
+     "subset": "clean",
+     "text": "ไม่ต้องทำแล้ว",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0176
+    },
+    {
+     "subset": "clean",
+     "text": "หยุดเลย",
+     "gold": "refuse",
+     "raw": "refuse",
+     "pred": "refuse",
+     "sec": 1.9985
+    },
+    {
+     "subset": "clean",
+     "text": "อันนั้นไม่เอานะ",
+     "gold": "refuse",
+     "raw": "refuse: ปฏิ",
+     "pred": "refuse",
+     "sec": 2.7248
+    },
+    {
+     "subset": "clean",
+     "text": "ไม่ใช่แบบนี้ ยกเลิก",
+     "gold": "refuse",
+     "raw": "refuse",
+     "pred": "refuse",
+     "sec": 1.9547
+    },
+    {
+     "subset": "clean",
+     "text": "งานเสร็จหมดหรือยัง",
+     "gold": "status",
+     "raw": "status: ดู log",
+     "pred": "status",
+     "sec": 2.6011
+    },
+    {
+     "subset": "clean",
+     "text": "ตอนนี้ถึงขั้นไหนแล้ว",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.7091
+    },
+    {
+     "subset": "clean",
+     "text": "ยังเหลืองานอะไรอยู่บ้าง",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6745
+    },
+    {
+     "subset": "clean",
+     "text": "ขอดู log ล่าสุด",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6632
+    },
+    {
+     "subset": "typo",
+     "text": "ช้วยบวก 15 กับ 27 ให้หน้อย",
+     "gold": "calc",
+     "raw": "calc: 15 + ",
+     "pred": "calc",
+     "sec": 2.656
+    },
+    {
+     "subset": "typo",
+     "text": "48 หาร 6 ใด้เท่าใหร่",
+     "gold": "calc",
+     "raw": "calc: 48 หาร",
+     "pred": "calc",
+     "sec": 2.7225
+    },
+    {
+     "subset": "typo",
+     "text": "คำนวนให้หน่อย 7*8",
+     "gold": "calc",
+     "raw": "calc: คำนวณ ",
+     "pred": "calc",
+     "sec": 2.6886
+    },
+    {
+     "subset": "typo",
+     "text": "ล้างความจำทั้งหมดเลบ",
+     "gold": "forget",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.7357
+    },
+    {
+     "subset": "typo",
+     "text": "ลืมทุกอยางที่ผมบอก",
+     "gold": "forget",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.819
+    },
+    {
+     "subset": "typo",
+     "text": "รีเชตความจำ",
+     "gold": "forget",
+     "raw": "refuse",
+     "pred": "refuse",
+     "sec": 1.9971
+    },
+    {
+     "subset": "typo",
+     "text": "ยังจำชื่อผมใด้ไหม",
+     "gold": "get_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6581
+    },
+    {
+     "subset": "typo",
+     "text": "คุนเรียกผมว่าอะไร",
+     "gold": "get_name",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6675
+    },
+    {
+     "subset": "typo",
+     "text": "ผมชือ่อะไรนะ",
+     "gold": "get_name",
+     "raw": "set_name: ชื่อ",
+     "pred": "set_name",
+     "sec": 2.6523
+    },
+    {
+     "subset": "typo",
+     "text": "สวัดดีครับ",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.6687
+    },
+    {
+     "subset": "typo",
+     "text": "หวัดดีขะ",
+     "gold": "greet",
+     "raw": "ก่อนอื่น ข",
+     "pred": null,
+     "sec": 2.6037
+    },
+    {
+     "subset": "typo",
+     "text": "ดีจ่า",
+     "gold": "greet",
+     "raw": "ก็แล้วแต่",
+     "pred": null,
+     "sec": 2.7294
+    },
+    {
+     "subset": "typo",
+     "text": "มีคำสังอะไรบ้าง",
+     "gold": "help",
+     "raw": "คำสั่ง: คำ",
+     "pred": null,
+     "sec": 2.6754
+    },
+    {
+     "subset": "typo",
+     "text": "ใช่งานแอปนี้ยังไง",
+     "gold": "help",
+     "raw": "คำตอบ: status",
+     "pred": "status",
+     "sec": 2.4658
+    },
+    {
+     "subset": "typo",
+     "text": "ทำอะไรใด้บ้าง",
+     "gold": "help",
+     "raw": "คำตอบของคุณมี",
+     "pred": null,
+     "sec": 2.6474
+    },
+    {
+     "subset": "typo",
+     "text": "สุมเลข 1 ถึง 100",
+     "gold": "random",
+     "raw": "random: สุ่มเลข",
+     "pred": "random",
+     "sec": 2.7085
+    },
+    {
+     "subset": "typo",
+     "text": "ขอตัวเลขสุ่มหนื่งตัว",
+     "gold": "random",
+     "raw": "random",
+     "pred": "random",
+     "sec": 1.7256
+    },
+    {
+     "subset": "typo",
+     "text": "ทอยลูกเต๋าให้หน้อย",
+     "gold": "random",
+     "raw": "go_on: สั่ง",
+     "pred": "go_on",
+     "sec": 2.6793
+    },
+    {
+     "subset": "typo",
+     "text": "ต่อไปเรียกผมว่าโบกัส",
+     "gold": "set_name",
+     "raw": "set_name: โบกัส",
+     "pred": "set_name",
+     "sec": 2.6378
+    },
+    {
+     "subset": "typo",
+     "text": "ผมชื่อเล่นว่าต้นคับ",
+     "gold": "set_name",
+     "raw": "set_name: ต้นค",
+     "pred": "set_name",
+     "sec": 2.5821
+    },
+    {
+     "subset": "typo",
+     "text": "ชือของฉันคือมิว",
+     "gold": "set_name",
+     "raw": "set_name: มิว",
+     "pred": "set_name",
+     "sec": 2.6167
+    },
+    {
+     "subset": "typo",
+     "text": "คุยกันไปกี่ค่อความแล้ว",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 2.7244
+    },
+    {
+     "subset": "typo",
+     "text": "ขอดูสถิตการใช่งาน",
+     "gold": "stats",
+     "raw": "stats: ถามสถิต",
+     "pred": "stats",
+     "sec": 2.6342
+    },
+    {
+     "subset": "typo",
+     "text": "ใช้งานไปนานแค่ใหนแล้ว",
+     "gold": "stats",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6582
+    },
+    {
+     "subset": "typo",
+     "text": "ขอบคุนมากครับ",
+     "gold": "thanks",
+     "raw": "ขอบคุณครับ",
+     "pred": null,
+     "sec": 2.6552
+    },
+    {
+     "subset": "typo",
+     "text": "ขอบไจมาก",
+     "gold": "thanks",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.5762
+    },
+    {
+     "subset": "typo",
+     "text": "ดีมากขอบคุนนะ",
+     "gold": "thanks",
+     "raw": "thanks",
+     "pred": "thanks",
+     "sec": 1.7841
+    },
+    {
+     "subset": "typo",
+     "text": "ตอนนี้กี่โมงแล้วหรอ",
+     "gold": "time",
+     "raw": "time: ถามเวลา ว",
+     "pred": "time",
+     "sec": 2.6238
+    },
+    {
+     "subset": "typo",
+     "text": "วันนี้วันที่เท่าไหล่",
+     "gold": "time",
+     "raw": "who: บอทเป็น",
+     "pred": "who",
+     "sec": 2.5795
+    },
+    {
+     "subset": "typo",
+     "text": "บอกเวลาหน้อย",
+     "gold": "time",
+     "raw": "time: ถามเวลา",
+     "pred": "time",
+     "sec": 2.568
+    },
+    {
+     "subset": "typo",
+     "text": "คุนเป็นใคร",
+     "gold": "who",
+     "raw": "who: คุนเป็น",
+     "pred": "who",
+     "sec": 2.5989
+    },
+    {
+     "subset": "typo",
+     "text": "ใครสน้างบอทนี้",
+     "gold": "who",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9602
+    },
+    {
+     "subset": "typo",
+     "text": "คุนคืออะไร",
+     "gold": "who",
+     "raw": "who: คุนคือ",
+     "pred": "who",
+     "sec": 2.6685
+    },
+    {
+     "subset": "typo",
+     "text": "คำตอบเมื่อกี้ไม่ถุก แก้ที",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6354
+    },
+    {
+     "subset": "typo",
+     "text": "พิมพิดอีกแล้ว ทำใหม่",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.636
+    },
+    {
+     "subset": "typo",
+     "text": "แก้ใฟล์นั้นใหม่",
+     "gold": "fix",
+     "raw": "fix: บอกว่า",
+     "pred": "fix",
+     "sec": 2.6601
+    },
+    {
+     "subset": "typo",
+     "text": "ทำต่อใด้เลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0314
+    },
+    {
+     "subset": "typo",
+     "text": "ทำให้คลบทุกข้อเลย",
+     "gold": "go_on",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.7272
+    },
+    {
+     "subset": "typo",
+     "text": "เร่อมทำเลย",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0491
+    },
+    {
+     "subset": "typo",
+     "text": "ไม่ต้องทำแล้วว",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9297
+    },
+    {
+     "subset": "typo",
+     "text": "หยุดก้อน",
+     "gold": "refuse",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 2.0937
+    },
+    {
+     "subset": "typo",
+     "text": "อันนั้นไม่เอานะคับ",
+     "gold": "refuse",
+     "raw": "refuse: ปฏิ",
+     "pred": "refuse",
+     "sec": 2.7135
+    },
+    {
+     "subset": "typo",
+     "text": "งานเส็ดหมดหรือยัง",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.586
+    },
+    {
+     "subset": "typo",
+     "text": "ตอนนี้ถึงขั้นใหนแล้ว",
+     "gold": "status",
+     "raw": "set_name: บอกช",
+     "pred": "set_name",
+     "sec": 2.6412
+    },
+    {
+     "subset": "typo",
+     "text": "ยังเหลืองานอะไรอยุ่บ้าง",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.6018
+    },
+    {
+     "subset": "real_new",
+     "text": "ทั้งหมดเลย",
+     "gold": "go_on",
+     "raw": "greet",
+     "pred": "greet",
+     "sec": 2.0322
+    },
+    {
+     "subset": "real_new",
+     "text": "ตั้ง",
+     "gold": "go_on",
+     "raw": "set_name",
+     "pred": "set_name",
+     "sec": 1.9554
+    },
+    {
+     "subset": "real_new",
+     "text": "ต่อในตาเดียวกันสิ",
+     "gold": "go_on",
+     "raw": "go_on",
+     "pred": "go_on",
+     "sec": 1.9159
+    },
+    {
+     "subset": "real_new",
+     "text": "เส็ดหรือยัง",
+     "gold": "status",
+     "raw": "status: ถามความคื",
+     "pred": "status",
+     "sec": 2.5897
+    },
+    {
+     "subset": "real_new",
+     "text": "พิมพิด จริงๆคือ 2026",
+     "gold": "fix",
+     "raw": "set_name: พิมพิด",
+     "pred": "set_name",
+     "sec": 2.6554
+    },
+    {
+     "subset": "real_new",
+     "text": "อย่าสร้างเทมเพลดเด็ดขาด",
+     "gold": "refuse",
+     "raw": "refuse: ปฏิ",
+     "pred": "refuse",
+     "sec": 2.6787
+    }
+   ]
+  }
+ }
+}

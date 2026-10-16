@@ -1,0 +1,90 @@
+{
+ "model_version": "0.7.0",
+ "python": "3.13.7",
+ "test_set.json": {
+  "sha256": "9312c04740192166de27f9cd9b43d25dd9893617223b330a0db869a109585dca",
+  "subsets": {
+   "old_clean": [
+    33,
+    36
+   ],
+   "new_clean": [
+    20,
+    20
+   ],
+   "real_bogus": [
+    13,
+    13
+   ],
+   "profile_typo": [
+    11,
+    11
+   ],
+   "pattern_typo": [
+    44,
+    44
+   ],
+   "total": [
+    121,
+    124
+   ]
+  },
+  "acc": 0.9758,
+  "latency_ms_mean_1thread": 0.238,
+  "errors": [
+   {
+    "subset": "old_clean",
+    "text": "what is my name",
+    "gold": "get_name",
+    "pred": "set_name",
+    "conf": 0.5843
+   },
+   {
+    "subset": "old_clean",
+    "text": "do you know my name",
+    "gold": "get_name",
+    "pred": "who",
+    "conf": 0.3763
+   },
+   {
+    "subset": "old_clean",
+    "text": "pick a number",
+    "gold": "random",
+    "pred": "set_name",
+    "conf": 0.1917
+   }
+  ]
+ },
+ "heldout_v07.json": {
+  "sha256": "09619675cc391f761c5247d3795ed25565f64d80ff43fafb1132b16aacefdf70",
+  "subsets": {
+   "clean": [
+    60,
+    61
+   ],
+   "typo": [
+    45,
+    45
+   ],
+   "real_new": [
+    6,
+    6
+   ],
+   "total": [
+    111,
+    112
+   ]
+  },
+  "acc": 0.9911,
+  "latency_ms_mean_1thread": 0.298,
+  "errors": [
+   {
+    "subset": "clean",
+    "text": "what is my name",
+    "gold": "get_name",
+    "pred": "set_name",
+    "conf": 0.5843
+   }
+  ]
+ }
+}
