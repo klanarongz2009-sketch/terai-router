@@ -6,6 +6,7 @@
   terai                         interactive prompt (Ctrl-D to quit)
   terai chat                    chat that answers and remembers (session in ~/.terai/session.json)
   terai chat --session s.json   use another session file; --reset starts from an empty memory
+  terai chat --web              opt-in web search (Wikipedia th, en); --searx URL adds a SearXNG instance
 """
 import argparse
 import json
@@ -33,14 +34,17 @@ def chat_main(argv=None):
     ap = argparse.ArgumentParser(prog='terai chat', description='TER-AI chat: offline Thai chat with memory (made with Sesame)')
     ap.add_argument('--session', default=DEFAULT_SESSION, help='session JSON file (default: ~/.terai/session.json)')
     ap.add_argument('--reset', action='store_true', help='erase the session memory before starting')
+    ap.add_argument('--web', action='store_true',
+                    help='opt-in web search: questions the offline pack cannot answer go to Wikipedia (th, then en)')
+    ap.add_argument('--searx', metavar='URL', help='also ask this SearXNG instance (implies --web)')
     a = ap.parse_args(argv)
     from .chat import Chat
-    c = Chat(path=a.session)
+    c = Chat(path=a.session, web=a.web, searx=a.searx)
     if a.reset:
         c.forget()
     tty = sys.stdin.isatty()
     if tty:
-        print('TER-AI chat ' + __version__ + ' (offline). Session: ' + c.path + '. Ctrl-D or /quit to exit.')
+        print('TER-AI chat ' + __version__ + (' (web search on)' if c.web else ' (offline)') + '. Session: ' + c.path + '. Ctrl-D or /quit to exit.')
     try:
         while True:
             line = input('you> ' if tty else '')

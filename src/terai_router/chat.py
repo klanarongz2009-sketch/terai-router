@@ -93,8 +93,17 @@ class Chat:
     _knowledge = None
     _chitchat = None
 
-    def __init__(self, path=None, now=None, seed=None, knowledge=None):
+    def __init__(self, path=None, now=None, seed=None, knowledge=None, web=False, searx=None, websearch=None):
         self.path = os.path.expanduser(path) if path else None
+        # opt-in web search: off by default, and no network at all while off
+        if websearch is not None:
+            self.web = websearch
+        elif web or searx:
+            from .websearch import WebSearch
+            self.web = WebSearch(enabled=True, searx=searx)
+        else:
+            self.web = None
+        self._web_tried = False
         self._now = now
         if knowledge is not None:
             self.kb = knowledge
@@ -206,6 +215,7 @@ class Chat:
         n = normalize(text)
         n = re.sub(' +', ' ', n).strip()
         self.state['turns'] += 1
+        self._web_tried = False
         out = None
         for step in (self._forget, self._recall, self._learn, self._social, self._datetime, self._random,
                      self._textops, self._calc, self._units, self._continue, self._chitchat_reply,
@@ -652,9 +662,18 @@ class Chat:
             if ans is not None:
                 self.state['last'] = {'kind': 'kb', 'doc': doc, 'q': n, 'next': nxt}
                 return ans + ' ' + self.kb.cite(doc)
+        live = bool(Q.search(n.lower()) and LIVE.search(n.lower()))
+        if live and self.web is not None:  # "current/latest" questions: the pack may be stale, ask the web first
+            out = self._web_reply(text, q)
+            if out is not None:
+                return out
         hit = self.kb.find(q) if q else None
         if hit is None:
-            if Q.search(n.lower()) and LIVE.search(n.lower()):
+            if self.web is not None and Q.search(n.lower()) and not self._web_tried:
+                out = self._web_reply(text, q)
+                if out is not None:
+                    return out
+            if live:
                 return ('ผมไม่มีข้อมูลแบบ real-time (ราคา ข่าว ผลการแข่งขัน หรือเรื่องที่เปลี่ยนทุกวัน) ครับ/ค่ะ '
                         'เพราะผมรัน offline และความรู้หยุดที่ Wikipedia ภาษาไทยวันที่ ' + self.kb.load().meta.get('retrieved', '') + ' เลยตอบไม่ได้')
             return None
@@ -670,6 +689,14 @@ class Chat:
         self.state['last'] = {'kind': 'kb', 'doc': doc, 'q': q, 'next': nxt}
         pre = ('(คิดว่าหมายถึง "' + title + '") ') if hit['how'] == 'fuzzy' else ''
         return pre + ans + ' ' + self.kb.cite(doc)
+
+    def _web_reply(self, text, q):
+        self._web_tried = True
+        hit = self.web.search(q or text)
+        if hit is None or not hit.get('answer'):
+            return None
+        self.state['last'] = {'kind': 'web', 'title': hit['title'], 'url': hit['url']}
+        return '[ค้นเว็บ] ' + hit['answer'] + ' ' + self.web.cite(hit)
 
     # ------------------------------------------------------------------ 13. router for short commands
     def _router(self, text, n):
@@ -709,7 +736,12 @@ class Chat:
     # ------------------------------------------------------------------ 14. honest fallback
     def _unknown(self, text, n):
         if Q.search(n.lower()):
-            return ('ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย ' + format(len(self.kb.docs), ',') + ' บทความ) '
-                    'ไม่มีข้อมูลที่ตอบคำถามนี้ได้ ผมเลยไม่เดา')
+            base = ('ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย ' + format(len(self.kb.docs), ',') + ' บทความ) '
+                    'ไม่มีข้อมูลที่ตอบคำถามนี้ได้')
+            if self._web_tried and self.web is not None:
+                if self.web.last_error:
+                    return base + ' และค้นเว็บไม่สำเร็จ (' + self.web.last_error.split(':')[0] + ') ผมเลยไม่เดา'
+                return base + ' ค้น Wikipedia ไทยและอังกฤษแล้วก็ไม่พบบทความที่ตรงพอ ผมเลยไม่เดา'
+            return base + ' ผมเลยไม่เดา'
         return ('ผมยังไม่เข้าใจข้อความนี้ครับ/ค่ะ (ไม่รู้ว่าจะตอบยังไง) ลองถามความรู้ คิดเลข ถามวันเวลา '
                 'หรือเล่าเรื่องของคุณให้ผมจำ เช่น ผมชื่อ... ผมชอบ... พิมพ์ ช่วยอะไรได้บ้าง เพื่อดูทั้งหมด')
