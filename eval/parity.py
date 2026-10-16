@@ -3,6 +3,8 @@
 1. Router: docs/terai.js vs terai_router.route on every intent eval sentence.
 2. Chat: docs/chat.js (node) vs terai_router.chat.Chat on every turn of chat_eval_v08, chat_heldout_v08 and
    chat_regress_v08, with the files' fixed clock and seed. Replies must be identical, character for character.
+3. Chat with web search on (v0.9): chat_web_v09 with every MediaWiki API request answered from the frozen
+   eval/web_fixtures_v09.json (offline conversations get a network error), JS through Chat.replyAsync.
 
 Usage: python eval/parity.py   (needs node on PATH)
 """
@@ -73,6 +75,66 @@ def chat_parity():
     return bad_total
 
 
+class OfflineError(Exception):
+    pass
+
+
+def web_key(url):
+    import urllib.parse
+    u = urllib.parse.urlparse(url)
+    return u.netloc + '|' + urllib.parse.parse_qs(u.query).get('gsrsearch', [''])[0]
+
+
+def python_web_chat(fix_path, spec_path):
+    import tempfile
+    from terai_router.chat import Chat
+    from terai_router.websearch import WebSearch
+    fix = json.loads(pathlib.Path(fix_path).read_text(encoding='utf-8'))['responses']
+    spec = json.loads(pathlib.Path(spec_path).read_text(encoding='utf-8'))
+    out = []
+    for conv in spec['conversations']:
+        now = conv.get('now', spec.get('now'))
+        seed = conv.get('seed', spec.get('seed'))
+
+        def fetch(url, offline=bool(conv.get('offline'))):
+            if offline:
+                raise OfflineError('network is unreachable')
+            return fix.get(web_key(url), {'batchcomplete': True})
+
+        with tempfile.TemporaryDirectory() as d:
+            path = pathlib.Path(d) / 'session.json'
+            mk = lambda: Chat(path, now=now, seed=seed, websearch=WebSearch(enabled=True, cache_dir=None, fetch=fetch))  # noqa: E731
+            chat = mk()
+            replies = []
+            for t in conv['turns']:
+                if t.get('restart'):
+                    chat = mk()
+                replies.append(chat.reply(t['user']))
+            out.append(replies)
+    return out
+
+
+def web_parity():
+    fix = str(ROOT / 'eval' / 'web_fixtures_v09.json')
+    spec = str(ROOT / 'eval' / 'chat_web_v09.json')
+    res = subprocess.run(['node', str(ROOT / 'eval' / 'chat_parity.js'), '--web', fix, spec], capture_output=True, text=True, check=True)
+    js = json.loads(res.stdout)[spec]
+    py = python_web_chat(fix, spec)
+    n = bad = 0
+    for ci, (pc, jc) in enumerate(zip(py, js)):
+        for ti, (a, b) in enumerate(zip(pc, jc)):
+            n += 1
+            if a != b:
+                bad += 1
+                print('WEB_DIFF', f'conv={ci} turn={ti}', '\n  py:', a, '\n  js:', b)
+        if len(pc) != len(jc):
+            bad += 1
+            print('WEB_LEN_DIFF', ci)
+    web_turns = sum(1 for r in py for t in r if t.startswith('[ค้นเว็บ]'))
+    print(f'web (mocked) chat_web_v09.json: turns={n} identical={n - bad} diff={bad} web_answers={web_turns}')
+    return bad
+
+
 def main():
     items = texts(ROOT / 'eval' / 'test_set.json') + texts(ROOT / 'eval' / 'heldout_v07.json')
     js = r"""
@@ -101,7 +163,8 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
         max_conf = max(max_conf, abs(p['confidence'] - jc))
     print(f'n={len(items)} intent_diff={intent_diff} normalized_diff={norm_diff} max_confidence_diff={max_conf:.2e}')
     chat_bad = chat_parity()
-    return 1 if intent_diff or norm_diff or chat_bad else 0
+    web_bad = web_parity()
+    return 1 if intent_diff or norm_diff or chat_bad or web_bad else 0
 
 
 if __name__ == '__main__':

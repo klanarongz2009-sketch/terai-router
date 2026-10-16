@@ -26,7 +26,7 @@ from . import tools as T
 from .knowledge import Knowledge, squash
 from .normalizer import normalize
 
-VERSION = '0.8.0'
+VERSION = '0.9.0'
 STATE_VERSION = 1
 HISTORY_MAX = 200
 CHITCHAT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'chitchat_th.json')

@@ -4,7 +4,7 @@ import socket
 import pytest
 
 from terai_router.chat import Chat
-from terai_router.websearch import WebSearch, cover, query_text
+from terai_router.websearch import CONT, WebSearch, cover, extract, passages, query_text
 
 NOW = '2026-10-16T16:00:00'
 
@@ -160,3 +160,29 @@ def test_cli_flags(monkeypatch, capsys, tmp_path):
     cli.main(['chat', '--searx', 'http://s.local', '--session', str(tmp_path / 's.json')])
     assert seen['searx'] == 'http://s.local'
     assert '[ค้นเว็บ]' in capsys.readouterr().out
+
+
+JP_LEAD = ('นายกรัฐมนตรีญี่ปุ่น (อังกฤษ: Prime Minister of Japan) ภาษาญี่ปุ่นเรียก ไนกากุโซริไดจิง '
+           '(ญี่ปุ่น: 内閣総理大臣 Naikaku-sōri-daijin) หรือ ชูโช (ญี่ปุ่น: 首相 Shushō) '
+           'เป็นหัวหน้ารัฐบาลญี่ปุ่นและผู้บัญชาการสูงสุดของกองกำลังป้องกันตนเองญี่ปุ่น '
+           'จักรพรรดิทรงแต่งตั้งนายกรัฐมนตรีตามที่สภานิติบัญญัติแห่งชาติถวายชื่อ '
+           'นายกรัฐมนตรีต้องได้รับความไว้วางใจจากสภาผู้แทนราษฎรให้ดำรงตำแหน่ง '
+           'นายกรัฐมนตรีเป็นหัวหน้าคณะรัฐมนตรี และรัฐมนตรีคนอื่น ๆ จะดำรงตำแหน่งตามอัธยาศัยของนายกรัฐมนตรี '
+           'นายกรัฐมนตรีคนปัจจุบัน คือ ซานาเอะ ทากาอิจิ ดำรงตำแหน่งตั้งแต่ 21 ตุลาคม พ.ศ. 2568')
+
+
+def test_passages_start_at_clause_start():
+    ps = passages(JP_LEAD)
+    assert ' '.join(ps) == JP_LEAD
+    for p in ps:
+        assert not p.startswith(CONT), p
+        assert p.count('(') == p.count(')'), p
+    ans = extract('ใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น', JP_LEAD)
+    assert not ans.startswith(CONT) and ' ๆ จะดำรง' not in ans.split(')')[-1][:12]
+    assert 'นายกรัฐมนตรีคนปัจจุบัน คือ ซานาเอะ ทากาอิจิ' in ans
+
+
+def test_passages_keep_english_sentences_whole():
+    t = 'Mars is the fourth planet from the Sun and the second smallest. It has a thin atmosphere, mostly carbon dioxide.'
+    for p in passages(t):
+        assert p[0].isupper() and p.endswith('.')

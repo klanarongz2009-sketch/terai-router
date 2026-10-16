@@ -174,14 +174,22 @@ $ printf 'ซาบาริโนวาลิกซ์คืออะไร\n�
 you> ซาบาริโนวาลิกซ์คืออะไร
 terai> ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย 8,192 บทความ) ไม่มีข้อมูลที่ตอบคำถามนี้ได้ ค้น Wikipedia ไทยและอังกฤษแล้วก็ไม่พบบทความที่ตรงพอ ผมเลยไม่เดา
 you> ใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น
-terai> [ค้นเว็บ] นายกรัฐมนตรีญี่ปุ่น (อังกฤษ: Prime Minister of Japan) ๆ จะดำรงตำแหน่งตามอัธยาศัยของนายกรัฐมนตรี นายกรัฐมนตรีคนปัจจุบัน คือ ซานาเอะ ทากาอิจิ ดำรงตำแหน่งตั้งแต่ 21 ตุลาคม พ.ศ. 2568 (ที่มา: Wikipedia ภาษาไทย "นายกรัฐมนตรีญี่ปุ่น", https://th.wikipedia.org/wiki/นายกรัฐมนตรีญี่ปุ่น, CC BY-SA 4.0)
+terai> [ค้นเว็บ] นายกรัฐมนตรีญี่ปุ่น (อังกฤษ: Prime Minister of Japan) นายกรัฐมนตรีคนปัจจุบัน คือ ซานาเอะ ทากาอิจิ ดำรงตำแหน่งตั้งแต่ 21 ตุลาคม พ.ศ. 2568 (ที่มา: Wikipedia ภาษาไทย "นายกรัฐมนตรีญี่ปุ่น", https://th.wikipedia.org/wiki/นายกรัฐมนตรีญี่ปุ่น, CC BY-SA 4.0)
 ```
 
-The answer is only as current as the Wikipedia article at the time of the search, and the passage cut is not always clean (the second answer starts mid-sentence).
+The answer is only as current as the Wikipedia article at the time of the search. Passages are cut only where a new clause can start (never at ๆ, ฯ, an open bracket or a linking word such as และ, หรือ, คือ, ซึ่ง), but Thai has no sentence marks, so a cut can still split a name or a list now and then.
 
 **Privacy:** without `--web` TER-AI never opens a network connection. With `--web` on, the question (minus question words) is sent to th.wikipedia.org and en.wikipedia.org, and to your SearXNG instance if you set one. Nothing else is sent: no session, no name, no history.
 
-The browser demo does not have web search yet; it comes in the next part of v0.9.
+### In the browser demo
+
+The chat in the [live demo](https://klanarongz2009-sketch.github.io/terai-router/) has a **Web search (Wikipedia)** switch under the message box. It is **off by default**, and the choice is saved in your browser (localStorage key `terai.chat.web.v1`).
+
+- `docs/chat.js` has its own port of the web search: the same MediaWiki API requests (with `origin=*` for CORS), Thai Wikipedia then English Wikipedia, the same trigram-coverage ranking (threshold 0.6), the same "current/latest/now" rule, a 5-second timeout, the same citation, and the same fallback to the knowledge pack when offline. SearXNG is CLI only (most instances do not allow browser requests from other sites).
+- Responses are kept in memory for the open page only (at most 200); errors are retried on the next message.
+- `python eval/parity.py` feeds the same frozen API responses (`eval/web_fixtures_v09.json`, recorded with `eval/make_web_fixtures.py`) to the JavaScript and the Python chat over `eval/chat_web_v09.json`, including an offline conversation, and requires identical replies.
+
+**Privacy (browser):** with the switch off, the page makes no request except loading itself and the knowledge pack from GitHub Pages. With it on, only the question text (minus question words) goes to th.wikipedia.org and en.wikipedia.org, directly from your browser. Your name, memory and chat history stay in your browser and are never sent.
 
 ## How it works
 
@@ -193,13 +201,14 @@ The browser demo does not have web search yet; it comes in the next part of v0.9
 
 `docs/index.html` is a single self-contained page: the model and `docs/terai.js` are inlined, so it works offline and can be hosted on GitHub Pages. Rebuild it with `python docs/build_demo.py`. `python eval/parity.py` checks that the JavaScript and Python versions agree; on the current model they give the same intent and normalized text on all 607 eval sentences (max confidence difference 6.7e-16).
 
-The demo has two modes: the intent router and a chat mode. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets).
+The demo has two modes: the intent router and a chat mode. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
 
 ## Development
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 42 tests
+pytest                          # 63 tests
+python eval/parity.py           # JS vs Python: router, chat, mocked web search
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows

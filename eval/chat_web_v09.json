@@ -1,0 +1,15 @@
+{
+  "about": "v0.9 web-search parity set. Replies are not fixed here: eval/parity.py feeds the same frozen MediaWiki API responses (eval/web_fixtures_v09.json) to docs/chat.js and to the Python Chat and requires identical replies. Conversations with offline=true get a network error for every request.",
+  "now": "2026-10-16T16:00:00",
+  "seed": 7,
+  "conversations": [
+    {"turns": [{"user": "ใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น"}, {"user": "ซาบาริโนวาลิกซ์คืออะไร"}]},
+    {"turns": [{"user": "สวัสดี"}, {"user": "12*7"}, {"user": "แล้ว 5 ล่ะ"}, {"user": "ดาวอังคารคืออะไร"}]},
+    {"turns": [{"user": "ใครคือประธานาธิบดีคนปัจจุบันของฝรั่งเศส"}, {"user": "ใครคือเลขาธิการสหประชาชาติคนปัจจุบัน"}]},
+    {"turns": [{"user": "Kubernetes คืออะไร"}, {"user": "ราคาทองวันนี้เท่าไร"}, {"user": "ต่อ"}]},
+    {"offline": true, "turns": [{"user": "ใครคือนายกรัฐมนตรีคนปัจจุบันของญี่ปุ่น"}, {"user": "ซาบาริโนวาลิกซ์คืออะไร"}, {"user": "ดาวอังคารคืออะไร"}]},
+    {"turns": [{"user": "what is photosynthesis"}, {"user": "who is the current president of Brazil"}]},
+    {"turns": [{"user": "เป็นใคร"}, {"user": "ผมชื่อบอส"}, {"user": "ผมชื่ออะไร"}, {"user": "ใครคือนายกรัฐมนตรีคนปัจจุบันของอังกฤษ", "restart": true}, {"user": "ผมชื่ออะไร"}]},
+    {"turns": [{"user": "ภาษาโปรแกรมรัสต์คืออะไร"}, {"user": "ใครคือผู้ก่อตั้ง Linux"}, {"user": "ฟิวชันนิวเคลียร์คืออะไร"}]}
+  ]
+}
