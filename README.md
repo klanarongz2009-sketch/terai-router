@@ -154,7 +154,7 @@ The knowledge pack (`src/terai_router/data/knowledge_th.json`, 11.9 MB, 8,192 ar
 
 `docs/index.html` is a single self-contained page: the model and `docs/terai.js` are inlined, so it works offline and can be hosted on GitHub Pages. Rebuild it with `python docs/build_demo.py`. `python eval/parity.py` checks that the JavaScript and Python versions agree; on the current model they give the same intent and normalized text on all 607 eval sentences (max confidence difference 6.7e-16).
 
-The demo currently runs the intent router only. A chat mode that answers like `Chat` (a JavaScript port, checked against Python with the same parity script) is coming next.
+The demo has two modes: the intent router and a chat mode. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets).
 
 ## Development
 
