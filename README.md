@@ -33,8 +33,10 @@ All numbers come from `eval/results_v07.json` and `bench/typhoon_results.json` i
 ## Install
 
 ```
-pip install .
+pip install git+https://github.com/klanarongz2009-sketch/terai-router.git
 ```
+
+From a local clone: `pip install .`
 
 Python 3.9+, no runtime dependencies.
 
@@ -43,11 +45,20 @@ Python 3.9+, no runtime dependencies.
 Command line:
 
 ```
-terai "เส็ดหรือยัง"            # intent, confidence, normalized text
-terai --json "ช้วยบวก 2+3"     # JSON with the top 3 intents
-echo "ทำต่อ" | terai -          # one result per input line
-terai                           # interactive prompt (Ctrl-D to quit)
-terai --threshold 0.5 "..."     # print 'unknown' below this confidence
+# intent, confidence, normalized text
+terai "เส็ดหรือยัง"
+
+# JSON with the top 3 intents
+terai --json "ช้วยบวก 2+3"
+
+# one result per input line
+echo "ทำต่อ" | terai -
+
+# interactive prompt (Ctrl-D to quit)
+terai
+
+# print 'unknown' below this confidence
+terai --threshold 0.5 "..."
 ```
 
 Python:
@@ -97,7 +108,7 @@ v1.0 will add more languages, starting with English, each with its own training 
 No. TER-AI is a small intent classifier, not a chat LLM. It reads one message at a time and keeps no conversation history inside the model. Anything an app wants to remember, such as the user's name, is stored by the app outside the model.
 
 ### Can I download the model?
-Yes. Install with `pip install .` or download this repository. The model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection.
+Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection.
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
