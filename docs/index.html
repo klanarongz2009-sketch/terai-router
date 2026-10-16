@@ -44,6 +44,15 @@
 .chatform input{flex:1;min-width:0;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:12px;font-size:16px}
 .chatform button{background:#238636;color:#fff;border:0;border-radius:10px;padding:0 18px;font-size:16px}
 .chatform button:disabled{opacity:.5}
+.webrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:#c9d1d9;flex-wrap:wrap}
+.switch{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;min-height:44px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{width:44px;height:24px;border-radius:12px;background:#30363d;position:relative;transition:background .15s;flex:none}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8b949e;transition:transform .15s,background .15s}
+.switch input:checked + .track{background:#1f6feb}
+.switch input:checked + .track::after{transform:translateX(20px);background:#fff}
+.switch input:focus-visible + .track{outline:2px solid #58a6ff;outline-offset:2px}
+.webnote{color:#8b949e;font-size:12px;flex-basis:100%}
 .mem{margin-top:12px;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px 12px}
 .mem summary{cursor:pointer;color:#c9d1d9}
 #facts{margin:8px 0;font-size:14px;color:#c9d1d9}
@@ -56,7 +65,7 @@
 <body>
 <main>
   <h1>TER-AI</h1>
-  <p class="sub">Offline Thai chat and typo-tolerant intent router. Runs fully in your browser, nothing is sent anywhere. Made with Sesame.</p>
+  <p class="sub">Offline Thai chat and typo-tolerant intent router. Runs fully in your browser, nothing is sent anywhere unless you turn on Web search. Made with Sesame.</p>
   <div class="tabs" role="tablist">
     <button type="button" class="tab on" id="tab-chat" role="tab" aria-selected="true">Chat</button>
     <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
@@ -68,6 +77,10 @@
       <input id="msg" type="text" enterkeyhint="send" placeholder="พิมพ์ข้อความ เช่น ดาวอังคารคืออะไร" aria-label="Message">
       <button type="submit" id="send">Send</button>
     </form>
+    <div class="webrow">
+      <label class="switch" for="webtoggle"><input type="checkbox" id="webtoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Web search (Wikipedia)</span></label>
+      <span id="webstate" class="webnote">Off: every answer comes from this page. On: questions the built-in knowledge cannot answer, and questions about current facts (ปัจจุบัน, ล่าสุด, ตอนนี้), are sent to th.wikipedia.org and en.wikipedia.org. Your name, memory and chat history are never sent.</span>
+    </div>
     <div class="chips" id="cchips"></div>
     <details id="mem" class="mem" open>
       <summary>Memory: facts stored in this browser</summary>
@@ -90,7 +103,7 @@
   </div>
 
   </section>
-  <footer>Chat v0.8.0: rules, tools, session memory and Thai Wikipedia (8,192 articles, CC BY-SA 4.0). The knowledge pack (11.9 MB, about 2.5 MB compressed) downloads only when a question needs it. Router model v0.7.0, 15 intents, 1.1 MB model file. Accuracy 97.6% on the frozen test set.</footer>
+  <footer>Chat v0.9.0: rules, tools, session memory and Thai Wikipedia (8,192 articles, CC BY-SA 4.0). The knowledge pack (11.9 MB, about 2.5 MB compressed) downloads only when a question needs it. Router model v0.7.0, 15 intents, 1.1 MB model file. Accuracy 97.6% on the frozen test set.</footer>
 </main>
 <script>/* TER-AI v0.7 inference in JavaScript. Same steps and integer arithmetic as src/terai_router/*.py.
    Browser: TERAI.create(modelJson, typoJson) ; Node: require('./terai.js').create(...) */
@@ -233,7 +246,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   else root.TERAI_CHAT = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.8.0';
+  const VERSION = '0.9.0';
   const STATE_VERSION = 1;
   const HISTORY_MAX = 200;
 
@@ -556,6 +569,196 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   }
   const tupleLt = (a, b) => { for (let i = 0; i < a.length; i++) { if (a[i] < b[i]) return true; if (a[i] > b[i]) return false; } return false; };
 
+  // ---------------------------------------------------------- opt-in web search (port of websearch.py)
+  /* Off by default. When on: Thai Wikipedia, then English Wikipedia (MediaWiki API, origin=* for CORS, free, no key).
+     Ranking and passage choice are TER-AI's own (trigram coverage, threshold 0.6), identical to the Python package.
+     reply() stays synchronous: a URL that is not fetched yet throws NeedWeb, Chat.replyAsync() rolls the turn back,
+     fetches it (timeout 5 s) and runs the turn again. Errors are kept for the current turn only. */
+  const WIKIS = [['th', 'Wikipedia ภาษาไทย'], ['en', 'Wikipedia ภาษาอังกฤษ']];
+  const WIKI_LICENSE = 'CC BY-SA 4.0';
+  const WEB_MIN_COVER = 0.6;
+  const WEB_CACHE_MAX = 200;
+  const CURRENT = R('ปัจจุบัน|ตอนนี้|ล่าสุด|current|incumbent|now|latest');
+  const CUR_CUES = ['ปัจจุบัน', 'คนปัจจุบัน', 'ดำรงตำแหน่ง', 'current', 'incumbent'];
+  const WEB_TAIL = R('(?: *(?:ครับ|คับ|ค่ะ|คะ|ค่า|จ้า|นะ|หรอ|เหรอ|ไหม|มั้ย|หน่อย|\\?))+$');
+  const CONT = ['ๆ', 'ฯ', '(', ')', ']', ',', '.', ';', ':', 'และ', 'หรือ', 'ซึ่ง', 'โดย', 'แต่', 'ของ', 'จะ', 'เป็น', 'คือ',
+    'ได้', 'ก็', 'จึง', 'เพื่อ', 'ทำให้', 'ตั้งแต่', 'กับ', 'แห่ง'];
+  const countCh = (s, c) => s.split(c).length - 1;
+  function trigrams(s) {
+    const a = cps(s), out = new Set();
+    if (a.length < 3) { if (s) out.add(s); return out; }
+    for (let i = 0; i < a.length - 2; i++) out.add(a[i] + a[i + 1] + a[i + 2]);
+    return out;
+  }
+  function queryText(question) {
+    let t = question.trim().toLowerCase().replace(WEB_TAIL, '');
+    for (const p of Q_ANY) t = rall(t, p, ' ');
+    t = t.replace(/ +/g, ' ').trim();
+    return t || question.trim();
+  }
+  function cover(question, text) {
+    const g = trigrams(residual(question));
+    if (!g.size) return 0.0;
+    const body = squash(text);
+    let k = 0;
+    for (const x of g) if (body.includes(x)) k++;
+    return k / g.size;
+  }
+  function glue(prev, piece) {
+    if (countCh(prev, '(') > countCh(prev, ')') || countCh(prev, '[') > countCh(prev, ']')) return true;
+    if (CONT.some(w => piece.startsWith(w)) || (piece[0] >= '0' && piece[0] <= '9')) return true;
+    const words = prev.split(' ');
+    if (CONT.includes(words[words.length - 1])) return true;
+    return /^[A-Za-z]/.test(piece) && !'.!?'.includes(prev[prev.length - 1]) && /[A-Za-z0-9,]$/.test(prev);
+  }
+  function units(text) {
+    const out = [];
+    for (const piece of text.split(' ')) {
+      if (!piece) continue;
+      if (out.length && glue(out[out.length - 1], piece)) out[out.length - 1] += ' ' + piece;
+      else out.push(piece);
+    }
+    return out;
+  }
+  function passages(text) {
+    const out = []; let cur = '';
+    for (const u of units(text)) {
+      cur = cur ? (cur + ' ' + u) : u;
+      if (cpLen(cur) >= 50) { out.push(cur); cur = ''; }
+    }
+    if (cur) {
+      if (out.length && cpLen(cur) < 25) out[out.length - 1] += ' ' + cur;
+      else out.push(cur);
+    }
+    return out;
+  }
+  function webExtract(question, text, limit) {
+    limit = limit || 300;
+    const cs = passages(text);
+    if (!cs.length) return '';
+    const cues = CUES[qtype(question)].slice();
+    if (CURRENT.test(question.toLowerCase())) for (const w of CUR_CUES) cues.push(w);
+    let best = 0;
+    if (cues.length) {
+      const grams = trigrams(residual(question));
+      let bestS = -1;
+      cs.forEach((c, j) => {
+        const sq = squash(c), low = c.toLowerCase();
+        let s = 0;
+        for (const g of grams) if (sq.includes(g)) s++;
+        for (const w of cues) if (low.includes(w)) s += 3;
+        if (s > bestS) { best = j; bestS = s; }
+      });
+    }
+    let out = cs[best];
+    if (best > 0 && cpLen(cs[0]) + 1 + cpLen(out) <= limit + 60) out = cs[0] + ' ' + out;
+    let k = best + 1;
+    while (k < cs.length && cpLen(out) + 1 + cpLen(cs[k]) <= limit) { out += ' ' + cs[k]; k++; }
+    return out;
+  }
+  const unquote = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
+  function webError(name, message) { const e = new Error(message); e.name = name; return e; }
+  async function defaultFetch(url, timeout) {
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), timeout) : null;
+    try {
+      const r = await fetch(url, { signal: ctl ? ctl.signal : undefined, headers: { Accept: 'application/json' } });
+      if (!r.ok) throw webError('HTTPError', 'HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw webError('TimeoutError', 'timed out after ' + timeout + ' ms');
+      if (e && e.name === 'TypeError') throw webError('NetworkError', e.message);
+      throw e;
+    } finally { if (timer) clearTimeout(timer); }
+  }
+  class NeedWeb extends Error {
+    constructor(url) { super('web fetch needed'); this.needWeb = true; this.url = url; }
+  }
+  class WebSearch {
+    /* o.enabled: false = no network ever. o.fetch: async (url) => parsed JSON (tests inject a fake). o.timeout in ms. */
+    constructor(o) {
+      o = o || {};
+      this.enabled = !!o.enabled; this.timeout = o.timeout || 5000; this._fetch = o.fetch || null;
+      this.cache = new Map(); this.lastError = null; this.calls = 0;
+    }
+    static wikiUrl(lang, query, limit) {
+      limit = limit || 5;
+      const p = new URLSearchParams([['action', 'query'], ['format', 'json'], ['formatversion', '2'], ['generator', 'search'],
+        ['gsrsearch', query], ['gsrlimit', String(limit)], ['prop', 'extracts|info'], ['exintro', '1'], ['explaintext', '1'],
+        ['exlimit', String(limit)], ['inprop', 'url'], ['redirects', '1'], ['origin', '*']]);
+      return 'https://' + lang + '.wikipedia.org/w/api.php?' + p.toString();
+    }
+    get(url) {
+      if (!this.enabled) throw new Error('web search is disabled');
+      const item = this.cache.get(url);
+      if (!item) throw new NeedWeb(url);
+      if (item.error) throw webError(item.error, item.message);
+      return item.data;
+    }
+    async load(url) {
+      this.calls += 1;
+      try {
+        const data = this._fetch ? await this._fetch(url) : await defaultFetch(url, this.timeout);
+        this.cache.set(url, { data });
+      } catch (e) {
+        this.cache.set(url, { error: (e && e.name) || 'Error', message: String((e && e.message) || e).slice(0, 120) });
+      }
+      while (this.cache.size > WEB_CACHE_MAX) this.cache.delete(this.cache.keys().next().value);
+    }
+    dropErrors() { for (const [k, v] of Array.from(this.cache)) if (v.error) this.cache.delete(k); }
+    _wiki(lang, name, query) {
+      const data = this.get(WebSearch.wikiUrl(lang, query));
+      const pages = (((data || {}).query || {}).pages || []).slice()
+        .sort((a, b) => (a.index == null ? 99 : a.index) - (b.index == null ? 99 : b.index));
+      const out = [];
+      for (const p of pages) {
+        const text = (p.extract || '').trim();
+        if (!text || p.missing) continue;
+        const url = p.fullurl || ('https://' + lang + '.wikipedia.org/wiki/' + encodeURIComponent(p.title.replace(/ /g, '_')));
+        out.push({ title: p.title, url, text: text.replace(/\s+/g, ' '), source: name, license: WIKI_LICENSE });
+      }
+      return out;
+    }
+    static rank(question, results) {
+      let best = null;
+      results.forEach((r, i) => {
+        const cAll = cover(question, r.title + ' ' + r.text);
+        if (cAll < WEB_MIN_COVER) return;
+        const score = cAll + 0.5 * cover(question, r.title) - 0.01 * i;
+        if (best === null || score > best.score) best = Object.assign({}, r, { score });
+      });
+      if (best !== null) {
+        best.score = Math.round(best.score * 1000) / 1000;
+        best.answer = webExtract(question, best.text);
+      }
+      return best;
+    }
+    search(question) {
+      this.lastError = null;
+      if (!this.enabled) return null;
+      const q = queryText(question);
+      const steps = WIKIS.map(([lang, name]) => () => this._wiki(lang, name, q));
+      let errors = 0;
+      for (const step of steps) {
+        let hit;
+        try {
+          hit = WebSearch.rank(question, step());
+        } catch (e) {
+          if (e && (e.needWeb || e.needKnowledge)) throw e;
+          errors += 1;
+          this.lastError = ((e && e.name) || 'Error') + ': ' + String((e && e.message) || e).slice(0, 120);
+          continue;
+        }
+        if (hit !== null) { this.lastError = null; return hit; }
+      }
+      if (errors < steps.length) this.lastError = null;
+      return null;
+    }
+    static cite(hit) {
+      return '(ที่มา: ' + hit.source + ' "' + hit.title + '", ' + unquote(hit.url) + ', ' + hit.license + ')';
+    }
+  }
+
   class NeedKnowledge extends Error {
     constructor() { super('knowledge pack not loaded'); this.needKnowledge = true; }
   }
@@ -741,6 +944,8 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
       this.chitchatPairs = o.chitchat;
       this._now = o.now;
       this.onSave = o.onSave || null;
+      this.web = o.web || null;  // a WebSearch, or null = offline (default)
+      this._webTried = false;
       const seed = o.seed == null ? Date.now() : o.seed;
       this.state = emptyState(seed);
       if (o.state) Object.assign(this.state, o.state);
@@ -793,6 +998,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
       let n = this.router.normalize(text).text;
       n = n.replace(/ +/g, ' ').trim();
       this.state.turns += 1;
+      this._webTried = false;
       let out = null;
       for (const step of [this._forget, this._recall, this._learn, this._social, this._datetime, this._random,
         this._textops, this._calc, this._units, this._continue, this._chitchatReply,
@@ -808,23 +1014,33 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
       return out;
     }
 
-    /* Browser entry: when a step needs the knowledge pack and it is not loaded yet, the turn is rolled back,
-       the pack is loaded (onLoading(true/false) around it) and the same turn runs again. */
-    async replyAsync(text, onLoading) {
+    /* Browser entry: when a step needs the knowledge pack (not loaded yet) or a web page (web search on, not fetched
+       yet), the turn is rolled back, the missing piece is loaded (onLoading(true/false) around the pack download,
+       onWeb(true/false) around a web request) and the same turn runs again. */
+    async replyAsync(text, onLoading, onWeb) {
       const snap = JSON.stringify(this.state);
       const saver = this.onSave;
       this.onSave = null;
+      if (this.web) this.web.dropErrors();
       try {
-        const out = this.reply(text);
-        this.onSave = saver; this.save();
-        return out;
-      } catch (e) {
-        this.state = JSON.parse(snap);
-        if (!(e && e.needKnowledge)) { this.onSave = saver; throw e; }
-        if (onLoading) onLoading(true);
-        try { await this.kb.ensure(); } finally { if (onLoading) onLoading(false); this.onSave = saver; }
-        return this.reply(text);
-      }
+        for (let round = 0; ; round++) {
+          try {
+            const out = this.reply(text);
+            this.onSave = saver; this.save();
+            return out;
+          } catch (e) {
+            this.state = JSON.parse(snap);
+            if (round >= 12 || !(e && (e.needKnowledge || e.needWeb))) throw e;
+            if (e.needKnowledge) {
+              if (onLoading) onLoading(true);
+              try { await this.kb.ensure(); } finally { if (onLoading) onLoading(false); }
+            } else {
+              if (onWeb) onWeb(true);
+              try { await this.web.load(e.url); } finally { if (onWeb) onWeb(false); }
+            }
+          }
+        }
+      } finally { this.onSave = saver; }
     }
 
     // ---------------------------------------------------------- 1. forget
@@ -1252,9 +1468,18 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
           return ans + ' ' + this.kb.cite(doc);
         }
       }
+      const live = Q.test(n.toLowerCase()) && LIVE.test(n.toLowerCase());
+      if (live && this.web !== null) {  // "current/latest" questions: the pack may be stale, ask the web first
+        const out = this._webReply(text, q);
+        if (out !== null) return out;
+      }
       const hit = q ? this.kb.find(q) : null;
       if (hit === null) {
-        if (Q.test(n.toLowerCase()) && LIVE.test(n.toLowerCase())) {
+        if (this.web !== null && Q.test(n.toLowerCase()) && !this._webTried) {
+          const out = this._webReply(text, q);
+          if (out !== null) return out;
+        }
+        if (live) {
           return 'ผมไม่มีข้อมูลแบบ real-time (ราคา ข่าว ผลการแข่งขัน หรือเรื่องที่เปลี่ยนทุกวัน) ครับ/ค่ะ ' +
             'เพราะผมรัน offline และความรู้หยุดที่ Wikipedia ภาษาไทยวันที่ ' + this.kb.retrieved() + ' เลยตอบไม่ได้';
         }
@@ -1272,6 +1497,14 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
       this.state.last = { kind: 'kb', doc: doc, q: q, next: nxt };
       const pre = hit.how === 'fuzzy' ? ('(คิดว่าหมายถึง "' + title + '") ') : '';
       return pre + ans + ' ' + this.kb.cite(doc);
+    }
+
+    _webReply(text, q) {
+      this._webTried = true;
+      const hit = this.web.search(q || text);
+      if (hit === null || !hit.answer) return null;
+      this.state.last = { kind: 'web', title: hit.title, url: hit.url };
+      return '[ค้นเว็บ] ' + hit.answer + ' ' + WebSearch.cite(hit);
     }
 
     // ---------------------------------------------------------- 13. router for short commands
@@ -1305,17 +1538,23 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     // ---------------------------------------------------------- 14. honest fallback
     _unknown(text, n) {
       if (Q.test(n.toLowerCase())) {
-        return 'ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย ' + commas(this.kb.count()) + ' บทความ) ' +
-          'ไม่มีข้อมูลที่ตอบคำถามนี้ได้ ผมเลยไม่เดา';
+        const base = 'ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย ' + commas(this.kb.count()) + ' บทความ) ' +
+          'ไม่มีข้อมูลที่ตอบคำถามนี้ได้';
+        if (this._webTried && this.web !== null) {
+          if (this.web.lastError) return base + ' และค้นเว็บไม่สำเร็จ (' + this.web.lastError.split(':')[0] + ') ผมเลยไม่เดา';
+          return base + ' ค้น Wikipedia ไทยและอังกฤษแล้วก็ไม่พบบทความที่ตรงพอ ผมเลยไม่เดา';
+        }
+        return base + ' ผมเลยไม่เดา';
       }
       return 'ผมยังไม่เข้าใจข้อความนี้ครับ/ค่ะ (ไม่รู้ว่าจะตอบยังไง) ลองถามความรู้ คิดเลข ถามวันเวลา ' +
         'หรือเล่าเรื่องของคุณให้ผมจำ เช่น ผมชื่อ... ผมชอบ... พิมพ์ ช่วยอะไรได้บ้าง เพื่อดูทั้งหมด';
     }
   }
 
-  return { VERSION, Chat, Knowledge, NeedKnowledge, emptyState,
+  return { VERSION, Chat, Knowledge, NeedKnowledge, WebSearch, NeedWeb, emptyState,
     tools: { fmtNum, pyRepr, calcPrepare, calcEval, prettyExpr, daysFromCivil, civilFromDays, thDate, findUnits, convert, rngNext },
-    knowledge: { squash, residual, qtype, chunks } };
+    knowledge: { squash, residual, qtype, chunks },
+    web: { trigrams, queryText, cover, units, passages, extract: webExtract } };
 }));
 </script>
 <script>
@@ -1346,6 +1585,18 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   }
   const kb = new TERAI_CHAT.Knowledge(null, KB_META, fetchPack);
   const chat = new TERAI_CHAT.Chat({ router: R, chitchat: CHITCHAT, knowledge: kb, state: loadState(), onSave: saveState });
+  const WEB_KEY = 'terai.chat.web.v1';
+  const webSearch = new TERAI_CHAT.WebSearch({ enabled: true, timeout: 5000 });
+  const webToggle = $('webtoggle');
+  function setWeb(on) {
+    chat.web = on ? webSearch : null;
+    webToggle.checked = on;
+    try { localStorage.setItem(WEB_KEY, on ? '1' : '0'); } catch (e) { /* private mode: setting lasts for this page only */ }
+  }
+  let webSaved = null;
+  try { webSaved = localStorage.getItem(WEB_KEY); } catch (e) { webSaved = null; }
+  setWeb(webSaved === '1');
+  webToggle.addEventListener('change', () => setWeb(webToggle.checked));
   function bubble(text, who, err) {
     const e = log.querySelector('.empty'); if (e) e.remove();
     const d = document.createElement('div');
@@ -1376,7 +1627,9 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     busy = true; send.disabled = true; msg.value = '';
     bubble(text, 'user');
     try {
-      const out = await chat.replyAsync(text, on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; });
+      const out = await chat.replyAsync(text,
+        on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; },
+        on => { kbload.hidden = !on; if (on) kbload.textContent = 'Searching Wikipedia...'; });
       bubble(out, 'bot');
     } catch (e) {
       bubble('Could not load the knowledge pack (' + (e && e.message ? e.message : e) + '). Check the connection and send again.', 'bot', true);

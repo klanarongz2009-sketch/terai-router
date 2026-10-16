@@ -27,7 +27,7 @@ import urllib.parse
 import urllib.request
 
 from . import __version__
-from .knowledge import CUES, Q_ANY, chunks, qtype, residual, squash
+from .knowledge import CUES, Q_ANY, qtype, residual, squash
 
 USER_AGENT = ('terai-router/' + __version__ +
               ' (offline Thai chat, opt-in web search; https://github.com/klanarongz2009-sketch/terai-router)')
@@ -40,6 +40,11 @@ MIN_COVER = 0.6          # share of the question's trigrams the result must cont
 CURRENT = re.compile('ปัจจุบัน|ตอนนี้|ล่าสุด|current|incumbent|now|latest')
 CUR_CUES = ['ปัจจุบัน', 'คนปัจจุบัน', 'ดำรงตำแหน่ง', 'current', 'incumbent']
 TAIL = re.compile(r'(?: *(?:ครับ|คับ|ค่ะ|คะ|ค่า|จ้า|นะ|หรอ|เหรอ|ไหม|มั้ย|หน่อย|\?))+$')
+# a passage never starts with these: they continue the clause before them
+CONT = ('ๆ', 'ฯ', '(', ')', ']', ',', '.', ';', ':', 'และ', 'หรือ', 'ซึ่ง', 'โดย', 'แต่', 'ของ', 'จะ', 'เป็น', 'คือ',
+        'ได้', 'ก็', 'จึง', 'เพื่อ', 'ทำให้', 'ตั้งแต่', 'กับ', 'แห่ง')
+LAT_START = re.compile('[A-Za-z]')
+LAT_END = re.compile('[A-Za-z0-9,]$')
 
 
 def trigrams(s):
@@ -64,9 +69,47 @@ def cover(question, text):
     return sum(1 for x in g if x in body) / len(g)
 
 
+def _glue(prev, piece):
+    """True when piece continues prev (same clause), so no passage may start at piece."""
+    if prev.count('(') > prev.count(')') or prev.count('[') > prev.count(']'):
+        return True
+    if piece.startswith(CONT) or '0' <= piece[0] <= '9' or prev.split(' ')[-1] in CONT:
+        return True
+    return bool(LAT_START.match(piece) and prev[-1] not in '.!?' and LAT_END.search(prev))
+
+
+def units(text):
+    """Split text at spaces where a new clause can start (Thai has no sentence marks; spaces are the cue)."""
+    out = []
+    for piece in text.split(' '):
+        if not piece:
+            continue
+        if out and _glue(out[-1], piece):
+            out[-1] += ' ' + piece
+        else:
+            out.append(piece)
+    return out
+
+
+def passages(text):
+    """Like knowledge.chunks (at least 50 characters each) but cut only at clause starts."""
+    out, cur = [], ''
+    for u in units(text):
+        cur = (cur + ' ' + u) if cur else u
+        if len(cur) >= 50:
+            out.append(cur)
+            cur = ''
+    if cur:
+        if out and len(cur) < 25:
+            out[-1] += ' ' + cur
+        else:
+            out.append(cur)
+    return out
+
+
 def extract(question, text, limit=300):
-    """Passage of text that answers the question: definition first, then the best chunk."""
-    cs = chunks(text)
+    """Passage of text that answers the question: definition first, then the best passage."""
+    cs = passages(text)
     if not cs:
         return ''
     cues = list(CUES[qtype(question)])
@@ -185,8 +228,9 @@ class WebSearch:
                 continue
             score = c_all + 0.5 * cover(question, r['title']) - 0.01 * i
             if best is None or score > best['score']:
-                best = dict(r, score=round(score, 3))
+                best = dict(r, score=score)
         if best is not None:
+            best['score'] = round(best['score'], 3)  # rounded only for display; ranking used the exact value
             best['answer'] = extract(question, best['text'])
         return best
 

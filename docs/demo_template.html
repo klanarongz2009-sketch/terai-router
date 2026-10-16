@@ -44,6 +44,15 @@
 .chatform input{flex:1;min-width:0;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:12px;font-size:16px}
 .chatform button{background:#238636;color:#fff;border:0;border-radius:10px;padding:0 18px;font-size:16px}
 .chatform button:disabled{opacity:.5}
+.webrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:#c9d1d9;flex-wrap:wrap}
+.switch{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;min-height:44px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{width:44px;height:24px;border-radius:12px;background:#30363d;position:relative;transition:background .15s;flex:none}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8b949e;transition:transform .15s,background .15s}
+.switch input:checked + .track{background:#1f6feb}
+.switch input:checked + .track::after{transform:translateX(20px);background:#fff}
+.switch input:focus-visible + .track{outline:2px solid #58a6ff;outline-offset:2px}
+.webnote{color:#8b949e;font-size:12px;flex-basis:100%}
 .mem{margin-top:12px;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px 12px}
 .mem summary{cursor:pointer;color:#c9d1d9}
 #facts{margin:8px 0;font-size:14px;color:#c9d1d9}
@@ -56,7 +65,7 @@
 <body>
 <main>
   <h1>TER-AI</h1>
-  <p class="sub">Offline Thai chat and typo-tolerant intent router. Runs fully in your browser, nothing is sent anywhere. Made with Sesame.</p>
+  <p class="sub">Offline Thai chat and typo-tolerant intent router. Runs fully in your browser, nothing is sent anywhere unless you turn on Web search. Made with Sesame.</p>
   <div class="tabs" role="tablist">
     <button type="button" class="tab on" id="tab-chat" role="tab" aria-selected="true">Chat</button>
     <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
@@ -68,6 +77,10 @@
       <input id="msg" type="text" enterkeyhint="send" placeholder="พิมพ์ข้อความ เช่น ดาวอังคารคืออะไร" aria-label="Message">
       <button type="submit" id="send">Send</button>
     </form>
+    <div class="webrow">
+      <label class="switch" for="webtoggle"><input type="checkbox" id="webtoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Web search (Wikipedia)</span></label>
+      <span id="webstate" class="webnote">Off: every answer comes from this page. On: questions the built-in knowledge cannot answer, and questions about current facts (ปัจจุบัน, ล่าสุด, ตอนนี้), are sent to th.wikipedia.org and en.wikipedia.org. Your name, memory and chat history are never sent.</span>
+    </div>
     <div class="chips" id="cchips"></div>
     <details id="mem" class="mem" open>
       <summary>Memory: facts stored in this browser</summary>
@@ -147,6 +160,18 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   }
   const kb = new TERAI_CHAT.Knowledge(null, KB_META, fetchPack);
   const chat = new TERAI_CHAT.Chat({ router: R, chitchat: CHITCHAT, knowledge: kb, state: loadState(), onSave: saveState });
+  const WEB_KEY = 'terai.chat.web.v1';
+  const webSearch = new TERAI_CHAT.WebSearch({ enabled: true, timeout: 5000 });
+  const webToggle = $('webtoggle');
+  function setWeb(on) {
+    chat.web = on ? webSearch : null;
+    webToggle.checked = on;
+    try { localStorage.setItem(WEB_KEY, on ? '1' : '0'); } catch (e) { /* private mode: setting lasts for this page only */ }
+  }
+  let webSaved = null;
+  try { webSaved = localStorage.getItem(WEB_KEY); } catch (e) { webSaved = null; }
+  setWeb(webSaved === '1');
+  webToggle.addEventListener('change', () => setWeb(webToggle.checked));
   function bubble(text, who, err) {
     const e = log.querySelector('.empty'); if (e) e.remove();
     const d = document.createElement('div');
@@ -177,7 +202,9 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     busy = true; send.disabled = true; msg.value = '';
     bubble(text, 'user');
     try {
-      const out = await chat.replyAsync(text, on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; });
+      const out = await chat.replyAsync(text,
+        on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; },
+        on => { kbload.hidden = !on; if (on) kbload.textContent = 'Searching Wikipedia...'; });
       bubble(out, 'bot');
     } catch (e) {
       bubble('Could not load the knowledge pack (' + (e && e.message ? e.message : e) + '). Check the connection and send again.', 'bot', true);

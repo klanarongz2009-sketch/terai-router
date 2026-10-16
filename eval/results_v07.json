@@ -30,7 +30,7 @@
    ]
   },
   "acc": 0.9758,
-  "latency_ms_mean_1thread": 0.238,
+  "latency_ms_mean_1thread": 0.241,
   "errors": [
    {
     "subset": "old_clean",
@@ -76,7 +76,7 @@
    ]
   },
   "acc": 0.9911,
-  "latency_ms_mean_1thread": 0.298,
+  "latency_ms_mean_1thread": 0.308,
   "errors": [
    {
     "subset": "clean",
