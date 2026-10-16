@@ -1,0 +1,67 @@
+{
+ "name": "TER-AI chat held-out v0.8",
+ "note": "Written after chat.py passed chat_eval_v08.json and run once without tuning chat.py on it. New wordings of the same skills; used only to measure, never to fix rules.",
+ "now": "2026-10-16T09:05:00",
+ "seed": 11,
+ "conversations": [
+  {"id": "h_name_typo", "category": "memory", "turns": [
+   {"user": "หนูชื่อแพรวค่ะ", "expect_all": ["แพรว"]},
+   {"user": "หนูชื่ออะไรคะ", "expect_all": ["แพรว"]}]},
+  {"id": "h_like_multi", "category": "memory", "turns": [
+   {"user": "ผมชอบแมว"},
+   {"user": "ผมชอบดนตรีอิเล็กทรอนิกส์"},
+   {"user": "ผมชอบอะไรบ้าง", "expect_all": ["แมว", "ดนตรีอิเล็กทรอนิกส์"]}]},
+  {"id": "h_location_age", "category": "memory", "turns": [
+   {"user": "ผมชื่อต้น อายุ 15 ปี อยู่ราชบุรี"},
+   {"user": "ผมอายุกี่ปี", "expect_all": ["15"]},
+   {"user": "ผมอยู่ที่ไหน", "expect_all": ["ราชบุรี"]},
+   {"user": "จำอะไรเกี่ยวกับผมได้บ้าง", "expect_all": ["ต้น", "15", "ราชบุรี"]}]},
+  {"id": "h_kv", "category": "memory", "turns": [
+   {"user": "แมวของผมชื่อส้มโอ"},
+   {"user": "แมวของผมชื่ออะไร", "expect_all": ["ส้มโอ"]},
+   {"user": "รหัสไวไฟของผมคืออะไร", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]}]},
+  {"id": "h_plan_weekday", "category": "memory", "turns": [
+   {"user": "มะรืนนี้ผมจะไปหาหมอฟัน"},
+   {"user": "มะรืนนี้ผมจะทำอะไร", "expect_all": ["หาหมอฟัน", "18 ตุลาคม 2569"]}]},
+  {"id": "h_forget_part", "category": "memory", "turns": [
+   {"user": "ผมชื่อโอ๊ต"},
+   {"user": "ผมชอบชาไทย"},
+   {"user": "ลืมชื่อผม"},
+   {"user": "ผมชื่ออะไร", "expect_any": ["ไม่รู้", "ยังไม่"], "expect_none": ["โอ๊ต"]},
+   {"user": "ผมชอบอะไร", "expect_all": ["ชาไทย"]}]},
+  {"id": "h_calc", "category": "tool", "turns": [
+   {"user": "25 คูณ 4 ได้เท่าไร", "expect_all": ["100"]},
+   {"user": "แล้วหาร 8 ล่ะ", "expect_all": ["12.5"]},
+   {"user": "20% ของ 350 เท่าไหร่", "expect_all": ["70"]},
+   {"user": "รากที่สองของ 81", "expect_all": ["9"]}]},
+  {"id": "h_units", "category": "tool", "turns": [
+   {"user": "3 ไมล์เป็นกี่กิโลเมตร", "expect_all": ["4.83"]},
+   {"user": "แล้ว 10 ล่ะ", "expect_all": ["16.09"]},
+   {"user": "90 นาทีเป็นกี่ชั่วโมง", "expect_all": ["1.5"]}]},
+  {"id": "h_date", "category": "tool", "turns": [
+   {"user": "พรุ่งนี้วันอะไร", "expect_all": ["เสาร์", "17 ตุลาคม 2569"]},
+   {"user": "อีก 3 วันเป็นวันที่เท่าไร", "expect_all": ["19 ตุลาคม 2569"]},
+   {"user": "ตอนนี้กี่โมง", "expect_all": ["09:05"]}]},
+  {"id": "h_text_random", "category": "tool", "turns": [
+   {"user": "กลับคำ terai", "expect_all": ["iaret"]},
+   {"user": "ตัวพิมพ์ใหญ่ bogus", "expect_all": ["BOGUS"]},
+   {"user": "สุ่มเลข 5 ถึง 6", "expect_regex": "สุ่มได้ [56] "}]},
+  {"id": "h_kb", "category": "knowledge", "turns": [
+   {"user": "ดาวพฤหัสบดีคืออะไร", "expect_all": ["ดาวพฤหัสบดี", "Wikipedia"]},
+   {"user": "ช้างคืออะไร", "expect_all": ["ช้าง", "Wikipedia"]},
+   {"user": "ภูเก็ตอยู่ภาคไหน", "expect_all": ["ใต้"]}]},
+  {"id": "h_kb_followup", "category": "followup", "turns": [
+   {"user": "ฝรั่งเศสคืออะไร", "expect_all": ["ฝรั่งเศส"]},
+   {"user": "มันอยู่ทวีปไหน", "expect_all": ["ยุโรป"]},
+   {"user": "เล่าต่อ", "expect_all": ["Wikipedia"]}]},
+  {"id": "h_unknown", "category": "unknown", "turns": [
+   {"user": "ใครจะชนะเลือกตั้งปี 2031", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "ราคาบิตคอยน์ตอนนี้เท่าไร", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "คุณครูของผมชื่ออะไร", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]}]},
+  {"id": "h_social", "category": "chitchat", "turns": [
+   {"user": "หวัดดีจ้า", "expect_all": ["สวัสดีครับ/ค่ะ"]},
+   {"user": "ขอบใจนะ", "expect_all": ["ยินดี"]},
+   {"user": "คุณเป็นใคร", "expect_all": ["TER-AI"]},
+   {"user": "ง่วงนอนจัง", "expect_none": ["ไม่เข้าใจ", "ไม่รู้"]}]}
+ ]
+}

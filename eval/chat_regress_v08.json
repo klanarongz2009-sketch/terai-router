@@ -1,0 +1,133 @@
+{
+ "_about": "Regression cases for TER-AI v0.8 chat bugs fixed after the frozen eval (2026-10-16). Same format as chat_eval_v08.json. Bugs: (a) 'ต่อ' with nothing pending, (b) bare-number calc follow-up, (c) school grade fact.",
+ "now": "2026-10-16T16:30:00",
+ "seed": 7,
+ "conversations": [
+  {
+   "id": "continue_nothing_pending",
+   "category": "follow_up",
+   "turns": [
+    {
+     "user": "ต่อ",
+     "expect_all": [
+      "ไม่มีเรื่องค้าง"
+     ],
+     "expect_none": [
+      "Vespidae",
+      "แมลง"
+     ]
+    },
+    {
+     "user": "12*7",
+     "expect_all": [
+      "= 84"
+     ]
+    },
+    {
+     "user": "ต่อเลย",
+     "expect_all": [
+      "ไม่มีเรื่องค้าง"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "calc_bare_number_followup",
+   "category": "follow_up",
+   "turns": [
+    {
+     "user": "12*7",
+     "expect_all": [
+      "12 × 7 = 84"
+     ]
+    },
+    {
+     "user": "แล้ว 5 ล่ะ",
+     "expect_all": [
+      "12 × 5 = 60"
+     ]
+    },
+    {
+     "user": "แล้วถ้าเป็น 10 ล่ะ",
+     "expect_all": [
+      "12 × 10 = 120"
+     ]
+    },
+    {
+     "user": "2^10",
+     "expect_all": [
+      "= 1024"
+     ]
+    },
+    {
+     "user": "แล้ว 3 ล่ะ",
+     "expect_all": [
+      "2 ^ 3 = 8"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "grade_fact",
+   "category": "memory",
+   "turns": [
+    {
+     "user": "ผมอยู่ชั้นอะไร",
+     "expect_all": [
+      "ยังไม่มีข้อมูล"
+     ]
+    },
+    {
+     "user": "ผมอยู่ ม.4",
+     "expect_all": [
+      "ม.4"
+     ],
+     "expect_none": [
+      "ไม่เข้าใจ"
+     ]
+    },
+    {
+     "user": "ผมอยู่ชั้นอะไร",
+     "expect_all": [
+      "ม.4"
+     ]
+    },
+    {
+     "user": "ผมอยู่ชั้นอะไร",
+     "restart": true,
+     "expect_all": [
+      "ม.4"
+     ]
+    },
+    {
+     "user": "ผมเรียนชั้นไหน",
+     "expect_all": [
+      "ม.4"
+     ]
+    },
+    {
+     "user": "ผมอยู่ไหน",
+     "expect_any": [
+      "ยังไม่รู้",
+      "ยังไม่มีข้อมูล"
+     ],
+     "expect_none": [
+      "ม.4"
+     ]
+    },
+    {
+     "user": "ลืมชั้นเรียน",
+     "expect_all": [
+      "ลืม"
+     ]
+    },
+    {
+     "user": "ผมอยู่ชั้นอะไร",
+     "expect_all": [
+      "ยังไม่มีข้อมูล"
+     ]
+    }
+   ]
+  }
+ ]
+}

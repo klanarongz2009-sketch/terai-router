@@ -7,8 +7,8 @@
 from .model import IntentModel, features
 from .normalizer import normalize, skeleton
 
-__version__ = '0.7.0'
-__all__ = ['IntentModel', 'route', 'normalize', 'skeleton', 'features', 'INTENTS', '__version__']
+__version__ = '0.8.0'
+__all__ = ['IntentModel', 'route', 'normalize', 'skeleton', 'features', 'INTENTS', 'Chat', 'Knowledge', '__version__']
 
 INTENTS = {
     'greet': 'greeting / ทักทาย',
@@ -37,3 +37,7 @@ def route(text, top=3):
     if _MODEL is None:
         _MODEL = IntentModel.load()
     return _MODEL.predict(text, top=top)
+
+
+from .knowledge import Knowledge  # noqa: E402
+from .chat import Chat  # noqa: E402

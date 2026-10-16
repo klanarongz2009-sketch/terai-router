@@ -1,0 +1,131 @@
+{
+ "_about": "Frozen chat eval for TER-AI v0.8. Written before the Chat code existed (2026-10-16). Do not edit; add a new file for new cases. A turn is scored only if it has checks. expect_all: every string must appear in the reply. expect_any: at least one must appear. expect_none: none may appear. expect_regex: the regex must match. restart: save the session, load a new Chat from the same file, then send the turn. Clock fixed at 'now' (Asia/Bangkok wall time), random seed fixed at 'seed'. Honesty spec: a reply that cannot answer must say so with 'ไม่รู้' or 'ไม่มีข้อมูล'. Greeting spec (Bogus): 'สวัสดีครับ/ค่ะ' + 'มีอะไรให้ช่วยครับ/คะ'.",
+ "now": "2026-10-16T15:40:00",
+ "seed": 7,
+ "conversations": [
+  {"id": "greet_plain", "category": "greeting", "turns": [
+   {"user": "สวัสดี", "expect_all": ["สวัสดีครับ/ค่ะ", "มีอะไรให้ช่วยครับ/คะ"]},
+   {"user": "หวัดดีคับ", "expect_all": ["สวัสดีครับ/ค่ะ", "มีอะไรให้ช่วยครับ/คะ"]}
+  ]},
+  {"id": "greet_named", "category": "greeting", "turns": [
+   {"user": "ผมชื่อเอก", "expect_all": ["เอก"]},
+   {"user": "สวัสดีครับ", "expect_all": ["สวัสดีครับ/ค่ะ", "เอก", "มีอะไรให้ช่วยครับ/คะ"]}
+  ]},
+  {"id": "calc_basic", "category": "tool", "turns": [
+   {"user": "(3+4)*2 เท่าไหร่", "expect_all": ["14"]},
+   {"user": "ช้วยบวก 2+3", "expect_all": ["5"]},
+   {"user": "10 หาร 4", "expect_all": ["2.5"]},
+   {"user": "2^10 ได้เท่าไร", "expect_all": ["1024"]},
+   {"user": "15% ของ 200", "expect_all": ["30"]},
+   {"user": "รากที่สองของ 144", "expect_all": ["12"]},
+   {"user": "1/0", "expect_any": ["ศูนย์", "0 ไม่ได้"]}
+  ]},
+  {"id": "calc_followup", "category": "followup", "turns": [
+   {"user": "12*8 เท่าไร", "expect_all": ["96"]},
+   {"user": "แล้วคูณ 2 ล่ะ", "expect_all": ["192"]},
+   {"user": "บวกอีก 4", "expect_all": ["196"]}
+  ]},
+  {"id": "time_date", "category": "tool", "turns": [
+   {"user": "ตอนนี้กี่โมงแล้ว", "expect_all": ["15:40"]},
+   {"user": "วันนี้วันอะไร", "expect_all": ["ศุกร์"]},
+   {"user": "วันนี้วันที่เท่าไร", "expect_all": ["16", "ตุลาคม"]},
+   {"user": "พรุ่งนี้วันอะไร", "expect_all": ["เสาร์"]},
+   {"user": "อีก 10 วันเป็นวันที่เท่าไร", "expect_all": ["26", "ตุลาคม"]}
+  ]},
+  {"id": "units", "category": "tool", "turns": [
+   {"user": "100 กิโลเมตรเป็นกี่ไมล์", "expect_all": ["62.14"]},
+   {"user": "แล้ว 5 ล่ะ", "expect_all": ["3.11"]},
+   {"user": "5 กิโลกรัมเป็นปอนด์", "expect_all": ["11.02"]},
+   {"user": "30 องศาเซลเซียสเป็นฟาเรนไฮต์", "expect_all": ["86"]},
+   {"user": "2 ชั่วโมงกี่นาที", "expect_all": ["120"]}
+  ]},
+  {"id": "random_text", "category": "tool", "turns": [
+   {"user": "สุ่มเลข 1 ถึง 10", "expect_regex": "(^|\\D)([1-9]|10)(\\D|$)"},
+   {"user": "ทอยลูกเต๋า", "expect_regex": "(^|\\D)[1-6](\\D|$)"},
+   {"user": "นับตัวอักษร สวัสดี", "expect_all": ["6"]},
+   {"user": "กลับคำ hello", "expect_all": ["olleh"]},
+   {"user": "ตัวพิมพ์ใหญ่ hello world", "expect_all": ["HELLO WORLD"]}
+  ]},
+  {"id": "kb_basic", "category": "knowledge", "turns": [
+   {"user": "กรุงเทพมหานครคืออะไร", "expect_all": ["เมืองหลวง", "Wikipedia"]},
+   {"user": "ดวงอาทิตย์คืออะไร", "expect_all": ["ดาวฤกษ์", "Wikipedia"]},
+   {"user": "ไอน์สไตน์คือใคร", "expect_all": ["นักฟิสิกส์", "Wikipedia"]},
+   {"user": "ดาวอังคารคืออะไร", "expect_all": ["ดาวเคราะห์", "Wikipedia"]},
+   {"user": "มวยไทยคืออะไร", "expect_all": ["Wikipedia"], "expect_any": ["ศิลปะการต่อสู้", "กีฬา"]}
+  ]},
+  {"id": "kb_more", "category": "knowledge", "turns": [
+   {"user": "บอกเกี่ยวกับเชียงใหม่หน่อย", "expect_all": ["Wikipedia"], "expect_any": ["ภาคเหนือ"]},
+   {"user": "ดวงอาทิดคืออะไร", "expect_all": ["ดาวฤกษ์"]},
+   {"user": "โตเกียวอยู่ประเทศอะไร", "expect_all": ["ญี่ปุ่น"]},
+   {"user": "ต้มยำคืออะไร", "expect_all": ["Wikipedia"], "expect_any": ["อาหาร", "แกง", "ซุป"]}
+  ]},
+  {"id": "kb_followup", "category": "followup", "turns": [
+   {"user": "ญี่ปุ่นคืออะไร", "expect_all": ["ญี่ปุ่น", "Wikipedia"]},
+   {"user": "มันอยู่ทวีปไหน", "expect_all": ["เอเชีย"]},
+   {"user": "แล้วจีนล่ะ", "expect_all": ["จีน", "Wikipedia"]}
+  ]},
+  {"id": "unknown_honesty", "category": "unknown", "turns": [
+   {"user": "ใครชนะฟุตบอลโลก 2034", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "ราคาทองวันนี้เท่าไร", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "บ้านผมมีแมวกี่ตัว", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "ประธานบริษัทซิกซ์คิวเอ็กซ์คือใคร", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]},
+   {"user": "ดาวเคราะห์เคปเลอร์ 999 แซด มีดวงจันทร์กี่ดวง", "expect_any": ["ไม่รู้", "ไม่มีข้อมูล"]}
+  ]},
+  {"id": "memory_facts", "category": "memory", "turns": [
+   {"user": "ผมชื่อเอก"},
+   {"user": "ผมชอบกาแฟดำ", "expect_all": ["กาแฟดำ"]},
+   {"user": "ผมไม่ชอบผักชี", "expect_all": ["ผักชี"]},
+   {"user": "พรุ่งนี้ผมจะไปสอบคณิต", "expect_all": ["สอบคณิต"]},
+   {"user": "ผมอายุ 19 ปี", "expect_all": ["19"]},
+   {"user": "ผมอยู่เชียงใหม่", "expect_all": ["เชียงใหม่"]},
+   {"user": "ผมชื่ออะไร", "expect_all": ["เอก"]},
+   {"user": "ผมชอบอะไร", "expect_all": ["กาแฟดำ"]},
+   {"user": "ผมไม่ชอบอะไร", "expect_all": ["ผักชี"]},
+   {"user": "พรุ่งนี้ผมจะทำอะไร", "expect_all": ["สอบคณิต"]},
+   {"user": "ผมอายุเท่าไร", "expect_all": ["19"]},
+   {"user": "ผมอยู่ที่ไหน", "expect_all": ["เชียงใหม่"]},
+   {"user": "จำอะไรเกี่ยวกับผมได้บ้าง", "expect_all": ["เอก", "กาแฟดำ", "สอบคณิต"]}
+  ]},
+  {"id": "memory_kv_and_last", "category": "memory", "turns": [
+   {"user": "รหัสล็อกเกอร์ของผมคือ 4821", "expect_all": ["4821"]},
+   {"user": "วันนี้ฝนตกหนักมาก"},
+   {"user": "เมื่อกี้ผมพูดว่าอะไร", "expect_all": ["ฝนตกหนัก"]},
+   {"user": "รหัสล็อกเกอร์ของผมคืออะไร", "expect_all": ["4821"]}
+  ]},
+  {"id": "memory_female_english", "category": "memory", "turns": [
+   {"user": "ฉันชื่อมายด์", "expect_all": ["มายด์"]},
+   {"user": "ฉันชอบแมว"},
+   {"user": "ฉันชื่ออะไร", "expect_all": ["มายด์"]},
+   {"user": "ฉันชอบอะไร", "expect_all": ["แมว"]},
+   {"user": "my name is Alex", "expect_all": ["Alex"]},
+   {"user": "what is my name", "expect_all": ["Alex"]}
+  ]},
+  {"id": "memory_correction_forget", "category": "memory", "turns": [
+   {"user": "ผมชื่อเอก"},
+   {"user": "ไม่ใช่ ผมชื่อบอส", "expect_all": ["บอส"]},
+   {"user": "ผมชื่ออะไร", "expect_all": ["บอส"], "expect_none": ["เอก"]},
+   {"user": "ลืมทั้งหมด"},
+   {"user": "ผมชื่ออะไร", "expect_any": ["ไม่รู้", "ยังไม่"], "expect_none": ["บอส"]}
+  ]},
+  {"id": "persistence", "category": "persistence", "turns": [
+   {"user": "ผมชื่อต้น"},
+   {"user": "ผมชอบดนตรีอิเล็กทรอนิกส์"},
+   {"user": "ผมชื่ออะไร", "restart": true, "expect_all": ["ต้น"]},
+   {"user": "ผมชอบอะไร", "expect_all": ["ดนตรีอิเล็กทรอนิกส์"]},
+   {"user": "เมื่อกี้ผมถามว่าอะไร", "expect_all": ["ผมชื่ออะไร"]}
+  ]},
+  {"id": "chitchat", "category": "chitchat", "turns": [
+   {"user": "วันนี้เหนื่อยมาก", "expect_any": ["เหนื่อย", "พัก"]},
+   {"user": "ง่วงจัง", "expect_any": ["ง่วง", "นอน"]},
+   {"user": "หิวข้าว", "expect_any": ["หิว", "กิน"]},
+   {"user": "วันนี้สอบได้คะแนนเต็ม", "expect_any": ["ยินดี", "เก่ง"]},
+   {"user": "เบื่อจัง", "expect_any": ["เบื่อ"]},
+   {"user": "ขอบคุณมาก", "expect_any": ["ยินดี"]},
+   {"user": "เธอเป็นใคร", "expect_all": ["TER-AI"]}
+  ]},
+  {"id": "commands", "category": "commands", "turns": [
+   {"user": "ช่วยอะไรได้บ้าง", "expect_all": ["คิดเลข"]},
+   {"user": "คุยไปกี่ครั้งแล้ว", "expect_regex": "[0-9]+"}
+  ]}
+ ]
+}
