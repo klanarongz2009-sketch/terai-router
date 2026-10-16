@@ -1,0 +1,26 @@
+TER-AI data licenses
+====================
+
+The code of terai-router is MIT licensed (see LICENSE). One bundled data file is not:
+
+src/terai_router/data/knowledge_th.json  (TER-AI Thai knowledge pack, v0.8.0)
+
+  Source:    Thai Wikipedia (https://th.wikipedia.org), lead sections of articles,
+             retrieved 2026-10-16.
+  Authors:   Wikipedia contributors. The authors of each article are listed in its
+             page history: https://th.wikipedia.org/?curid=<id> (the id of every entry
+             is stored in the file).
+  License:   Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+             https://creativecommons.org/licenses/by-sa/4.0/
+  Changes:   Wiki markup, tables, references and templates removed; text converted to
+             plain text and shortened to the lead section; a search index added.
+             Built by training/build_knowledge.py.
+
+  This file, as an adaptation of Wikipedia text, is distributed under CC BY-SA 4.0.
+  If you share it or a modified version, keep this attribution and the same license.
+  Every answer the Chat class gives from this file ends with the article title and
+  "CC BY-SA 4.0" so the source stays visible to the person reading it.
+
+All other files in src/terai_router/data/ (model.json, typo_pairs.json,
+chitchat_th.json) were written or trained for this project and are MIT licensed
+like the code.

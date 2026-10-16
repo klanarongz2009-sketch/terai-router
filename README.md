@@ -6,6 +6,8 @@ Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: 
 
 TER-AI reads one Thai (or Thai-English) message and tells you what the user wants: one of 15 intents, a confidence score, and the message with common typos fixed. It runs fully offline on CPU, so it fits phones, Raspberry Pi, IoT devices and chat bots that should not send every message to a large model.
 
+Since v0.8.0 it also ships `Chat`: an offline Thai chat that answers with real tools (calculator, date and time, unit conversion), answers knowledge questions from a bundled Thai Wikipedia pack with the source named, remembers what the user tells it across restarts, and says it does not know instead of guessing. There is no language model inside.
+
 ```
 $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
@@ -15,9 +17,9 @@ status  1.00  เสร็จหรือยัง
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.7.0)
+## Results (v0.8.0)
 
-All numbers come from `eval/results_v07.json` and `bench/typhoon_results.json` in this repo.
+The intent model is unchanged since v0.7.0; its numbers come from `eval/results_v07.json` and `bench/typhoon_results.json` in this repo (rechecked on v0.8.0 with `python training/evaluate.py`: 121/124 and 111/112).
 
 | | TER-AI v0.7.0 | Typhoon2 1B instruct (zero-shot) |
 |---|---|---|
@@ -29,6 +31,14 @@ All numbers come from `eval/results_v07.json` and `bench/typhoon_results.json` i
 - Test set by subset: clean 33/36 and 20/20, real user messages 13/13, profile typos 11/11, pattern typos 44/44.
 - Typhoon model: `typhoon-ai/llama3.2-typhoon2-1b-instruct`, revision `7513a054`, greedy decoding, max 6 new tokens, system prompt listing the 15 intents. Hardware: AMD EPYC, 8 threads, torch 2.14.1+cpu, transformers 5.19.0, Python 3.13.7.
 - The test set is frozen (SHA-256 in `eval/SHA256SUMS`) and never used for training. `training/leak_check.py` reports the closest training sentence for each test sentence.
+
+Chat (v0.8.0), scored with `python eval/chat_eval.py <file>`:
+
+| Chat eval | Turns passed | Conversations passed |
+|---|---|---|
+| `eval/chat_eval_v08.json` (frozen, written before the Chat code) | 81/81 | 18/18 |
+| `eval/chat_heldout_v08.json` (held out) | 37/37 | 14/14 |
+| `eval/chat_regress_v08.json` (regressions for bugs fixed later) | 16/16 | 3/3 |
 
 ## Install
 
@@ -77,6 +87,63 @@ print(r["intent"], r["confidence"], r["normalized"])
 
 `calc`, `fix`, `forget`, `get_name`, `go_on`, `greet`, `help`, `random`, `refuse`, `set_name`, `stats`, `status`, `thanks`, `time`, `who`
 
+## Chat
+
+`Chat` keeps one conversation: facts about the user, the history, and the context for follow-ups. Every reply comes from a rule-based step, tried in order: forget, memory questions, new facts, greeting / thanks / help, date and time, random, text tools, calculator, unit conversion, small talk, the Thai Wikipedia pack, and the intent router. When none can answer, the reply says ไม่รู้ or ไม่มีข้อมูล.
+
+Python:
+
+```
+from terai_router import Chat
+
+c = Chat(path='session.json')      # memory is saved to this file after every turn
+c.reply('ผมชื่อบอส')               # 'ยินดีที่ได้รู้จักครับ/ค่ะ คุณบอส ผมจำชื่อไว้แล้ว'
+c.reply('12*7')                    # '12 × 7 = 84'
+c.reply('แล้ว 5 ล่ะ')               # '12 × 5 = 60'
+c.facts                            # {'name': 'บอส', ...}
+c.forget()                         # erase every fact and the history
+```
+
+`Chat(now=..., seed=...)` fixes the clock and the random seed, which is how the tests and evals run.
+
+Command line:
+
+```
+terai chat                         # session in ~/.terai/session.json
+terai chat --session s.json        # another session file
+terai chat --reset                 # start from an empty memory
+```
+
+Real output of `pip install` + `terai chat` (v0.8.0), two runs on the same session file:
+
+```
+$ printf 'สวัสดี\nผมชื่อบอส\n12*7\nแล้ว 5 ล่ะ\nผมชื่ออะไร\n' | terai chat --session /tmp/s.json
+you> สวัสดี
+terai> สวัสดีครับ/ค่ะ มีอะไรให้ช่วยครับ/คะ
+you> ผมชื่อบอส
+terai> ยินดีที่ได้รู้จักครับ/ค่ะ คุณบอส ผมจำชื่อไว้แล้ว
+you> 12*7
+terai> 12 × 7 = 84
+you> แล้ว 5 ล่ะ
+terai> 12 × 5 = 60
+you> ผมชื่ออะไร
+terai> คุณชื่อบอสครับ/ค่ะ
+
+$ printf 'ผมอยู่ ม.4\nผมอยู่ชั้นอะไร\nดาวอังคารคืออะไร\nซาบาริโนวาลิกซ์คืออะไร\nจำอะไรเกี่ยวกับผมได้บ้าง\n' | terai chat --session /tmp/s.json
+you> ผมอยู่ ม.4
+terai> จำไว้แล้วว่าคุณเรียนอยู่ชั้น ม.4
+you> ผมอยู่ชั้นอะไร
+terai> คุณเรียนอยู่ชั้น ม.4 ครับ/ค่ะ
+you> ดาวอังคารคืออะไร
+terai> ดาวอังคาร เป็นดาวเคราะห์ลำดับที่สี่จากดวงอาทิตย์ และยังเป็นที่รู้จักในชื่อ "ดาวเคราะห์แดง" ... (ที่มา: Wikipedia ภาษาไทย "ดาวอังคาร", CC BY-SA 4.0)
+you> ซาบาริโนวาลิกซ์คืออะไร
+terai> ผมไม่รู้ครับ/ค่ะ ในความรู้ที่ผมมี (Wikipedia ภาษาไทย 8,192 บทความ) ไม่มีข้อมูลที่ตอบคำถามนี้ได้ ผมเลยไม่เดา
+you> จำอะไรเกี่ยวกับผมได้บ้าง
+terai> สิ่งที่ผมจำเกี่ยวกับคุณ: ชื่อ บอส; เรียนชั้น ม.4
+```
+
+The knowledge pack (`src/terai_router/data/knowledge_th.json`, 11.9 MB, 8,192 articles) is installed with the package. It has no live data: questions about prices, news or today's results get an honest "no data" reply.
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -87,11 +154,15 @@ print(r["intent"], r["confidence"], r["normalized"])
 
 `docs/index.html` is a single self-contained page: the model and `docs/terai.js` are inlined, so it works offline and can be hosted on GitHub Pages. Rebuild it with `python docs/build_demo.py`. `python eval/parity.py` checks that the JavaScript and Python versions agree; on the current model they give the same intent and normalized text on all 607 eval sentences (max confidence difference 6.7e-16).
 
+The demo currently runs the intent router only. A chat mode that answers like `Chat` (a JavaScript port, checked against Python with the same parity script) is coming next.
+
 ## Development
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 24 tests
+pytest                          # 42 tests
+python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
+python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows
 python training/train.py        # train
 python training/evaluate.py     # accuracy and latency
@@ -105,7 +176,7 @@ v1.0 will add more languages, starting with English, each with its own training 
 ## FAQ
 
 ### Does the model have a context window?
-No. TER-AI is a small intent classifier, not a chat LLM. It reads one message at a time and keeps no conversation history inside the model. Anything an app wants to remember, such as the user's name, is stored by the app outside the model.
+Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model.
 
 ### Can I download the model?
 Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection.
@@ -121,4 +192,6 @@ Email: klanarongz2009@gmail.com
 
 ## License
 
-MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
+Code: MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
+
+Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. Details and the list of changes are in `DATA_LICENSE`.
