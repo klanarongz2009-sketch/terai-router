@@ -1,4 +1,4 @@
-# MUML 1.0 HIQ (prototype, not released)
+# MUML 1.0 HIQ (released in terai-router v0.13.0)
 
 High-quality text-to-music for TER-AI. Thai or English prompt in, real audio
 (.mp3/.wav) out, on a CPU with 8 GB RAM, free, offline after the first download.
@@ -101,7 +101,7 @@ engine is deterministic for a given seed. The CER of yue2 and ACE-Step are both 
 the floor with music mixed in; yue2 is the default because it sounded clearer.
 
 No variant is clearly intelligible to the ASR (all near the English-song floor).
-C is the default for Thai lyrics because it scored best on lyric words; romanisation
+C is what `--vocal-engine ace` uses for Thai lyrics because it scored best on lyric words; romanisation
 uses PyThaiNLP `royin` (optional dependency; without it Thai script is sent as `th`).
 
 ## What "จูน" means here

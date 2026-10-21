@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "terai-router"
-version = "0.12.0"
+version = "0.13.0"
 description = "Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame."
 readme = "README.md"
 license = "MIT"
@@ -12,7 +12,7 @@ license-files = ["LICENSE", "DATA_LICENSE", "NOTICE"]
 authors = [{ name = "Clanarong Tammaketuek (klanarongz2009)" }]
 requires-python = ">=3.9"
 dependencies = []
-keywords = ["thai", "nlp", "intent", "intent-classification", "typo", "offline", "chatbot", "iot", "tts", "text-to-speech"]
+keywords = ["thai", "nlp", "intent", "intent-classification", "typo", "offline", "chatbot", "iot", "tts", "text-to-speech", "music", "text-to-music"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",

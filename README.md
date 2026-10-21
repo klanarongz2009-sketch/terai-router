@@ -4,7 +4,7 @@
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
-What is released today (v0.12.0):
+What is released today (v0.13.0):
 
 | Part | What it does | Since |
 |---|---|---|
@@ -13,6 +13,7 @@ What is released today (v0.12.0):
 | TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
 | MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Notes come from a seeded Markov note writer (Markov v1, not the trained MuML 1.0 model); every sound is made by the Web Audio API. | v0.12.0 |
+| MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
 
 Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: https://github.com/klanarongz2009-sketch/terai-router · Wiki: https://github.com/klanarongz2009-sketch/terai-router/wiki
 
@@ -27,14 +28,14 @@ status  1.00  เสร็จหรือยัง
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.12.0, measured 2026-10-21)
+## Results (v0.13.0, measured 2026-10-21)
 
-Run on commit `4867fa4` (v0.12.0) with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+Run on the v0.13.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
 
 | Check | Command | Result |
 |---|---|---|
-| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.169 ms per message (1 thread) |
-| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.209 ms per message (1 thread) |
+| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.167 ms per message (1 thread) |
+| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.213 ms per message (1 thread) |
 | Chat eval, frozen (written before the Chat code) | `python eval/chat_eval.py eval/chat_eval_v08.json` | 81/81 turns, 18/18 conversations |
 | Chat eval, held out | `python eval/chat_eval.py eval/chat_heldout_v08.json` | 37/37 turns, 14/14 conversations |
 | Chat regressions (bugs fixed later) | `python eval/chat_eval.py eval/chat_regress_v08.json` | 16/16 turns, 3/3 conversations |
@@ -43,7 +44,19 @@ Run on commit `4867fa4` (v0.12.0) with the scripts in this repo. Machine: AMD EP
 | Browser vs Python, TTH text frontend | `python eval/parity.py` | 1,700/1,700 checks identical |
 | Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
 | Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | 330/330 checks identical; web note table matches `markov.json` byte for byte |
-| Unit tests | `pytest` | 169 passed, 1 skipped (real speech, runs with `TERAI_TTH_REAL=1`) |
+| Browser vs Python, Temmo remix rules | `python eval/parity.py` | 42/42 cases identical |
+| Unit tests | `pytest` | 293 passed, 4 skipped (real speech and real model runs, opt-in) |
+
+MUML 1.0 HIQ end to end (same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
+
+| Run | Wall time | Peak RSS | CER | Lyric words heard |
+|---|---|---|---|---|
+| Thai lyrics, yue2, no `--duration` (90 s planned, song ended on its own at 50.6 s, 2.5 s fade-out) | 24:53 | 2.93 GB | 0.8598 | 14/30, from all 4 lines |
+| Thai lyrics, yue2, `--duration 30` (before the fix: cut mid-phrase) | 14:03 | 2.93 GB | 0.9065 | 4/30 |
+| Thai lyrics, split (ACE-Step instrumental + TTH Wayu speech, snap style; speech on a beat, not singing) | 5:44 | 3.33 GB | 0.2430 | 20/30 |
+| English song on ACE-Step (reference floor: no Thai in it) | - | - | 0.8131 | 3/30 |
+
+The fade-out took the last 0.25 s of the 90 s run from -23.8 dB to -73.1 dB. `--setup` on a clean machine (no binaries, no weights): about 3 GB of YuE2 GGUF downloaded, yue-synth built in 36 s; the downloaded files matched the reference SHA-256. More numbers and the ACE-Step variants: [docs/MUML-HIQ.md](docs/MUML-HIQ.md).
 
 Test set by subset: clean 33/36 and 20/20, real user messages 13/13, profile typos 11/11, pattern typos 44/44. The test set is frozen (SHA-256 in `eval/SHA256SUMS`) and never used for training; `training/leak_check.py` reports the closest training sentence for each test sentence. Latency depends on the machine and its load.
 
@@ -69,7 +82,7 @@ pip install git+https://github.com/klanarongz2009-sketch/terai-router.git
 
 From a local clone: `pip install .`
 
-Python 3.9+, no runtime dependencies for the intent router and Chat. TTH and SANKPUP have optional extras, described in their sections.
+Python 3.9+, no runtime dependencies for the intent router and Chat. TTH and SANKPUP have optional extras, described in their sections. MUML 1.0 HIQ needs no Python extra, but `terai muml --hiq --setup` needs git, cmake and a C++17 compiler to build its engines, and ffmpeg for .mp3 output and the fade-out.
 
 ## Use
 
@@ -335,6 +348,38 @@ open("waltz.mid", "wb").write(muml_wa.to_midi(song))     # Standard MIDI File, f
   `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
   that reads it stays MIT. Details: [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE).
 
+## MUML 1.0 HIQ: text-to-music audio (v0.13.0)
+
+MUML 1.0 HIQ is the high-quality member of the MuML music family: a Thai or English prompt (and optional lyrics) in, a real audio file out, on a CPU with 8 GB RAM, free and offline after the first download. It is built on other open models; the weights are not fine-tuned. HIQ tunes the conditioning: a prompt adapter turns Thai prompts into English music tags (genre, Thai instruments such as phin and khaen, mood) and moves BPM, length, key and meter into their own fields.
+
+```
+pip install git+https://github.com/klanarongz2009-sketch/terai-router.git@v0.13.0
+terai muml --hiq --setup        # once: downloads the GGUF weights, builds acestep.cpp and yue2.cpp (git, cmake, C++17)
+terai muml --hiq --status       # binaries and weights found?
+terai muml --hiq "เพลงลูกทุ่งสนุกๆ มีพิณกับแคน จังหวะ 130" -o song.mp3          # instrumental, ACE-Step
+terai muml --hiq "Lo-fi hip hop, 85 BPM, 30 seconds" -o lofi.mp3
+terai muml --hiq "เพลงป๊อปช้าๆ ตอนกลางคืน" --lyrics lyrics_th.txt -o night.mp3   # Thai lyrics, YuE2-3B
+terai muml --hiq --dry-run "เปียโนเศร้าๆ ตอนฝนตก"   # show the request, generate nothing
+terai muml --hiq --credits      # credit line to keep with shared songs
+```
+
+Engines (`--vocal-engine yue2|ace|split`):
+
+| Song | Default engine | Time per 30 s on 8 vCPU | Songs may be used commercially? |
+|---|---|---|---|
+| Instrumental | ace: ACE-Step 1.5 turbo (8 steps, acestep.cpp) | about 4 min | Yes (MIT parts only) |
+| English lyrics | ace: ACE-Step 1.5 lyric LM, then synthesis | about 6 to 7 min | Yes (MIT parts only) |
+| Thai lyrics | yue2: YuE2-3B Q5_K_M sings the Thai script (32 steps, yue2.cpp) | about 15 min | **No.** YuE2 is CC-BY-NC-4.0 |
+| Thai lyrics, `--vocal-engine split` | ACE-Step instrumental + the local TTH Wayu voice per line, pitch-snapped, with ducking | about 6 min | **No.** Wayu is CC-BY-NC-4.0 |
+
+- **`--fade-out SECONDS`** (default 2.5, 0 = off): both engines stop at the requested length whether the song has ended or not. When the last 0.25 s is louder than -40 dB, the CLI fades the end out (quadratic curve, ffmpeg), for every engine.
+- **Song length for yue2:** without `--duration`, the length is sized from the lyrics (9 intro bars + 5 bars per lyric line + 4 outro bars, at the BPM or 90, in 5 s steps, at most 240 s); a 4-line song gets 90 s. A shorter `--duration` gives a warning with the length to use. After a yue2 render the CLI keeps the replay request in `<out>.yue2.json`.
+- **`--setup`** checks for git, cmake and a C++ compiler before downloading anything, and finds a cmake installed by pip next to the venv's Python. Weights go to `~/.cache/terai/muml-hiq/models` (or `$TERAI_MUML_HIQ_MODELS`); `TERAI_ACESTEP_BIN` and `TERAI_YUE2_BIN` point to binaries you built yourself. yue2.cpp is pinned at commit `8af0174`, acestep.cpp at `de858d8`.
+- **Limits:** CPU only and slow (a 90 s Thai song took about 25 minutes). Thai lyrics are only partly intelligible: the best yue2 run had CER 0.8598 with 14 of 30 lyric words heard, close to the 0.8131 floor of a song with no Thai at all. The split mode is far easier to understand (CER 0.2430) but it is speech on a beat, not singing. The yue2 score does not always plan every lyric section; the CLI reports which planned sections fit.
+- **License:** this repository holds only TER-AI code (MIT). No weights are stored here; they are downloaded by `--setup`. Instrumentals and English songs use ACE-Step 1.5 (MIT) and can be used commercially. Songs made with yue2 (the default for Thai lyrics) or split are **non-commercial only** and must credit m-a-p (YuE2) or Paxa Labs / Wayu Research (Wayu); the CLI prints this warning before every such render. See the [license table](#license) and [NOTICE](NOTICE) items 8 to 13.
+
+Full details, ASR tables and why there is no LoRA yet: [docs/MUML-HIQ.md](docs/MUML-HIQ.md).
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -353,10 +398,11 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 169 pass, 1 skipped (real speech, runs with TERAI_TTH_REAL=1)
+pytest                          # 293 pass, 4 skipped (real speech and real model runs, opt-in)
 python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
 python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
+python eval/muml_hiq_bench.py                      # MUML 1.0 HIQ: render the test prompts (needs --setup first)
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows
@@ -374,7 +420,6 @@ Planned:
 In progress (not released):
 
 - MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. Not in this repository yet.
-- MuML HIQ: higher-quality music, tuned from another model. Not in this repository yet.
 - TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
 - Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
@@ -384,7 +429,7 @@ In progress (not released):
 Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model.
 
 ### Can I download the model?
-Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH and SANKPUP models are downloaded separately on first use and keep their own licenses (see below).
+Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH, SANKPUP and MUML 1.0 HIQ models are downloaded separately (on first use, or with `terai muml --hiq --setup`) and keep their own licenses (see below).
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
@@ -411,6 +456,12 @@ Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its o
 | edge-tts (TTH engine "edge", online fallback) | installed by the `tth` or `tth-edge` extra | library LGPL-3.0; it sends text to Microsoft's online read-aloud service, whose voices follow Microsoft's terms ([NOTICE](NOTICE) item 2) | No | Library: yes. The Microsoft service and voices: only as Microsoft's terms allow; TER-AI grants nothing for them |
 | Gemma 4 weights (SANKPUP engine "gemma", by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
 | llama-cpp-python, resvg-py (wrapping resvg), Pillow | installed by the `sankpup` / `sankpup-gemma` extras | MIT; MIT (resvg Apache-2.0); MIT-CMU ([NOTICE](NOTICE) items 5 and 6) | No | Yes |
+| ACE-Step 1.5 weights and GGUF conversions (MUML 1.0 HIQ engine "ace", by ACE Studio and StepFun) | downloaded by `terai muml --hiq --setup` | MIT ([NOTICE](NOTICE) item 8) | No | Yes |
+| Qwen3-Embedding-0.6B (ACE-Step text encoder) | downloaded by `--setup` | Apache License 2.0 ([NOTICE](NOTICE) item 9) | No | Yes |
+| YuE2-3B and YuE2-Vae weights and GGUF conversions (MUML 1.0 HIQ engine "yue2", default for Thai lyrics, by m-a-p) | downloaded by `--setup` | CC-BY-NC-4.0 ([NOTICE](NOTICE) item 12) | No | **No.** Non-commercial only; credit m-a-p. Songs made with this engine are non-commercial too |
+| Songs from MUML 1.0 HIQ split mode (TTH Wayu voice) | made on your machine | CC-BY-NC-4.0 through the Wayu weights ([NOTICE](NOTICE) item 11) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research |
+| acestep.cpp, yue2.cpp (ggml) | cloned and built by `--setup` at pinned commits | MIT ([NOTICE](NOTICE) items 10 and 12) | No | Yes |
+| PyThaiNLP, pyworld (optional, MUML 1.0 HIQ) | installed by you if wanted | Apache-2.0; MIT (WORLD vocoder modified BSD) ([NOTICE](NOTICE) items 11 and 13) | No | Yes |
 | Browser speech in the web demo | the device's own Thai voice (Web Speech API) | the device or browser maker's terms ([NOTICE](NOTICE) item 3) | No | Depends on the device maker |
 
-TTH does not use the Paxa Labs cloud API, SANKPUP does not call any cloud API, and MuML 1.0 WA uses no soundfont, samples or server.
+TTH does not use the Paxa Labs cloud API, SANKPUP does not call any cloud API, MuML 1.0 WA uses no soundfont, samples or server, and MUML 1.0 HIQ runs locally after `--setup` with no cloud API.

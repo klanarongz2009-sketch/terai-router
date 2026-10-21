@@ -101,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--raw", action="store_true", help="skip the prompt adapter (prompt goes in verbatim)")
     p.add_argument("--dry-run", action="store_true", help="print the request that would be sent, generate nothing")
     p.add_argument("--json", action="store_true", help="machine-readable output")
-    p.add_argument("--setup", action="store_true", help="download weights and build acestep.cpp")
+    p.add_argument("--setup", action="store_true", help="download weights and build acestep.cpp and yue2.cpp")
     p.add_argument("--status", action="store_true", help="show engine/model readiness")
     p.add_argument("--credits", action="store_true", help="show licences and credits")
     return p

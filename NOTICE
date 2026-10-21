@@ -83,7 +83,7 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    https://github.com/ServeurpersoCom/acestep.cpp , pinned commit de858d8e1a94f0e1939cf9bdd8ff7d9631953077.
    Cloned and built by `terai muml --hiq --setup`.
 
-11. Thai vocal "split" mode (`terai muml --hiq --lyrics ... --thai-vocal split`, prototype)
+11. Thai vocal "split" mode (`terai muml --hiq --lyrics ... --vocal-engine split`, since v0.13.0)
    ACE-Step renders an instrumental and the Thai lyrics are voiced by the local TTH engine, Wayu-Paxa-TTS-Edge
    (item 1 above). The Wayu weights are CC-BY-NC-4.0: commercial use is NOT permitted and Paxa Labs / Wayu
    Research must be credited. Every song made with --thai-vocal split contains that voice, so the song is for
@@ -93,7 +93,7 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    modified BSD license; https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder), installed separately.
 
 12. YuE2-3B by m-a-p (Multimodal Art Projection), default engine for songs with Thai lyrics
-   (`terai muml --hiq --lyrics <Thai> [--vocal-engine yue2]`, prototype)
+   (`terai muml --hiq --lyrics <Thai> [--vocal-engine yue2]`, since v0.13.0)
    Model: https://huggingface.co/m-a-p/YuE2-3B, VAE: https://huggingface.co/m-a-p/YuE2-Vae
    Licence of both: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Commercial use is NOT
    permitted and m-a-p must be credited. Every song made with the yue2 engine is for non-commercial use only;
@@ -103,5 +103,8 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    Runtime: yue2.cpp by ServeurpersoCom, MIT, built on ggml (MIT): https://github.com/ServeurpersoCom/yue2.cpp
    pinned at commit 8af01740686824ffd4a1839a457954f42e2a8ce7 (2026-10-16). `--setup` downloads the GGUF files
    and builds that commit; nothing is redistributed in this repository.
+
+13. PyThaiNLP (https://github.com/PyThaiNLP/pythainlp), Apache License 2.0. Optional: when installed, the ACE-Step
+   engine romanises Thai lyrics with it (`royin`). Installed separately by the user; not bundled.
 
 MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.
