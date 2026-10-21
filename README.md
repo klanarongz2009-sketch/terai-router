@@ -19,6 +19,8 @@ Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: 
 
 Licenses differ by part: the code is MIT, but some data and optional models are not. Check the [license table](#license) before commercial use.
 
+> **Project notice:** TER-AI is an indie project and may pause or close with little warning. Read the [project notice](PROJECT_NOTICE.md).
+
 ```
 $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
