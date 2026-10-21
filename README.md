@@ -1,6 +1,6 @@
 # TER-AI
 
-TER-AI คือชุด AI ภาษาไทยที่รันออฟไลน์บน CPU ได้ฟรี ไม่ต้องใช้ GPU และไม่ต้องส่งข้อมูลขึ้น cloud
+[อ่านภาษาไทย (Thai version)](README.th.md)
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
@@ -371,12 +371,12 @@ Planned:
 
 - v1.0 will add more languages, starting with English, each with its own training data, frozen test set and a 90% accuracy bar.
 
-กำลังทำ (in progress, not released, not in this repository yet):
+In progress (not released):
 
-- MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. กำลังทำ
-- MuML HIQ: higher-quality music, tuned from another model. กำลังทำ
-- TTH-MTL: more and better Thai voices for TTH. กำลังทำ
-- Temmo: an AI that makes small indie games. กำลังทำ
+- MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. Not in this repository yet.
+- MuML HIQ: higher-quality music, tuned from another model. Not in this repository yet.
+- TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
+- Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
 ## FAQ
 
