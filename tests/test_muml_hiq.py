@@ -160,7 +160,7 @@ def test_cli_vocal_language_from_lyrics_not_prompt(capsys):
     req = json.loads(capsys.readouterr().out)
     assert req["vocal_language"] == "en" and req["lm_model"] == LM_FILES[DEFAULT_LM]
     assert terai_main(["muml", "--hiq", "--dry-run", "pop ballad", "--thai-lyrics", "native",
-                       "--lyrics", TH_LYRICS, "--lm-model", "1.7B"]) == 0
+                       "--lyrics", TH_LYRICS, "--lm-model", "1.7B", "--vocal-engine", "ace"]) == 0
     req = json.loads(capsys.readouterr().out)
     assert req["vocal_language"] == "th" and req["lyrics"] == TH_LYRICS
     assert req["lm_model"] == LM_FILES["1.7B"]
@@ -169,7 +169,8 @@ def test_cli_vocal_language_from_lyrics_not_prompt(capsys):
 def test_cli_thai_lyrics_default(capsys):
     pytest.importorskip("pythainlp")
     from terai_router.muml_hiq.adapter import THAI_LYRICS_LM, THAI_LYRICS_MODE
-    assert terai_main(["muml", "--hiq", "--dry-run", "pop ballad", "--lyrics", TH_LYRICS]) == 0
+    # Thai lyrics on ACE-Step (default engine for Thai is yue2 since 2026-10-21, see test_muml_hiq_yue2.py)
+    assert terai_main(["muml", "--hiq", "--dry-run", "pop ballad", "--lyrics", TH_LYRICS, "--vocal-engine", "ace"]) == 0
     req = json.loads(capsys.readouterr().out)
     assert req["lm_model"] == LM_FILES[THAI_LYRICS_LM]
     assert req["vocal_language"] == ("unknown" if THAI_LYRICS_MODE == "roman" else "th")

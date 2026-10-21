@@ -101,8 +101,8 @@ def test_cli_split_needs_thai_lyrics(capsys):
     assert terai_main(["muml", "--hiq", "ballad", "--thai-vocal", "split"]) == 2
 
 
-def test_cli_default_sing_unchanged(capsys):
-    assert terai_main(["muml", "--hiq", "ballad", "--lyrics", LYRICS, "--dry-run"]) == 0
+def test_cli_thai_vocal_sing_alias_is_ace(capsys):
+    assert terai_main(["muml", "--hiq", "ballad", "--lyrics", LYRICS, "--thai-vocal", "sing", "--dry-run"]) == 0
     d = json.loads(capsys.readouterr().out)
     assert "thai_vocal" not in d and d["lyrics"] != "[Instrumental]"
 

@@ -13,6 +13,28 @@ from .adapter import THAI_LYRICS_LM, adapt, lyrics_language, prepare_lyrics
 from .engine import HiqError, generate, setup, status
 from .split import DEFAULT_KEY as SPLIT_DEFAULT_KEY, SplitError, generate_split, lyric_lines
 from .split import DEFAULT_STYLE as SPLIT_DEFAULT_STYLE, DEFAULT_VOICE as SPLIT_DEFAULT_VOICE, STYLES as SPLIT_STYLES
+from . import yue2
+
+VOCAL_ENGINES = ("yue2", "ace", "split")
+
+
+def resolve_vocal_engine(lyrics: Optional[str], vocal_engine: Optional[str] = None,
+                         thai_vocal: Optional[str] = None) -> str:
+    """Which engine renders the song.
+
+    Thai lyrics -> yue2 by default (Bogus' pick, 2026-10-21); instrumental and
+    English lyrics -> ace. --vocal-engine wins; the older --thai-vocal sing|split
+    maps to ace|split. Raises ValueError for a combination that cannot work.
+    """
+    eng = vocal_engine or {"sing": "ace", "split": "split"}.get(thai_vocal or "", None)
+    lang = lyrics_language(lyrics) if lyrics else ""
+    if eng is None:
+        return "yue2" if lang == "th" else "ace"
+    if eng in ("yue2", "split") and not lyrics:
+        raise ValueError(f"--vocal-engine {eng} needs --lyrics")
+    if eng == "split" and lang != "th":
+        raise ValueError("--vocal-engine split (--thai-vocal split) needs Thai lyrics")
+    return eng
 
 
 def is_hiq_request(argv: List[str]) -> bool:
@@ -52,17 +74,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--key", default="", help='override key, e.g. "A minor"')
     p.add_argument("--lyrics", default=None, help="lyrics text or path to a .txt file (default instrumental)")
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--steps", type=int, default=8, help="turbo diffusion steps (default 8)")
+    p.add_argument("--steps", type=int, default=None,
+                   help=f"diffusion steps (default: ACE-Step turbo 8, YuE2 {yue2.DEFAULT_STEPS})")
     p.add_argument("--quant", choices=sorted(DIT_FILES), default=DEFAULT_QUANT, help="DiT GGUF quantisation")
     p.add_argument("--lm-model", choices=sorted(LM_FILES), default=None,
                    help=f"lyric LM run before synthesis when --lyrics is given (default {DEFAULT_LM}; "
                         f"Thai lyrics {THAI_LYRICS_LM})")
     p.add_argument("--thai-lyrics", choices=("roman", "native"), default=None,
                    help="Thai lyrics: romanise before singing (default) or keep Thai script")
-    p.add_argument("--thai-vocal", choices=("sing", "split"), default="sing",
-                   help="Thai lyrics: sing = ACE-Step sings them (default); split = instrumental from ACE-Step + "
-                        "the local TTH Wayu voice on top, much clearer (CER 0.27 vs 0.84). Wayu weights are "
-                        "CC-BY-NC-4.0, so split songs are non-commercial only")
+    p.add_argument("--vocal-engine", choices=VOCAL_ENGINES, default=None,
+                   help="who sings the lyrics. Default: yue2 for Thai lyrics (YuE2-3B sings the Thai script, "
+                        "~15 min per 30 s on CPU, CC-BY-NC-4.0 = non-commercial), ace (ACE-Step 1.5) for "
+                        "English lyrics and instrumentals; split = ACE-Step instrumental + the local TTH Wayu "
+                        "voice (CC-BY-NC-4.0)")
+    p.add_argument("--yue2-quant", choices=sorted(yue2.MODEL_FILES), default=yue2.DEFAULT_QUANT,
+                   help=f"YuE2-3B GGUF quantisation (default {yue2.DEFAULT_QUANT})")
+    p.add_argument("--thai-vocal", choices=("sing", "split"), default=None,
+                   help="older alias: sing = --vocal-engine ace, split = --vocal-engine split")
     p.add_argument("--split-style", choices=SPLIT_STYLES, default=SPLIT_DEFAULT_STYLE,
                    help="with --thai-vocal split: snap = voice pitch snapped to the key (default), rap = spoken "
                         "in rhythm, melody = one note per syllable")
@@ -83,17 +111,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(CREDITS)
         return 0
     if a.status:
-        print(json.dumps(status(a.quant), ensure_ascii=False, indent=2))
+        st = status(a.quant)
+        st["yue2"] = yue2.status(a.yue2_quant)
+        print(json.dumps(st, ensure_ascii=False, indent=2))
         return 0
     if a.setup:
         try:
             for lmname in ([a.lm_model] if a.lm_model else sorted({DEFAULT_LM, THAI_LYRICS_LM})):
                 st = setup(a.quant, log=lambda m: print(m, file=sys.stderr), lm=lmname)
+            if a.vocal_engine in (None, "yue2"):
+                print(f"setting up {yue2.MODEL_NAME} (yue2.cpp {yue2.RUNTIME_COMMIT[:7]}); {yue2.LICENSE_WARNING}",
+                      file=sys.stderr)
+                st["yue2"] = yue2.setup(a.yue2_quant, log=lambda m: print(m, file=sys.stderr))
         except Exception as e:  # pragma: no cover - network/build
             print(f"setup failed: {e}", file=sys.stderr)
             return 1
         print(json.dumps(st, ensure_ascii=False, indent=2))
-        return 0 if st["ready"] else 1
+        return 0 if st["ready"] and st.get("yue2", {"ready": True})["ready"] else 1
 
     prompt = " ".join(a.prompt).strip()
     if not prompt:
@@ -112,16 +146,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         lyrics = lp.read_text(encoding="utf-8") if is_file else a.lyrics
     lang = ""
     split_lyrics = None
-    if lyrics and a.thai_vocal == "split":
-        if lyrics_language(lyrics) != "th":
-            print("terai muml --hiq: --thai-vocal split needs Thai lyrics", file=sys.stderr)
-            return 2
+    yue2_lyrics = None
+    try:
+        engine = resolve_vocal_engine(lyrics, a.vocal_engine, a.thai_vocal)
+    except ValueError as e:
+        print(f"terai muml --hiq: {e}", file=sys.stderr)
+        return 2
+    if engine == "split":
         split_lyrics, lyrics = lyrics, None  # ACE-Step renders the instrumental; Wayu says the lines
         print("note: split vocal uses Wayu-Paxa-TTS-Edge (CC-BY-NC-4.0): this song is non-commercial only",
               file=sys.stderr)
-    elif a.thai_vocal == "split":
-        print("terai muml --hiq: --thai-vocal split needs --lyrics", file=sys.stderr)
-        return 2
+    elif engine == "yue2":
+        yue2_lyrics, lyrics = lyrics, None  # Thai script goes to YuE2 verbatim (no romanisation, no ace-lm)
+    steps = a.steps if a.steps is not None else (yue2.DEFAULT_STEPS if engine == "yue2" else 8)
     if lyrics:
         if lyrics_language(lyrics) == "th" and not a.lm_model:
             lm = THAI_LYRICS_LM
@@ -136,7 +173,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             fields["vocal_language"] = lang
     else:
         fields = adapt(prompt, duration=a.duration, bpm=a.bpm, key=a.key,
-                       vocals=True if lyrics else None)
+                       vocals=True if (lyrics or yue2_lyrics) else None)
         if lyrics:
             fields["lyrics"] = lyrics
             # vocal_language follows the lyrics, not the prompt.
@@ -144,6 +181,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         elif split_lyrics:
             fields["lyrics"] = "[Instrumental]"
             fields["vocal_language"] = ""
+        elif yue2_lyrics:
+            fields["lyrics"] = yue2_lyrics
         elif not fields["lyrics"]:
             # vocals asked for but no lyrics: this prototype renders without the LM
             # lyric writer, so fall back to instrumental and say so.
@@ -153,21 +192,37 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if split_lyrics and not fields.get("keyscale"):
         fields["keyscale"] = SPLIT_DEFAULT_KEY  # fixed key so the vocal can follow it
+    if yue2_lyrics and not fields.get("duration"):
+        fields["duration"] = 30.0
     if a.dry_run:
         from .engine import build_request
         fmt = "mp3" if a.out.lower().endswith(".mp3") else "wav16"
-        req = build_request(fields, a.quant, a.seed, a.steps, fmt, lm=lm)
+        if yue2_lyrics:
+            req = yue2.build_request(fields, yue2_lyrics, a.seed, steps, fmt)
+            b = yue2.find_binary() or Path("yue-synth")
+            print(json.dumps({"engine": "yue2", "quant": a.yue2_quant, "threads": yue2.cpu_threads(), "eta_min": yue2.eta_minutes(req["duration"]),
+                              "license": yue2.LICENSE, "request": req,
+                              "argv": yue2.build_argv(b, "request.json", a.out, a.yue2_quant)},
+                             ensure_ascii=False, indent=2))
+            return 0
+        req = build_request(fields, a.quant, a.seed, steps, fmt, lm=lm)
         if split_lyrics:
             req = {"instrumental": req, "thai_vocal": "split", "split_style": a.split_style, "voice": a.voice,
                    "lines": lyric_lines(split_lyrics)}
         print(json.dumps(req, ensure_ascii=False, indent=2))
         return 0
+    if yue2_lyrics:
+        # Say the cost and the licence before a ~15 min render starts.
+        print(yue2.eta_message(fields["duration"]), file=sys.stderr)
+        print(yue2.LICENSE_WARNING, file=sys.stderr)
     try:
-        if split_lyrics:
+        if yue2_lyrics:
+            r = yue2.generate(fields, yue2_lyrics, Path(a.out), quant=a.yue2_quant, seed=a.seed, steps=steps)
+        elif split_lyrics:
             r = generate_split(fields, split_lyrics, Path(a.out), style=a.split_style, voice=a.voice,
-                               quant=a.quant, seed=a.seed, steps=a.steps)
+                               quant=a.quant, seed=a.seed, steps=steps)
         else:
-            r = generate(fields, Path(a.out), quant=a.quant, seed=a.seed, steps=a.steps, lm=lm)
+            r = generate(fields, Path(a.out), quant=a.quant, seed=a.seed, steps=steps, lm=lm)
     except (HiqError, SplitError) as e:
         print(f"terai muml --hiq: {e}", file=sys.stderr)
         return 1
@@ -175,7 +230,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(json.dumps(r, ensure_ascii=False))
     else:
         rq = r["request"]
-        print(f"{r['out']}  {rq.get('duration')}s  bpm={rq.get('bpm', '-')}  {a.quant}  {r['wall_s']}s  ({NAME} {VERSION})")
+        q = a.yue2_quant if yue2_lyrics else a.quant
+        print(f"{r['out']}  {rq.get('duration')}s  bpm={rq.get('bpm', '-')}  {engine}  {q}  {r['wall_s']}s  "
+              f"({NAME} {VERSION})")
     return 0
 
 

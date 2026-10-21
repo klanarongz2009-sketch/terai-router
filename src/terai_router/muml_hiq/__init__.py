@@ -5,6 +5,9 @@ through acestep.cpp (MIT) with community GGUF quantisations. TER-AI adds a
 Thai/English prompt adapter that turns a free-form prompt into the caption and
 metadata (BPM, key, time signature, duration) the model was trained on.
 
+Songs with Thai lyrics default to YuE2-3B (m-a-p, CC-BY-NC-4.0) through
+yue2.cpp (MIT): it sings the Thai script more clearly (see yue2.py).
+
 No weights live in this repository: they are downloaded on first use.
 """
 
@@ -37,5 +40,8 @@ CREDITS = (
     "https://huggingface.co/ACE-Step/Ace-Step1.5), run through acestep.cpp by "
     "ServeurpersoCom (MIT, https://github.com/ServeurpersoCom/acestep.cpp) with GGUF "
     "files from https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF. Text encoder: "
-    "Qwen3-Embedding-0.6B (Apache-2.0)."
+    "Qwen3-Embedding-0.6B (Apache-2.0). Songs with Thai lyrics default to YuE2-3B by "
+    "m-a-p (CC-BY-NC-4.0, non-commercial only, https://huggingface.co/m-a-p/YuE2-3B), run "
+    "through yue2.cpp by ServeurpersoCom (MIT, https://github.com/ServeurpersoCom/yue2.cpp) "
+    "with GGUF files from https://huggingface.co/Serveurperso/YuE2-GGUF."
 )

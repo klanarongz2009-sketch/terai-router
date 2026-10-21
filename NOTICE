@@ -92,4 +92,16 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    Optional pitch retuning (--split-style snap or melody) uses pyworld (WORLD vocoder by Masanori Morise,
    modified BSD license; https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder), installed separately.
 
+12. YuE2-3B by m-a-p (Multimodal Art Projection), default engine for songs with Thai lyrics
+   (`terai muml --hiq --lyrics <Thai> [--vocal-engine yue2]`, prototype)
+   Model: https://huggingface.co/m-a-p/YuE2-3B, VAE: https://huggingface.co/m-a-p/YuE2-Vae
+   Licence of both: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Commercial use is NOT
+   permitted and m-a-p must be credited. Every song made with the yue2 engine is for non-commercial use only;
+   the CLI prints this warning before each render.
+   GGUF conversions (Q5_K_M used by default, Q6_K, Q8_0; VAE F32), CC-BY-NC-4.0:
+   https://huggingface.co/Serveurperso/YuE2-GGUF
+   Runtime: yue2.cpp by ServeurpersoCom, MIT, built on ggml (MIT): https://github.com/ServeurpersoCom/yue2.cpp
+   pinned at commit 8af01740686824ffd4a1839a457954f42e2a8ce7 (2026-10-16). `--setup` downloads the GGUF files
+   and builds that commit; nothing is redistributed in this repository.
+
 MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.
