@@ -1,0 +1,57 @@
+{
+ "prompts": [
+  "folk jig D major",
+  "sad waltz in A minor 1 minute",
+  "calm reel key of G 45 seconds",
+  "happy irish 6/8 key Bb 90 bpm",
+  "เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที",
+  "คีย์ D ไมเนอร์ ร็อค 6/8",
+  "เพลงเศร้า 3/4 คีย์ F",
+  "rock C major 120 bpm 30 วินาที",
+  "เพลงสนุก คีย์ A 4/4 40 วินาที",
+  ""
+ ],
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "markov-v1": {
+  "distinct3": 0.6478,
+  "distinct4": 0.7566,
+  "bar_repeat": 0.2229,
+  "in_scale": 0.9755,
+  "tonic_end": 1.0,
+  "len_ratio": 1.0406,
+  "notes": 101.6333,
+  "sec": 0.0018,
+  "songs": 30
+ },
+ "muml-1.0-net": {
+  "distinct3": 0.7622,
+  "distinct4": 0.927,
+  "bar_repeat": 0.0124,
+  "in_scale": 0.9832,
+  "tonic_end": 0.2667,
+  "len_ratio": 1.0187,
+  "notes": 103.4,
+  "sec": 1.7383,
+  "songs": 30
+ },
+ "muml-1.0-net (key guard off)": {
+  "distinct3": 0.8395,
+  "distinct4": 0.965,
+  "bar_repeat": 0.0,
+  "in_scale": 0.8823,
+  "tonic_end": 0.1333,
+  "len_ratio": 1.0223,
+  "notes": 102.7,
+  "sec": 3.0836,
+  "songs": 30
+ },
+ "weights": {
+  "file": "muml-1.0-int8.bin",
+  "bytes": 3421372,
+  "sha256": "f8a6d1030476d80757f44c3a990a3975d230b2f186820f48481429365c144fef"
+ }
+}

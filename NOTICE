@@ -62,9 +62,13 @@ Unlike TTH and SANKPUP, MuML 1.0 WA includes third-party-derived data in this re
    Used for: the note table src/terai_router/muml_wa/data/markov.json and its web copy docs/muml_wa_table.js
    (counts of pitch, chord and rhythm transitions; no tune is stored). These two files are GPL-3.0; the full
    license text is next to each of them (LICENSE-GPL-3.0.txt). The code that reads them stays MIT.
+   Since v0.15.0 also used for: docs/muml-1.0-int8.bin, the weights of the MuML 1.0 network trained from
+   scratch on this dataset (int8, 3,421,372 bytes). GPL-3.0 like the table; see DATA_LICENSE.
 
-The note writer in v0.12.0 is a seeded Markov chain ("markov-v1"), not the trained MuML 1.0 network. All sound is
-synthesized by the Web Audio API in the browser: no soundfont, no samples, no server, no cloud API.
+The note writer in v0.12.0 was a seeded Markov chain ("markov-v1"). Since v0.15.0 the trained MuML 1.0 network
+writes the notes ("muml-1.0-net": docs/muml_wa_net.js and src/terai_router/muml_wa/net.py, MIT code, our own
+forward pass, no onnxruntime and no third-party model); Markov v1 stays only as the fallback when the weights
+(or numpy, in Python) are missing. All sound is synthesized by the Web Audio API in the browser: no soundfont, no samples, no server, no cloud API.
 
 MUML 1.0 HIQ (text-to-music audio, released in v0.13.0)
 MUML 1.0 HIQ ships only TER-AI code (MIT) in this repository: the Thai/English prompt adapter and the

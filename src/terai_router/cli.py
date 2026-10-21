@@ -205,6 +205,9 @@ def main(argv=None):
     if argv and argv[0] == 'sankpup':
         from .sankpup.cli import main as sankpup_main
         return sankpup_main(argv[1:])
+    if argv and argv[0] == 'muml-wa':
+        from .muml_wa.cli import main as muml_wa_main
+        return muml_wa_main(argv[1:])
     if argv and argv[0] in ('muml', 'muml-hiq'):
         # Contract with MuML 1.0: see docs/MUML-CLI-CONTRACT.md. `--hiq` / `--model hiq`
         # (or the `muml-hiq` alias) goes to MUML 1.0 HIQ; everything else is MuML 1.0.

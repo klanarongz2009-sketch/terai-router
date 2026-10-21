@@ -41,7 +41,7 @@ def test_muml_wa_js_matches_python():
     js = json.loads(out)
     bad = []
     for (p, s, st), (song, mid) in zip(items, js):
-        py = muml_wa.generate(p, s, st)
+        py = muml_wa.generate(p, s, st, writer='markov')
         py_json = json.loads(json.dumps(py, ensure_ascii=False))
         if py_json != song or muml_wa.to_midi(py).hex() != mid:
             bad.append((p, s, st))

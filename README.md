@@ -6,7 +6,7 @@
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
-What is released today (v0.14.0):
+What is released today (v0.15.0):
 
 | Part | What it does | Since |
 |---|---|---|
@@ -14,7 +14,7 @@ What is released today (v0.14.0):
 | Chat | Offline Thai chat with real tools (calculator, date and time, unit conversion), answers from a bundled Thai Wikipedia pack with the source named, memory across restarts, says "I don't know" instead of guessing. No language model inside. Optional Wikipedia web search since v0.9.0. | v0.8.0 |
 | TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
-| MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Notes come from a seeded Markov note writer (Markov v1, not the trained MuML 1.0 model); every sound is made by the Web Audio API. | v0.12.0 |
+| MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Since v0.15.0 the notes come from the trained MuML 1.0 network (3.3M-parameter transformer, int8 weights 3.4 MB, run in JavaScript); Markov v1 is the fallback. Every sound is made by the Web Audio API. | v0.12.0, network v0.15.0 |
 | MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
 | TERM AI (limited-time trial) | The original Terminal AI that TER-AI grew from: a Thai terminal chatbot made of rules plus the first own model, TER-AI-0.5. Offline, no dependencies. **Trial: stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.** | v0.14.0 |
 
@@ -33,9 +33,9 @@ status  1.00  เสร็จหรือยัง
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.14.0, measured 2026-10-22)
+## Results (v0.15.0, measured 2026-10-22)
 
-Run on the v0.14.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+Run on the v0.15.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
 
 | Check | Command | Result |
 |---|---|---|
@@ -48,10 +48,10 @@ Run on the v0.14.0 code with the scripts in this repo. Machine: AMD EPYC, 8 core
 | Browser vs Python, chat | `python eval/parity.py` | 790/790 turns identical; 24/24 with mocked web search |
 | Browser vs Python, TTH text frontend | `python eval/parity.py` | 1,700/1,700 checks identical |
 | Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
-| Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | 330/330 checks identical; web note table matches `markov.json` byte for byte |
+| Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | Markov v1 330/330 and MuML 1.0 network 30/30 songs identical (tokens, notes and `.mid` bytes); web note table matches `markov.json` byte for byte |
 | Browser vs Python, Temmo remix rules | `python eval/parity.py` | 42/42 cases identical |
 | TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
-| Unit tests | `pytest` | 347 passed, 4 skipped (real speech and real model runs, opt-in) |
+| Unit tests | `pytest` | 353 passed, 4 skipped (real speech and real model runs, opt-in) |
 
 MUML 1.0 HIQ end to end (measured 2026-10-21 for v0.13.0, unchanged since; same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
 
@@ -323,7 +323,7 @@ save(art, "house.png", save_code=True)   # house.png + house.svg
   byte-identical SVG (checked by `eval/parity.py`), and can download PNG, JPG or the SVG code. Gemma is not used in
   the browser.
 
-## MuML 1.0 WA: music in the browser (v0.12.0)
+## MuML 1.0 WA: music in the browser (v0.12.0; MuML 1.0 network since v0.15.0)
 
 MuML 1.0 WA (MuML 1.0 Web Audio API) is the browser member of the MuML music family. Type a prompt in Thai or
 English, for example `เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 30 วินาที` or `rock reel key of D 120 bpm 30 seconds`,
@@ -333,25 +333,55 @@ pick a style (Auto, Folk or Rock) and a seed, then play it or download `.wav` an
 ```python
 from terai_router import muml_wa
 song = muml_wa.generate("เพลงเศร้า วอลทซ์ คีย์ A minor 30 วินาที", seed=3, style="auto")
-print(song["prompt"]["meter"], song["form"], song["note_writer"])   # 3/4 AB markov-v1
+print(song["prompt"]["meter"], song["note_writer"])   # 3/4 muml-1.0-net (markov-v1 if the weights are missing)
 open("waltz.mid", "wb").write(muml_wa.to_midi(song))     # Standard MIDI File, format 1, 24 ticks per quarter
 ```
 
-- **Note writer: Markov v1, not the MuML 1.0 model.** A seeded Markov chain built from the MuML 1.0 training data
-  (Nottingham folk tunes): key-relative pitch order-2 with order-1 back-off, a chord per bar, whole-bar rhythm
-  patterns. It uses the MuML 1.0 token language and the same interface (prompt + seed in, MuML tokens out), so the
-  trained MuML 1.0 network can replace it later. The tab says which note writer is in use.
+```bash
+pip install numpy                    # the network runs on numpy in Python; the browser needs nothing
+terai muml-wa --setup                # downloads muml-1.0-int8.bin (3,421,372 bytes) and checks its SHA-256
+terai muml-wa "rock E minor 120 bpm 30 วินาที" --seed 1 -o rock.mid
+terai muml-wa "folk jig D major" --writer markov    # the old Markov v1 writer
+```
+
+- **Note writer (since v0.15.0): the trained MuML 1.0 network.** A decoder-only transformer (4 layers, d_model 256,
+  4 heads, context 512 tokens, 163 MuML tokens, 3,332,352 parameters) trained from scratch on the Nottingham folk
+  tunes for 30 epochs (val loss 1.3780). It writes melody, chords and rhythm token by token, conditioned on meter,
+  tune type, mode and key from the prompt. The forward pass is our own code (`docs/muml_wa_net.js`,
+  `src/terai_router/muml_wa/net.py`), float64 with a key/value cache; no onnxruntime, no server. Weights are int8 with
+  one scale per row (`docs/muml-1.0-int8.bin`, 3.4 MB, fetched once when you first press Write; val loss of the int8
+  file 1.3779, same as fp32). Decoding: temperature 0.9, top-p 0.95, a grammar mask (a duration after every note) and
+  a key guard (logit -2 for pitches outside the scale). Longer songs chain several tunes of up to 512 tokens.
+- **Before/after** (`python eval/muml_wa_writers.py`, 10 fixed prompts x 3 seeds, same prompts for both):
+
+  | Note writer | distinct 3-grams | distinct 4-grams | bars repeated | notes in key | ends on tonic | length / asked | time per song |
+  |---|---|---|---|---|---|---|---|
+  | Markov v1 (v0.12.0) | 0.648 | 0.757 | 22.3% | 97.6% | 100% | 1.04 | 0.002 s (Python) |
+  | MuML 1.0 network | 0.762 | 0.927 | 1.2% | 98.3% | 26.7% | 1.02 | 1.7 s (Python, numpy) |
+  | network, key guard off | 0.840 | 0.965 | 0% | 88.2% | 13.3% | 1.02 | 3.1 s |
+
+  Browser (headless Chromium on the 8-core VM while other jobs ran): weights downloaded and parsed in about 0.5 s
+  from a local server, a 30-second waltz (154 tokens) written in 1.8 s.
+- **Markov v1 (v0.12.0) stays as the fallback**: used when the weights cannot load (browser) or numpy or the weights
+  are missing (Python), or when you pick it. Key-relative pitch order-2 with order-1 back-off, a chord per bar,
+  whole-bar rhythm patterns. The tab says which note writer wrote the song.
+
 - **Sound:** everything is synthesized by the Web Audio API: fiddle-like lead, strummed chords and oom-pah bass for
   Folk; distorted lead, palm-muted power chords, bass and a synthesized drum kit for Rock; a compressor on the
   master. No soundfont, no samples, no server, no cloud API. `.wav` is rendered with OfflineAudioContext.
 - **Same in Python and JavaScript:** `terai_router.muml_wa` is the reference; `docs/muml_wa.js` gives the same
-  prompt reading, tokens, notes and `.mid` bytes for the same prompt, seed and style (`eval/parity.py`: 330 of 330).
-- **Limits:** length is rounded to whole 8-bar parts (30 s asked as a jig gives 36.5 s); Folk is quieter than Rock
-  (no loudness normalization); the notes come from a Markov chain, so long-range structure is simple (AABB or AB).
-- **License: code MIT, data GPL-3.0.** The note table is built from the Nottingham Music Database as cleaned by
+  prompt reading, tokens, notes and `.mid` bytes for the same prompt, seed and style (`eval/parity.py`: Markov v1
+  330 of 330, MuML 1.0 network 30 of 30). The network draws from integer weights (parts per million) with the same
+  seeded generator, so float rounding between numpy and JavaScript does not change the song.
+- **Limits:** the network almost never repeats a bar (1.2% against about 22% for Markov v1), so tunes wander instead
+  of having clear AABB parts, and only 27% end on the tonic (a long song is cut at the bar where the asked length is
+  reached); repeat signs it writes are not expanded; Python needs numpy; writing takes seconds, not milliseconds
+  (Markov v1 is instant); the network is folk-trained, so Rock changes the arrangement, not the melody style.
+  Markov v1 length is rounded to whole 8-bar parts (30 s asked as a jig gives 36.5 s); Folk is quieter than Rock.
+- **License: code MIT, data GPL-3.0.** The network weights and the note table are built from the Nottingham Music Database as cleaned by
   [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset), which is GPL-3.0, so the table
-  is GPL-3.0 too. It is kept in its own files, `src/terai_router/muml_wa/data/markov.json` and
-  `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
+  and the weights are GPL-3.0 too. They are kept in their own files, `docs/muml-1.0-int8.bin` (license entry in its
+  header; not in the Python package), `src/terai_router/muml_wa/data/markov.json` and `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
   that reads it stays MIT. Details: [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE).
 
 ## MUML 1.0 HIQ: text-to-music audio (v0.13.0)
@@ -429,7 +459,7 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 347 pass, 4 skipped (real speech and real model runs, opt-in)
+pytest                          # 353 pass, 4 skipped (real speech and real model runs, opt-in)
 python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
 python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
@@ -451,7 +481,8 @@ Planned:
 
 In progress (not released):
 
-- MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. Not in this repository yet.
+- MuML 1.0 training code and a CLI that writes from the network outside MuML 1.0 WA: the training scripts are not in
+  this repository yet (only the export script `training/muml_wa/export_net.py` is).
 - TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
 - Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
@@ -486,7 +517,7 @@ Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its o
 | Code (Python, JavaScript, web demo, scripts) | everything not listed below | MIT ([LICENSE](LICENSE)) | Yes | Yes |
 | Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json`; TERM AI trial: `src/terai_router/term_ai/data/model.json`, `train_data.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
 | Thai knowledge pack (from Thai Wikipedia) | `src/terai_router/data/knowledge_th.json` and its web copy `docs/knowledge_th.json` | CC BY-SA 4.0 ([DATA_LICENSE](DATA_LICENSE)) | Yes | Yes, with attribution to Wikipedia contributors and the same license on shared copies |
-| MuML 1.0 WA note table (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
+| MuML 1.0 WA note table and MuML 1.0 network weights (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json`, its web copy `docs/muml_wa_table.js`, and `docs/muml-1.0-int8.bin` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
 | Wayu-Paxa-TTS-Edge weights (TTH engine "wayu", by Paxa Labs / Wayu Research) | downloaded from Hugging Face on first use | CC-BY-NC-4.0 plus the Wayu Research Acceptable Use terms ([NOTICE](NOTICE) item 1) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research. Audio made with this engine is non-commercial too |
 | wayu-tts inference code | installed by the `tth` extra | Apache-2.0 ([NOTICE](NOTICE) item 1) | No | Yes |
 | edge-tts (TTH engine "edge", online fallback) | installed by the `tth` or `tth-edge` extra | library LGPL-3.0; it sends text to Microsoft's online read-aloud service, whose voices follow Microsoft's terms ([NOTICE](NOTICE) item 2) | No | Library: yes. The Microsoft service and voices: only as Microsoft's terms allow; TER-AI grants nothing for them |

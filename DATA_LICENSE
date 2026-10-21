@@ -22,6 +22,20 @@ docs/knowledge_th.json                   (byte copy of the same pack for the web
   Every answer the Chat class gives from this file ends with the article title and
   "CC BY-SA 4.0" so the source stays visible to the person reading it.
 
+docs/muml-1.0-int8.bin                     (MuML 1.0 network weights for MuML 1.0 WA, since v0.15.0)
+
+  Source:    the MuML 1.0 network (decoder-only transformer, 3,332,352 parameters) trained from
+             scratch on the same Nottingham Music Database copy as below (jukedeck/nottingham-dataset,
+             commit 0992bb6cd864f6d4b90d6663e08c0ef53ffaa08f), 30 epochs, best val loss 1.3780.
+             Stored as int8 with one float32 scale per row by training/muml_wa/export_net.py
+             (code, MIT). Measured val loss of the int8 file: 1.3779 (fp32 checkpoint: 1.3780).
+  License:   GPL-3.0-only, treated like the Markov table: the weights are learned from that
+             GPL-3.0 dataset. Full text: docs/LICENSE-GPL-3.0.txt. The file header has a
+             "license" entry naming the source.
+  Size:      3,421,372 bytes, SHA-256 f8a6d1030476d80757f44c3a990a3975d230b2f186820f48481429365c144fef.
+             Not in the Python package: `terai muml-wa --setup` downloads it to
+             ~/.cache/terai/muml/ and checks the SHA-256; the web demo fetches it from GitHub Pages.
+
 src/terai_router/muml_wa/data/markov.json  (MuML 1.0 WA note table, Markov v1, since v0.12.0)
 docs/muml_wa_table.js                      (the same table for the web demo's MuML tab)
 

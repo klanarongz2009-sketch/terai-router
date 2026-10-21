@@ -75,6 +75,8 @@ def main():
     if not (DOCS / 'LICENSE-GPL-3.0.txt').exists() or (DOCS / 'LICENSE-GPL-3.0.txt').read_bytes() != gpl.read_bytes():
         shutil.copyfile(gpl, DOCS / 'LICENSE-GPL-3.0.txt')
     html = html.replace('__MUML_WA_JS__', (DOCS / 'muml_wa.js').read_text(encoding='utf-8'))
+    # v0.15: the MuML 1.0 network writer (MIT code, inlined); its weights stay a separate file, docs/muml-1.0-int8.bin
+    html = html.replace('__MUML_WA_NET_JS__', (DOCS / 'muml_wa_net.js').read_text(encoding='utf-8'))
     (DOCS / 'index.html').write_text(html, encoding='utf-8')
     # Temmo tab: the runtime is copied byte for byte from the package (docs/temmo/sample is a built game)
     (DOCS / 'temmo').mkdir(exist_ok=True)
