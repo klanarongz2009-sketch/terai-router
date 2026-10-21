@@ -2,6 +2,8 @@
 
 [English README](README.md)
 
+> **ทดลองใช้แบบจำกัดเวลา: TERM AI ซึ่งเป็น Terminal AI ตัวดั้งเดิม กลับมาให้ลองถึง 2027-01-01 00:00:00 เวลาประเทศไทย (UTC+7)** ลองได้ด้วย `terai term` ([v0.14.0](https://github.com/klanarongz2009-sketch/terai-router/releases/tag/v0.14.0), [ประกาศ](https://github.com/klanarongz2009-sketch/terai-router/issues/6)) พอถึงเวลานั้นจะใช้ไม่ได้และถูกถอดออกจาก repo [รายละเอียด](#term-ai-ทดลองใช้แบบจำกัดเวลา)
+
 TER-AI คือชุด AI ภาษาไทยที่รันออฟไลน์บน CPU ได้ฟรี ไม่ต้องใช้ GPU และไม่ต้องส่งข้อมูลขึ้น cloud ทำร่วมกับ Sesame
 
 > **ประกาศเกี่ยวกับโปรเจกต์:** TER-AI เป็นโปรเจกต์อินดี้ อาจหยุดชั่วคราวหรือปิดได้โดยแจ้งล่วงหน้าเพียงเล็กน้อย อ่าน[ประกาศเกี่ยวกับโปรเจกต์](PROJECT_NOTICE.th.md)

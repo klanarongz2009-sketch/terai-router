@@ -115,9 +115,10 @@ and take TERM AI out of:
   `terai term` line in the module docstring
 - `pyproject.toml`: `"term_ai/data/*.json"` in `[tool.setuptools.package-data]`
 - `README.md` and `README.th.md`: the TERM AI row of the release table, the TERM AI section,
-  the Development line, the Roadmap line and the license-table mention
+  the top banner, the Development line, the Roadmap line and the license-table mention
 - `CHANGELOG.md`: keep the v0.14.0 entry as history and add a removal entry
 - the wiki: page `TERM-AI`, its `_Sidebar` link, the Home row; keep the History entry
+- GitHub: unpin and close the announcement issue #6
 
 The same lists are in `REMOVAL_PATHS` and `REMOVAL_EDITS` in `trial.py`, and a test checks
 that they exist and that nothing outside `cli.py` imports `term_ai`, so the removal cannot
