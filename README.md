@@ -1,6 +1,6 @@
 # TER-AI
 
-[อ่านภาษาไทย (Thai version)](README.th.md)
+[Thai version](README.th.md)
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
