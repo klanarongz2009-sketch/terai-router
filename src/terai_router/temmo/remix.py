@@ -38,7 +38,8 @@ MAX_LEVELS = 10
 AI_SYSTEM = ("You edit small maze games. Reply with ONE JSON object (a patch) and nothing else. Allowed keys: "
              "title, title_th, tagline, win_title, win_text, gem_name, enemy_name (strings), "
              "palette (object of bg/wall/floor/player/gem/enemy/exit -> #rrggbb), "
-             "time_delta (integer seconds added to every level, -30..30), enemy_speed (\"faster\" or \"slower\").")
+             "time_delta (integer seconds added to every level, -30..30), enemy_speed (\"faster\" or \"slower\"), "
+             "add_levels (integer 1..3: add mirrored copies of existing levels, max 10 levels in total).")
 AI_PROMPT = "Game: {title} ({title_th}) - {tagline}\nPalette: {palette}\nPlayer request: {instruction}\nPatch JSON:"
 
 
