@@ -248,9 +248,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     except RuntimeError as e:
         r["ending"] = {"ending": f"fade failed: {e}", "fade_out_s": 0.0}
     reach = r.get("reach")
-    if reach and reach.get("unplanned_lyrics"):
-        print("note: the score YuE2 planned leaves out these lyric sections, so they are not sung: "
-              + ", ".join(reach["unplanned_lyrics"]) + " (another --seed plans another score)", file=sys.stderr)
     if reach and reach.get("cut_by_duration"):
         left = [s["section"] for s in reach["sections"] if s["state"] != "complete"]
         print(f"note: yue2 stopped at the {r['request'].get('duration')} s duration before the song ended (planned {reach['plan_s']:g} s; "

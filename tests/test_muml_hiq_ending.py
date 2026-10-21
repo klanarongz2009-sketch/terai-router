@@ -71,7 +71,7 @@ def test_plan_and_reach_of_the_cut_song():
     r = yue2.reach_report({"abc": ABC, "lyrics": TH4, "semantic_tokens": ",".join(["1"] * 750)}, 30.0)
     assert r["cut_by_duration"] and r["seconds"] == 30.0 and r["plan_s"] == 52.4
     assert [s["state"] for s in r["sections"]] == ["complete", "cut at 5.2 of 27.6 s"]
-    assert r["unplanned_lyrics"] == ["chorus"]
+    assert r["lyric_tags_not_in_plan"] == ["chorus"]
     full = yue2.reach_report({"abc": ABC, "lyrics": TH4, "semantic_tokens": ",".join(["1"] * 1320)}, 90.0)
     assert not full["cut_by_duration"] and [s["state"] for s in full["sections"]] == ["complete", "complete"]
 
@@ -121,10 +121,10 @@ def test_cli_reports_where_yue2_stopped(tmp_path, monkeypatch, capsys):
                        "--json", "-o", str(out)]) == 0
     cap = capsys.readouterr()
     r = json.loads(cap.out)
-    assert r["reach"]["cut_by_duration"] and r["reach"]["unplanned_lyrics"] == ["chorus"]
+    assert r["reach"]["cut_by_duration"] and r["reach"]["lyric_tags_not_in_plan"] == ["chorus"]
     assert Path(r["reach"]["replay"]) == tmp_path / "s.yue2.json" and (tmp_path / "s.yue2.json").is_file()
     assert "stopped at the 30.0 s duration" in cap.err and "unfinished: verse" in cap.err
-    assert "not sung: chorus" in cap.err
+    assert "not sung" not in cap.err
     assert r["ending"]["fade_out_s"] == 0.0  # fake mp3 bytes: nothing to fade
 
 

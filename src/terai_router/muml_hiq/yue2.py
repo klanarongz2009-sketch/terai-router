@@ -222,7 +222,8 @@ def reach_report(replay: Dict[str, object], duration: float) -> Dict[str, object
             state = f"cut at {seconds - start:.1f} of {end - start:.1f} s"
         reached.append({"section": sec["name"], "start_s": sec["start_s"], "length_s": sec["length_s"],
                         "state": state})
-    # Lyric sections the score never planned are not sung at any duration (seed 42 test song: no chorus planned).
+    # Lyric tags with no section of that name in the score. Informational only: the score has no lyrics, and the
+    # seed 42 test song sang words of its unplanned chorus inside the planned verse bars (E2E at 50.6 s).
     planned = [str(s["name"]).lower() for s in plan]
     unplanned, i = [], 0
     for tag, _ in lyric_sections(str(replay.get("lyrics") or "")):
@@ -233,7 +234,7 @@ def reach_report(replay: Dict[str, object], duration: float) -> Dict[str, object
             i = j + 1
     return {"frames": len(toks), "seconds": round(seconds, 2), "cut_by_duration": len(toks) >= budget > 0,
             "plan_s": round(sum(float(s["length_s"]) for s in plan), 1), "sections": reached,
-            "unplanned_lyrics": unplanned}
+            "lyric_tags_not_in_plan": unplanned}
 
 
 def build_style(fields: Dict[str, object]) -> str:

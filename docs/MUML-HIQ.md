@@ -50,8 +50,12 @@ verse (27.6 s), so the voice came in at 24.8 s and only the start of the first l
   the CLI warns and names the length to use. KV context grows past 8192 only when
   the frames plus 3000 prompt tokens need it.
 - After a yue2 render the CLI keeps the replay request (`<out>.yue2.json`: score and
-  frames), reports which planned sections fit, and names lyric sections the score
-  left out (they are not sung at any length; another seed plans another score).
+  frames) and reports which planned sections fit. The score carries no lyrics: at
+  seed 42 it names only intro and verse, yet ASR found chorus words in the verse bars.
+- E2E (4-line Thai test song, seed 42, no --duration): duration 90 s, yue2 ended on
+  its own at 1265 frames (50.6 s, before the 52.4 s plan), last 0.25 s -23.8 dB, after
+  the 2.5 s fade -73.1 dB; 24:53 wall, peak RSS 2.93 GB; CER 0.8598, 14/30 words
+  (30 s run: 0.9065, 4/30), words from all 4 lyric lines.
 
 ## How it works
 
