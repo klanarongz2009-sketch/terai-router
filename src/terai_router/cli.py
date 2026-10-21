@@ -192,6 +192,9 @@ def main(argv=None):
         return chat_main(argv[1:])
     if argv and argv[0] == 'tth':
         return tth_main(argv[1:])
+    if argv and argv[0] == 'sankpup':
+        from .sankpup.cli import main as sankpup_main
+        return sankpup_main(argv[1:])
     ap = argparse.ArgumentParser(prog='terai', description='TER-AI: offline Thai intent router that tolerates typos (made with Sesame)')
     ap.add_argument('text', nargs='*', help="text to classify; '-' reads lines from stdin")
     ap.add_argument('--json', action='store_true', help='print JSON')

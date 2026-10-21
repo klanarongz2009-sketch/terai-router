@@ -32,3 +32,21 @@ this repository; each part is installed or downloaded separately and keeps its o
    for it and sends nothing; how the device or browser makes the speech is up to its maker.
 
 TTH does not use the Paxa Labs cloud API (Paxa TTS Flash).
+
+SANKPUP (pictures from code, v0.11.0)
+SANKPUP uses no third-party model or data inside this repository. The optional parts below are installed or
+downloaded separately and keep their own licenses.
+
+4. Gemma 4 (SANKPUP engine "gemma", optional, runs locally)
+   Model weights by Google DeepMind: official QAT Q4_0 GGUF builds, e.g.
+   https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf
+   License of the weights: Apache License 2.0 (https://ai.google.dev/gemma/docs/gemma_4_license).
+   Downloaded on first use into ~/.cache/terai/models and checked against the published SHA-256.
+
+5. llama-cpp-python (https://github.com/abetlen/llama-cpp-python), MIT. Installed by the "sankpup-gemma" extra.
+
+6. resvg-py (https://github.com/baseplate-admin/resvg-py), MIT, wrapping resvg
+   (https://github.com/linebender/resvg), Apache-2.0; Pillow (https://python-pillow.org), MIT-CMU.
+   Installed by the "sankpup" and "sankpup-gemma" extras.
+
+SANKPUP does not call any cloud API.

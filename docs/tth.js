@@ -9,7 +9,7 @@
   else root.TERAI_TTH = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.10.0';
+  const VERSION = '0.11.0';
   const MAX_CHARS = 90;
   const MAX_DIGITS = 15;
 

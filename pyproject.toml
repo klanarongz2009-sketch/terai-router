@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "terai-router"
-version = "0.10.0"
+version = "0.11.0"
 description = "Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame."
 readme = "README.md"
 license = "MIT"
@@ -38,6 +38,8 @@ tth = [
     "edge-tts>=6.1",
 ]
 tth-edge = ["edge-tts>=6.1"]
+sankpup = ["resvg-py>=0.1.5", "Pillow>=9"]
+sankpup-gemma = ["resvg-py>=0.1.5", "Pillow>=9", "llama-cpp-python>=0.3.36"]
 
 [project.scripts]
 terai = "terai_router.cli:main"
@@ -46,7 +48,7 @@ terai = "terai_router.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-terai_router = ["data/*.json"]
+terai_router = ["data/*.json", "sankpup/data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

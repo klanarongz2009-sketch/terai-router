@@ -10,6 +10,8 @@ Since v0.8.0 it also ships `Chat`: an offline Thai chat that answers with real t
 
 Since v0.10.0 it can also speak: TTH reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge) and falls back to edge-tts, both optional. See [TTH: Thai speech](#tth-thai-speech-v0100).
 
+Since v0.11.0 it can also make pictures: SANKPUP writes a picture as SVG code, either with a local Gemma 4 model or with a built-in offline generator, then renders it to PNG or JPG. It is not an image model and no cloud API is used. See [SANKPUP: pictures from code](#sankpup-pictures-from-code-v0110).
+
 ```
 $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
@@ -240,6 +242,51 @@ prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')   # 'สิ�
 - **Synthetic voice:** audio from TTH is machine-made. Do not present it as a real person's voice. Audio made with
   the Wayu engine is for non-commercial use (CC-BY-NC-4.0). Details and attribution: [NOTICE](NOTICE).
 
+## SANKPUP: pictures from code (v0.11.0)
+
+SANKPUP (from Thai "สร้างภาพ", "make a picture") turns a Thai or English prompt into a picture made purely from
+code. It is a workflow, not a native image model: a language model (or the offline generator) writes SVG code,
+SANKPUP sanitizes that code, then renders it to PNG and converts it to JPG. Nothing is drawn by a pixel or
+diffusion model, and everything runs locally: no cloud API, no account, no key.
+
+```bash
+# rendering only (offline generator + PNG/JPG): resvg-py and Pillow
+pip install "terai-router[sankpup] @ git+https://github.com/klanarongz2009-sketch/terai-router.git"
+# plus local Gemma 4 through llama-cpp-python (CPU is fine)
+pip install "terai-router[sankpup-gemma] @ git+https://github.com/klanarongz2009-sketch/terai-router.git"
+
+terai sankpup "แมวสีส้มนั่งบนดวงจันทร์" -o cat.png              # auto: Gemma if downloaded, else offline
+terai sankpup "a red sailboat on the sea" --engine offline -o boat.jpg
+terai sankpup --pull                    # download Gemma 4 E2B (QAT Q4_0 GGUF, 3.35 GB, SHA-256 checked)
+terai sankpup "หุ่นยนต์ถือดอกไม้" --engine gemma -o robot.png --save-code --json
+terai sankpup "ภูเขากับพระอาทิตย์ตก" --server http://127.0.0.1:11434/v1 --server-model gemma4:e2b   # Ollama / llama-server
+terai sankpup --list-models             # Gemma 4 variants, what is downloaded, which renderer is installed
+```
+
+```python
+from terai_router.sankpup import generate, save
+art = generate("บ้านหลังเล็กกับต้นไม้สองต้น ตอนกลางคืน", engine="offline", seed=1)
+save(art, "house.png", save_code=True)   # house.png + house.svg
+```
+
+- **Engines:** `gemma` (local Gemma 4 writes the SVG; retries once with the error message if the code is unusable,
+  then falls back to offline unless `--no-fallback`), `offline` (deterministic rules and vector templates, instant,
+  no download) and `auto` (Gemma only if llama-cpp-python is installed and the weights are already on disk).
+- **Models:** default `e2b` (Gemma 4 E2B, runs in 8 GB RAM on CPU). `e4b`, `12b`, `26b-a4b` and `31b` can be picked
+  with `--model` on machines with more memory or a GPU; a path to any `.gguf` also works. Weights are Google's
+  official QAT Q4_0 GGUF builds from Hugging Face, downloaded on first use into `~/.cache/terai/models`
+  (`$TERAI_MODELS_DIR`), never stored in this repository.
+- **Safety:** model output is treated as untrusted. Only drawing elements and attributes survive (no `script`,
+  `foreignObject`, `image`, `use`, event handlers, external `url(...)`, `javascript:` or `data:` values, DOCTYPE or
+  entities); size, element count and depth are capped. An unclosed local paint reference such as `url(#g` is closed.
+- **Measured (Gemma 4 E2B, 8-core CPU, 8 GB RAM, no GPU, 12 prompts: 6 Thai, 6 English):** 11 of 12 valid (valid =
+  parses as XML, passes the sanitizer, renders, and the image is not one flat colour). Thai 5/6, English 6/6. The
+  one failure drew a full-canvas rectangle over everything (blank render). Time per picture p50 24.2 s, p95 49.1 s;
+  model load 38 to 125 s. Reproduce with `python eval/sankpup_gemma_bench.py --model e2b`.
+- **Browser:** the demo's SANKPUP tab runs `docs/sankpup.js`, a port of the offline generator that gives
+  byte-identical SVG (checked by `eval/parity.py`), and can download PNG, JPG or the SVG code. Gemma is not used in
+  the browser.
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -250,7 +297,7 @@ prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')   # 'สิ�
 
 `docs/index.html` is a single self-contained page: the model and `docs/terai.js` are inlined, so it works offline and can be hosted on GitHub Pages. Rebuild it with `python docs/build_demo.py`. `python eval/parity.py` checks that the JavaScript and Python versions agree; on the current model they give the same intent and normalized text on all 607 eval sentences (max confidence difference 6.7e-16).
 
-The demo has two modes: the intent router and a chat mode. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
+The demo has three tabs: chat, the intent router and SANKPUP (v0.11.0, pictures from code with the offline generator). The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
 
 Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by default) with the browser's Web Speech API and a Thai voice already on the device. `docs/tth.js` prepares the text the same way as the Python TTH; `python eval/parity.py` checks 1,700 of 1,700 frontend outputs are identical.
 
@@ -258,8 +305,9 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 108 tests (1 more, real speech, with TERAI_TTH_REAL=1)
-python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend
+pytest                          # 138 tests (1 more, real speech, with TERAI_TTH_REAL=1)
+python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline
+python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows
@@ -296,3 +344,5 @@ Code: MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
 Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. Details and the list of changes are in `DATA_LICENSE`.
 
 Speech (TTH, optional, not included in this repository): the Wayu-Paxa-TTS-Edge weights by Paxa Labs / Wayu Research are CC-BY-NC-4.0 (non-commercial, attribution required) and are downloaded from Hugging Face on first use; edge-tts (LGPL-3.0) uses an online Microsoft service. Attribution and details are in `NOTICE`.
+
+Pictures (SANKPUP, optional, not included in this repository): Gemma 4 weights by Google are released under the Apache License 2.0 (https://ai.google.dev/gemma/docs/gemma_4_license) and are downloaded from Hugging Face on first use. Rendering uses resvg-py (MIT, wrapping resvg, Apache-2.0) and Pillow (MIT-CMU); llama-cpp-python is MIT. Details: [NOTICE](NOTICE).

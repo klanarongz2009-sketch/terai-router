@@ -7,6 +7,8 @@
    eval/web_fixtures_v09.json (offline conversations get a network error), JS through Chat.replyAsync.
 4. TTH text frontend (v0.10): docs/tth.js prepare()/chunk() vs terai_router.tth on eval/tth_cases_v10.json and on
    every Python chat reply from 2 and 3, with both politeness settings (ครับ and ค่ะ).
+5. SANKPUP offline generator (v0.11): docs/sankpup.js vs terai_router.sankpup.offline, byte-identical SVG for the
+   12 Gemma bench prompts, every tth_cases_v10 text and the intent eval sentences, seeds 0-3.
 
 Usage: python eval/parity.py   (needs node on PATH)
 """
@@ -174,6 +176,45 @@ def tth_parity():
     return bad
 
 
+SANKPUP_JS = r"""
+const fs = require('fs');
+const S = require(process.argv[1]);
+S.setLexicon(JSON.parse(fs.readFileSync(process.argv[2], 'utf8')));
+const items = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(items.map(([p, s]) => S.generateSvg(p, s))));
+"""
+
+
+def sankpup_parity():
+    from terai_router.sankpup import offline
+    prompts = [p for _, p in _bench_prompts()]
+    prompts += json.loads((ROOT / 'eval' / 'tth_cases_v10.json').read_text(encoding='utf-8'))['cases']
+    prompts += texts(ROOT / 'eval' / 'test_set.json')
+    items = [[p, s] for p in prompts for s in range(4)]
+    lex = ROOT / 'src' / 'terai_router' / 'sankpup' / 'data' / 'lexicon.json'
+    res = subprocess.run(['node', '-e', SANKPUP_JS, str(ROOT / 'docs' / 'sankpup.js'), str(lex)],
+                         input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, check=True)
+    js = json.loads(res.stdout)
+    bad = 0
+    for (p, s), j in zip(items, js):
+        if offline.generate_svg(p, s) != j:
+            bad += 1
+            if bad <= 5:
+                print('SANKPUP_DIFF', repr(p), s)
+    print(f'sankpup offline: prompts={len(prompts)} checks={len(items)} identical={len(items) - bad} diff={bad}')
+    return bad
+
+
+def _bench_prompts():
+    import ast
+    src = (ROOT / 'eval' / 'sankpup_gemma_bench.py').read_text(encoding='utf-8')
+    tree = ast.parse(src)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], 'id', '') == 'PROMPTS':
+            return ast.literal_eval(node.value)
+    raise RuntimeError('PROMPTS not found in sankpup_gemma_bench.py')
+
+
 def main():
     items = texts(ROOT / 'eval' / 'test_set.json') + texts(ROOT / 'eval' / 'heldout_v07.json')
     js = r"""
@@ -204,7 +245,8 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
     chat_bad = chat_parity()
     web_bad = web_parity()
     tth_bad = tth_parity()
-    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad else 0
+    sankpup_bad = sankpup_parity()
+    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad else 0
 
 
 if __name__ == '__main__':

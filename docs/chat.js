@@ -9,7 +9,7 @@
   else root.TERAI_CHAT = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '0.10.0';
+  const VERSION = '0.11.0';
   const STATE_VERSION = 1;
   const HISTORY_MAX = 200;
 

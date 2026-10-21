@@ -49,6 +49,10 @@ def main():
                 .replace('__CHITCHAT_JSON__', json.dumps(chitchat, ensure_ascii=False, separators=(',', ':')))
                 .replace('__CHAT_JS__', (DOCS / 'chat.js').read_text(encoding='utf-8'))
                 .replace('__TTH_JS__', (DOCS / 'tth.js').read_text(encoding='utf-8')))
+    # v0.11: SANKPUP offline generator (docs/sankpup.js) and its lexicon are inlined for the SANKPUP tab.
+    lex = json.loads((DATA.parent / 'sankpup' / 'data' / 'lexicon.json').read_text(encoding='utf-8'))
+    html = (html.replace('__SANKPUP_LEXICON__', json.dumps(lex, ensure_ascii=False, separators=(',', ':')))
+                .replace('__SANKPUP_JS__', (DOCS / 'sankpup.js').read_text(encoding='utf-8')))
     (DOCS / 'index.html').write_text(html, encoding='utf-8')
     print('wrote', DOCS / 'index.html', round((DOCS / 'index.html').stat().st_size / 1e6, 2), 'MB')
 

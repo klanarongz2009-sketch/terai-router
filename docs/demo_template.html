@@ -69,6 +69,7 @@
   <div class="tabs" role="tablist">
     <button type="button" class="tab on" id="tab-chat" role="tab" aria-selected="true">Chat</button>
     <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
+    <button type="button" class="tab" id="tab-sankpup" role="tab" aria-selected="false">SANKPUP</button>
   </div>
   <section id="pane-chat">
     <div id="log" class="log" aria-live="polite"></div>
@@ -107,6 +108,15 @@
   </div>
 
   </section>
+  <section id="pane-sankpup" hidden>
+    <p class="sub">SANKPUP (from สร้างภาพ): pictures made purely from code. Here the built-in offline generator writes SVG in your browser (byte-identical to <code>terai sankpup --engine offline</code>); the Python package can also let a local Gemma 4 model write the SVG. No pixel model, no cloud API.</p>
+    <textarea id="sp-in" placeholder="Describe a picture in Thai or English, e.g. แมวสีส้มนั่งบนดวงจันทร์"></textarea>
+    <div class="chips" id="sp-chips"></div>
+    <div class="row"><span class="k">Seed</span><span class="v"><input id="sp-seed" type="number" value="0" min="0" style="width:7em"> <button type="button" class="chip" id="sp-next">New seed</button></span></div>
+    <div class="card" id="sp-art" aria-live="polite" style="padding:8px;max-width:520px"></div>
+    <div class="chips"><button type="button" class="chip" id="sp-png">Download PNG</button><button type="button" class="chip" id="sp-jpg">Download JPG</button><button type="button" class="chip" id="sp-svg">Download SVG code</button></div>
+    <div class="row"><span class="k">Understood</span><span class="v" id="sp-info">-</span></div>
+  </section>
   <footer>Chat __CHAT_VERSION__: rules, tools, session memory and Thai Wikipedia (__KB_COUNT__ articles, CC BY-SA 4.0). The knowledge pack (__KB_MB__ MB, about __KB_GZ_MB__ MB compressed) downloads only when a question needs it. Router model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
 </main>
 <script>__TERAI_JS__</script>
@@ -137,6 +147,42 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
 </script>
 <script>__CHAT_JS__</script>
 <script>__TTH_JS__</script>
+<script>window.SANKPUP_LEXICON = __SANKPUP_LEXICON__;</script>
+<script>__SANKPUP_JS__</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  SANKPUP.setLexicon(window.SANKPUP_LEXICON);
+  let svg = '';
+  function draw() {
+    const prompt = $('sp-in').value, seed = Math.max(0, parseInt($('sp-seed').value, 10) || 0);
+    const r = SANKPUP.compose(prompt, seed);
+    svg = r.svg;
+    $('sp-art').innerHTML = '<img alt="" style="width:100%;height:auto;display:block;border-radius:10px" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) + '">';
+    $('sp-info').textContent = (r.subjects.join(', ') || 'abstract') + (r.scenes.length ? ' | ' + r.scenes.join(', ') : '');
+  }
+  function download(name, href) { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  function raster(type, ext) {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 512;
+      const g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, 512, 512); g.drawImage(img, 0, 0, 512, 512);
+      download('sankpup.' + ext, c.toDataURL(type, 0.9));
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  ['แมวสีส้มนั่งบนดวงจันทร์', 'บ้านหลังเล็กกับต้นไม้สองต้น ตอนกลางคืน', 'เรือใบสีแดงกลางทะเล', 'หุ่นยนต์ถือดอกไม้', 'a rocket flying to Mars', 'mountains at sunset'].forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t;
+    b.addEventListener('click', () => { $('sp-in').value = t; draw(); }); $('sp-chips').appendChild(b);
+  });
+  $('sp-in').addEventListener('input', draw); $('sp-seed').addEventListener('input', draw);
+  $('sp-next').addEventListener('click', () => { $('sp-seed').value = (parseInt($('sp-seed').value, 10) || 0) + 1; draw(); });
+  $('sp-png').addEventListener('click', () => raster('image/png', 'png'));
+  $('sp-jpg').addEventListener('click', () => raster('image/jpeg', 'jpg'));
+  $('sp-svg').addEventListener('click', () => download('sankpup.svg', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)));
+  $('sp-in').value = 'แมวสีส้มนั่งบนดวงจันทร์'; draw();
+})();
+</script>
 <script>
 (function () {
   const CHITCHAT = __CHITCHAT_JSON__;
@@ -242,15 +288,15 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   });
   if (chat.state.history.length) { for (const h of chat.state.history) { bubble(h.user, 'user'); bubble(h.bot, 'bot'); } } else emptyNote();
   renderFacts();
+  const PANES = ['chat', 'router', 'sankpup'];
   function show(which) {
-    const chatOn = which !== 'router';
-    $('pane-chat').hidden = !chatOn; $('pane-router').hidden = chatOn;
-    $('tab-chat').classList.toggle('on', chatOn); $('tab-router').classList.toggle('on', !chatOn);
-    $('tab-chat').setAttribute('aria-selected', String(chatOn)); $('tab-router').setAttribute('aria-selected', String(!chatOn));
+    for (const p of PANES) {
+      const on = p === which;
+      $('pane-' + p).hidden = !on; $('tab-' + p).classList.toggle('on', on); $('tab-' + p).setAttribute('aria-selected', String(on));
+    }
   }
-  $('tab-chat').addEventListener('click', () => { history.replaceState(null, '', '#chat'); show('chat'); });
-  $('tab-router').addEventListener('click', () => { history.replaceState(null, '', '#router'); show('router'); });
-  show(location.hash === '#router' ? 'router' : 'chat');
+  for (const p of PANES) $('tab-' + p).addEventListener('click', () => { history.replaceState(null, '', '#' + p); show(p); });
+  show(PANES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'chat');
 })();
 </script>
 </body>
