@@ -12,6 +12,8 @@ Since v0.10.0 it can also speak: TTH reads Thai aloud with a local open-weight v
 
 Since v0.11.0 it can also make pictures: SANKPUP writes a picture as SVG code, either with a local Gemma 4 model or with a built-in offline generator, then renders it to PNG or JPG. It is not an image model and no cloud API is used. See [SANKPUP: pictures from code](#sankpup-pictures-from-code-v0110).
 
+Since v0.12.0 it can also write and play music in the browser: MuML 1.0 WA reads a Thai or English prompt (mood, BPM, key, length), writes the notes with a seeded Markov note writer and synthesizes every sound with the Web Audio API. The note writer is Markov v1, not the trained MuML 1.0 model yet. See [MuML 1.0 WA: music in the browser](#muml-10-wa-music-in-the-browser-v0120).
+
 ```
 $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
@@ -287,6 +289,37 @@ save(art, "house.png", save_code=True)   # house.png + house.svg
   byte-identical SVG (checked by `eval/parity.py`), and can download PNG, JPG or the SVG code. Gemma is not used in
   the browser.
 
+## MuML 1.0 WA: music in the browser (v0.12.0)
+
+MuML 1.0 WA (MuML 1.0 Web Audio API) is the browser member of the MuML music family. Type a prompt in Thai or
+English, for example `เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 30 วินาที` or `rock reel key of D 120 bpm 30 seconds`,
+pick a style (Auto, Folk or Rock) and a seed, then play it or download `.wav` and `.mid`. Open the MuML tab of the
+[live demo](https://klanarongz2009-sketch.github.io/terai-router/).
+
+```python
+from terai_router import muml_wa
+song = muml_wa.generate("เพลงเศร้า วอลทซ์ คีย์ A minor 30 วินาที", seed=3, style="auto")
+print(song["prompt"]["meter"], song["form"], song["note_writer"])   # 3/4 AB markov-v1
+open("waltz.mid", "wb").write(muml_wa.to_midi(song))     # Standard MIDI File, format 1, 24 ticks per quarter
+```
+
+- **Note writer: Markov v1, not the MuML 1.0 model.** A seeded Markov chain built from the MuML 1.0 training data
+  (Nottingham folk tunes): key-relative pitch order-2 with order-1 back-off, a chord per bar, whole-bar rhythm
+  patterns. It uses the MuML 1.0 token language and the same interface (prompt + seed in, MuML tokens out), so the
+  trained MuML 1.0 network can replace it later. The tab says which note writer is in use.
+- **Sound:** everything is synthesized by the Web Audio API: fiddle-like lead, strummed chords and oom-pah bass for
+  Folk; distorted lead, palm-muted power chords, bass and a synthesized drum kit for Rock; a compressor on the
+  master. No soundfont, no samples, no server, no cloud API. `.wav` is rendered with OfflineAudioContext.
+- **Same in Python and JavaScript:** `terai_router.muml_wa` is the reference; `docs/muml_wa.js` gives the same
+  prompt reading, tokens, notes and `.mid` bytes for the same prompt, seed and style (`eval/parity.py`: 330 of 330).
+- **Limits:** length is rounded to whole 8-bar parts (30 s asked as a jig gives 36.5 s); Folk is quieter than Rock
+  (no loudness normalization); the notes come from a Markov chain, so long-range structure is simple (AABB or AB).
+- **License: code MIT, data GPL-3.0.** The note table is built from the Nottingham Music Database as cleaned by
+  [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset), which is GPL-3.0, so the table
+  is GPL-3.0 too. It is kept in its own files, `src/terai_router/muml_wa/data/markov.json` and
+  `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
+  that reads it stays MIT. Details: [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE).
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -297,7 +330,7 @@ save(art, "house.png", save_code=True)   # house.png + house.svg
 
 `docs/index.html` is a single self-contained page: the model and `docs/terai.js` are inlined, so it works offline and can be hosted on GitHub Pages. Rebuild it with `python docs/build_demo.py`. `python eval/parity.py` checks that the JavaScript and Python versions agree; on the current model they give the same intent and normalized text on all 607 eval sentences (max confidence difference 6.7e-16).
 
-The demo has three tabs: chat, the intent router and SANKPUP (v0.11.0, pictures from code with the offline generator). The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
+The demo has four tabs: chat, the intent router, SANKPUP (v0.11.0, pictures from code with the offline generator) and MuML (v0.12.0, music with the Web Audio API). The MuML note table is loaded from its own GPL-3.0 file, `docs/muml_wa_table.js`; everything else the page needs is inlined. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
 
 Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by default) with the browser's Web Speech API and a Thai voice already on the device. `docs/tth.js` prepares the text the same way as the Python TTH; `python eval/parity.py` checks 1,700 of 1,700 frontend outputs are identical.
 
@@ -305,8 +338,9 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 138 tests (1 more, real speech, with TERAI_TTH_REAL=1)
-python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline
+pytest                          # 169 pass, 1 skipped (real speech, runs with TERAI_TTH_REAL=1)
+python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
+python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
@@ -341,7 +375,7 @@ Email: klanarongz2009@gmail.com
 
 Code: MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
 
-Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. Details and the list of changes are in `DATA_LICENSE`.
+Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. The MuML 1.0 WA note table (`src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js`) is built from the Nottingham Music Database as cleaned by [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset) and is licensed under GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file). Details and the list of changes are in `DATA_LICENSE`.
 
 Speech (TTH, optional, not included in this repository): the Wayu-Paxa-TTS-Edge weights by Paxa Labs / Wayu Research are CC-BY-NC-4.0 (non-commercial, attribution required) and are downloaded from Hugging Face on first use; edge-tts (LGPL-3.0) uses an online Microsoft service. Attribution and details are in `NOTICE`.
 

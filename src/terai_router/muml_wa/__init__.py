@@ -4,9 +4,10 @@ This module is the Python reference for docs/muml_wa.js. Both must produce the s
 the same MuML tokens, the same arranged note events and the same .mid bytes for the same
 (prompt, seed, style). tests/test_muml_wa_js_parity.py checks that.
 
-Note writer (v1.0 prototype): a seeded Markov chain over the MuML 1.0 training data (Nottingham,
+Note writer (markov-v1, released in terai-router v0.12.0): a seeded Markov chain over the MuML 1.0 training data (Nottingham,
 key-relative pitch order-2 with order-1 back-off, bar-level chord transitions, whole-bar rhythm
-patterns), table in data/markov.json. It is NOT the trained MuML 1.0 network; it sits behind the same
+patterns), table in data/markov.json (GPL-3.0 data built from the Nottingham dataset, see DATA_LICENSE;
+this module's code is MIT). It is NOT the trained MuML 1.0 network; it sits behind the same
 interface (prompt + seed -> MuML tokens) so the network can replace it later.
 Sound is made in the browser by docs/muml_wa.js with Web Audio oscillators, filters and noise.
 No dependencies.

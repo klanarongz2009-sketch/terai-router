@@ -21,17 +21,27 @@ src/terai_router/data/knowledge_th.json  (TER-AI Thai knowledge pack, v0.8.0)
   Every answer the Chat class gives from this file ends with the article title and
   "CC BY-SA 4.0" so the source stays visible to the person reading it.
 
-src/terai_router/muml_wa/data/markov.json  (MuML 1.0 WA note table, prototype, not released)
+src/terai_router/muml_wa/data/markov.json  (MuML 1.0 WA note table, Markov v1, since v0.12.0)
+docs/muml_wa_table.js                      (the same table for the web demo's MuML tab)
 
-  Source:    Nottingham Music Database, cleaned by jukedeck/nottingham-dataset
-             (https://github.com/jukedeck/nottingham-dataset), as tokenized for MuML 1.0.
-  License:   GNU General Public License v3.0 (GPL-3.0), the license of that dataset.
+  Source:    Nottingham Music Database (original ABC files: http://abc.sourceforge.net/NMD/),
+             as cleaned by jukedeck/nottingham-dataset
+             (https://github.com/jukedeck/nottingham-dataset, commit
+             0992bb6cd864f6d4b90d6663e08c0ef53ffaa08f), tokenized for MuML 1.0.
+  License:   GNU General Public License v3.0 (GPL-3.0-only), the license of that dataset
+             (its LICENSE.md is the GPL-3.0 text). The full text ships next to each data file:
+             src/terai_router/muml_wa/data/LICENSE-GPL-3.0.txt and docs/LICENSE-GPL-3.0.txt.
   Contents:  counts only: which key-relative pitch follows which, which chord follows which,
              and which whole-bar rhythms occur. No tune is stored. Built by
-             training/muml_wa/build_table.py.
+             training/muml_wa/build_table.py (that script is code, MIT).
+  Marking:   markov.json has a "license" entry and docs/muml_wa_table.js has a license
+             header; both name the source. docs/muml_wa_table.js is a byte copy of
+             markov.json (checked by eval/parity.py and tests/test_muml_wa_js_parity.py).
 
-  Until a licensing decision is made this table is treated as a GPL-3.0 derivative of the
-  dataset. docs/index.html inlines it for the MuML tab, so the same applies there.
+  These two data files are distributed under GPL-3.0. If you share them or a modified
+  version, keep this attribution and the GPL-3.0 license. They are kept as separate files,
+  so the code that reads them (src/terai_router/muml_wa/__init__.py, docs/muml_wa.js,
+  docs/index.html and the rest of the repository) stays MIT.
 
 All other files in src/terai_router/data/ (model.json, typo_pairs.json,
 chitchat_th.json) were written or trained for this project and are MIT licensed

@@ -47,3 +47,22 @@ def test_muml_wa_js_matches_python():
             bad.append((p, s, st))
     assert not bad, bad[:5]
     assert len(items) == 228
+
+
+def test_demo_table_file_is_markov_json_with_license_header():
+    """The web demo loads docs/muml_wa_table.js; it must be a byte copy of markov.json behind a GPL-3.0 header."""
+    page = (ROOT / 'docs' / 'muml_wa_table.js').read_text(encoding='utf-8')
+    head, sep, body = page.partition('window.MUML_WA_TABLE = ')
+    assert sep and body == TABLE.read_text(encoding='utf-8') + ';\n'
+    assert 'GPL-3.0' in head and 'https://github.com/jukedeck/nottingham-dataset' in head
+    assert (ROOT / 'docs' / 'LICENSE-GPL-3.0.txt').read_bytes() == (TABLE.parent / 'LICENSE-GPL-3.0.txt').read_bytes()
+
+
+def test_table_declares_its_license():
+    t = json.loads(TABLE.read_text(encoding='utf-8'))
+    assert t['license']['spdx'] == 'GPL-3.0-only'
+    assert t['license']['source_url'] == 'https://github.com/jukedeck/nottingham-dataset'
+    gpl = (TABLE.parent / 'LICENSE-GPL-3.0.txt').read_text(encoding='utf-8')
+    assert 'GNU GENERAL PUBLIC LICENSE' in gpl and 'Version 3, 29 June 2007' in gpl
+    # the web page must not inline the GPL table into the MIT-licensed page any more
+    assert 'window.MUML_WA_TABLE = {' not in (ROOT / 'docs' / 'index.html').read_text(encoding='utf-8')

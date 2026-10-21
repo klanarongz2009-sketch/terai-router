@@ -233,7 +233,13 @@ def muml_wa_parity():
             if bad <= 5:
                 print('MUML_WA_DIFF', repr(p), s, st)
     print(f'muml wa: prompts={len(prompts)} checks={len(items)} identical={len(items) - bad} diff={bad}')
-    return bad
+    # v0.12: the web demo loads the table from docs/muml_wa_table.js (GPL-3.0 data file with a license header);
+    # it must carry exactly the bytes of markov.json, or the browser would write different songs.
+    page = (ROOT / 'docs' / 'muml_wa_table.js').read_text(encoding='utf-8')
+    head, _, body = page.partition('window.MUML_WA_TABLE = ')
+    same = body == table.read_text(encoding='utf-8') + ';\n' and 'GPL-3.0' in head and 'nottingham-dataset' in head
+    print(f'muml wa: docs/muml_wa_table.js matches markov.json and has the GPL-3.0 header: {same}')
+    return bad + (0 if same else 1)
 
 
 def _bench_prompts():

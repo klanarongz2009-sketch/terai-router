@@ -8,6 +8,18 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 DATA = ROOT / 'src' / 'terai_router' / 'data'
+MUML_TABLE_HEADER = """/*
+ * MuML 1.0 WA note table (Markov v1), used by the MuML tab of the TER-AI web demo.
+ *
+ * LICENSE: GNU General Public License v3.0 (GPL-3.0-only). Full text: LICENSE-GPL-3.0.txt (next to this file).
+ * This file is DATA built from the Nottingham Music Database as cleaned by jukedeck/nottingham-dataset
+ * (https://github.com/jukedeck/nottingham-dataset, commit 0992bb6c, GPL-3.0; original ABC files:
+ * http://abc.sourceforge.net/NMD/). It holds counts only (which pitch follows which, which chord follows
+ * which, which whole-bar rhythms occur); no tune is stored.
+ * It is a byte copy of src/terai_router/muml_wa/data/markov.json, written by docs/build_demo.py.
+ * The code of terai-router (including docs/muml_wa.js) is MIT; this file is not. See DATA_LICENSE.
+ */
+"""
 
 
 def main():
@@ -53,10 +65,16 @@ def main():
     lex = json.loads((DATA.parent / 'sankpup' / 'data' / 'lexicon.json').read_text(encoding='utf-8'))
     html = (html.replace('__SANKPUP_LEXICON__', json.dumps(lex, ensure_ascii=False, separators=(',', ':')))
                 .replace('__SANKPUP_JS__', (DOCS / 'sankpup.js').read_text(encoding='utf-8')))
-    # MuML 1.0 WA: Markov table + Web Audio synth (docs/muml_wa.js) for the MuML tab.
-    mu_table = (DATA.parent / 'muml_wa' / 'data' / 'markov.json').read_text(encoding='utf-8')
-    html = (html.replace('__MUML_WA_TABLE__', mu_table)
-                .replace('__MUML_WA_JS__', (DOCS / 'muml_wa.js').read_text(encoding='utf-8')))
+    # v0.12: MuML 1.0 WA. The synth (docs/muml_wa.js, MIT) is inlined; the Markov table is GPL-3.0 data
+    # (built from the Nottingham dataset), so it is NOT inlined: it ships as its own file,
+    # docs/muml_wa_table.js, with a license header, next to docs/LICENSE-GPL-3.0.txt.
+    mu_dir = DATA.parent / 'muml_wa' / 'data'
+    mu_table = (mu_dir / 'markov.json').read_text(encoding='utf-8')
+    (DOCS / 'muml_wa_table.js').write_text(MUML_TABLE_HEADER + 'window.MUML_WA_TABLE = ' + mu_table + ';\n', encoding='utf-8')
+    gpl = mu_dir / 'LICENSE-GPL-3.0.txt'
+    if not (DOCS / 'LICENSE-GPL-3.0.txt').exists() or (DOCS / 'LICENSE-GPL-3.0.txt').read_bytes() != gpl.read_bytes():
+        shutil.copyfile(gpl, DOCS / 'LICENSE-GPL-3.0.txt')
+    html = html.replace('__MUML_WA_JS__', (DOCS / 'muml_wa.js').read_text(encoding='utf-8'))
     (DOCS / 'index.html').write_text(html, encoding='utf-8')
     print('wrote', DOCS / 'index.html', round((DOCS / 'index.html').stat().st_size / 1e6, 2), 'MB')
 

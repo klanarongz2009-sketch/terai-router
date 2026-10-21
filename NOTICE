@@ -1,7 +1,8 @@
 TER-AI (terai-router)
 Copyright (c) 2026 Clanarong Tammaketuek (Bogus). Made with Sesame.
 
-The code in this repository is MIT licensed (see LICENSE). The knowledge pack is CC BY-SA 4.0 (see DATA_LICENSE).
+The code in this repository is MIT licensed (see LICENSE). The knowledge pack is CC BY-SA 4.0 and the MuML 1.0 WA
+note table is GPL-3.0 (see DATA_LICENSE and the MuML section at the end of this file).
 This file lists third-party work that TTH, the text-to-speech part of TER-AI, can use. None of it is included in
 this repository; each part is installed or downloaded separately and keeps its own license.
 
@@ -50,3 +51,17 @@ downloaded separately and keep their own licenses.
    Installed by the "sankpup" and "sankpup-gemma" extras.
 
 SANKPUP does not call any cloud API.
+
+MuML 1.0 WA (music in the browser with the Web Audio API, v0.12.0)
+Unlike TTH and SANKPUP, MuML 1.0 WA includes third-party-derived data in this repository:
+
+7. Nottingham Music Database, as cleaned by jukedeck/nottingham-dataset
+   Repository: https://github.com/jukedeck/nottingham-dataset (commit 0992bb6cd864f6d4b90d6663e08c0ef53ffaa08f)
+   Original ABC files: http://abc.sourceforge.net/NMD/
+   License: GNU General Public License v3.0 (the repository's LICENSE.md).
+   Used for: the note table src/terai_router/muml_wa/data/markov.json and its web copy docs/muml_wa_table.js
+   (counts of pitch, chord and rhythm transitions; no tune is stored). These two files are GPL-3.0; the full
+   license text is next to each of them (LICENSE-GPL-3.0.txt). The code that reads them stays MIT.
+
+The note writer in v0.12.0 is a seeded Markov chain ("markov-v1"), not the trained MuML 1.0 network. All sound is
+synthesized by the Web Audio API in the browser: no soundfont, no samples, no server, no cloud API.

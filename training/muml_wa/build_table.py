@@ -24,6 +24,18 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# The table is a derivative of the Nottingham dataset, so it carries that dataset's license (GPL-3.0);
+# this script itself is MIT like the rest of the code. See DATA_LICENSE.
+TABLE_LICENSE = {
+    'spdx': 'GPL-3.0-only',
+    'text': 'LICENSE-GPL-3.0.txt (next to this file)',
+    'notice': ('This data file is licensed under the GNU General Public License v3.0, the license of the dataset '
+               'it was built from. The code of terai-router is MIT; this file is not.'),
+    'source': 'Nottingham Music Database, cleaned by jukedeck/nottingham-dataset',
+    'source_url': 'https://github.com/jukedeck/nottingham-dataset',
+    'source_commit': '0992bb6cd864f6d4b90d6663e08c0ef53ffaa08f',
+    'original': 'http://abc.sourceforge.net/NMD/',
+}
 DEFAULT_DATA = Path('/home/sprite/muml-work/data/tunes.json')
 DEFAULT_OUT = ROOT / 'src' / 'terai_router' / 'muml_wa' / 'data' / 'markov.json'
 METER_MAP = {'4/4': '4/4', '2/2': '4/4', '6/8': '6/8', '3/4': '3/4'}
@@ -90,6 +102,7 @@ def build(tunes):
             chords[mode][a][b] += 1
     ck = lambda c: (int(c.split(':')[0]), c.split(':')[1])
     out = {
+        'license': TABLE_LICENSE,
         'format': 'muml-wa-markov-1',
         'source': 'Nottingham Music Database (jukedeck/nottingham-dataset, GPL-3.0), via MuML 1.0 tunes.json',
         'tunes': dict(sorted(used.items())),

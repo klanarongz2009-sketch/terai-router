@@ -119,7 +119,7 @@
     <div class="row"><span class="k">Understood</span><span class="v" id="sp-info">-</span></div>
   </section>
   <section id="pane-muml" hidden>
-    <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. A seeded Markov note writer trained on the MuML 1.0 data (Nottingham folk tunes) writes the notes; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. Same prompt and seed give the same song as <code>terai_router.muml_wa</code> in Python.</p>
+    <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. A seeded Markov note writer trained on the MuML 1.0 data (Nottingham folk tunes) writes the notes; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. Same prompt and seed give the same song as <code>terai_router.muml_wa</code> in Python. The note writer is Markov v1, not the trained MuML 1.0 model yet. License: code MIT; the note table (<a href="muml_wa_table.js">muml_wa_table.js</a>, built from the <a href="https://github.com/jukedeck/nottingham-dataset">Nottingham dataset</a>) is <a href="LICENSE-GPL-3.0.txt">GPL-3.0</a>.</p>
     <textarea id="mu-in" placeholder="Describe the song in Thai or English: mood, BPM, key, length, e.g. เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที"></textarea>
     <div class="chips" id="mu-chips"></div>
     <div class="row"><span class="k">Style</span><span class="v"><select id="mu-style" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"><option value="auto">Auto (from prompt)</option><option value="folk">Folk</option><option value="rock">Rock</option></select></span></div>
@@ -195,7 +195,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   $('sp-in').value = 'แมวสีส้มนั่งบนดวงจันทร์'; draw();
 })();
 </script>
-<script>window.MUML_WA_TABLE = __MUML_WA_TABLE__;</script>
+<script src="muml_wa_table.js"></script>
 <script>__MUML_WA_JS__</script>
 <script>
 (function () {
