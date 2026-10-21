@@ -9,6 +9,8 @@
    every Python chat reply from 2 and 3, with both politeness settings (ครับ and ค่ะ).
 5. SANKPUP offline generator (v0.11): docs/sankpup.js vs terai_router.sankpup.offline, byte-identical SVG for the
    12 Gemma bench prompts, every tth_cases_v10 text and the intent eval sentences, seeds 0-3.
+6. MuML 1.0 WA (prototype): docs/muml_wa.js vs terai_router.muml_wa, identical prompt reading, MuML tokens,
+   arranged notes and .mid bytes for the SANKPUP prompt set plus music prompts, seeds 0-1, styles auto/folk/rock.
 
 Usage: python eval/parity.py   (needs node on PATH)
 """
@@ -205,6 +207,35 @@ def sankpup_parity():
     return bad
 
 
+MUML_WA_JS = r"""
+const M = require(process.argv[1]);
+M.setTable(JSON.parse(require('fs').readFileSync(process.argv[2], 'utf8')));
+const items = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(items.map(([p, s, st]) => { const g = M.generate(p, s, st); return [g, Buffer.from(M.toMidi(g)).toString('hex')]; })));
+"""
+
+
+def muml_wa_parity():
+    from terai_router import muml_wa
+    prompts = [p for _, p in _bench_prompts()]
+    prompts += json.loads((ROOT / 'eval' / 'tth_cases_v10.json').read_text(encoding='utf-8'))['cases']
+    prompts += ['เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'sad waltz in A minor 1 minute', 'calm reel key of G 45 seconds',
+                'happy irish 6/8 key Bb 90 bpm', 'epic metal 180 bpm 2 นาที 10 วิ', 'คีย์ D ไมเนอร์ ร็อค 6/8', '']
+    items = [[p, s, st] for p in prompts for s in (0, 1) for st in ('auto', 'folk', 'rock')]
+    table = ROOT / 'src' / 'terai_router' / 'muml_wa' / 'data' / 'markov.json'
+    res = subprocess.run(['node', '-e', MUML_WA_JS, str(ROOT / 'docs' / 'muml_wa.js'), str(table)],
+                         input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, check=True)
+    bad = 0
+    for (p, s, st), (song, mid) in zip(items, json.loads(res.stdout)):
+        py = muml_wa.generate(p, s, st)
+        if json.loads(json.dumps(py, ensure_ascii=False)) != song or muml_wa.to_midi(py).hex() != mid:
+            bad += 1
+            if bad <= 5:
+                print('MUML_WA_DIFF', repr(p), s, st)
+    print(f'muml wa: prompts={len(prompts)} checks={len(items)} identical={len(items) - bad} diff={bad}')
+    return bad
+
+
 def _bench_prompts():
     import ast
     src = (ROOT / 'eval' / 'sankpup_gemma_bench.py').read_text(encoding='utf-8')
@@ -246,7 +277,8 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
     web_bad = web_parity()
     tth_bad = tth_parity()
     sankpup_bad = sankpup_parity()
-    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad else 0
+    muml_wa_bad = muml_wa_parity()
+    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad or muml_wa_bad else 0
 
 
 if __name__ == '__main__':

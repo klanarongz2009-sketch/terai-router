@@ -53,6 +53,10 @@ def main():
     lex = json.loads((DATA.parent / 'sankpup' / 'data' / 'lexicon.json').read_text(encoding='utf-8'))
     html = (html.replace('__SANKPUP_LEXICON__', json.dumps(lex, ensure_ascii=False, separators=(',', ':')))
                 .replace('__SANKPUP_JS__', (DOCS / 'sankpup.js').read_text(encoding='utf-8')))
+    # MuML 1.0 WA: Markov table + Web Audio synth (docs/muml_wa.js) for the MuML tab.
+    mu_table = (DATA.parent / 'muml_wa' / 'data' / 'markov.json').read_text(encoding='utf-8')
+    html = (html.replace('__MUML_WA_TABLE__', mu_table)
+                .replace('__MUML_WA_JS__', (DOCS / 'muml_wa.js').read_text(encoding='utf-8')))
     (DOCS / 'index.html').write_text(html, encoding='utf-8')
     print('wrote', DOCS / 'index.html', round((DOCS / 'index.html').stat().st_size / 1e6, 2), 'MB')
 

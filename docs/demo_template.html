@@ -70,6 +70,7 @@
     <button type="button" class="tab on" id="tab-chat" role="tab" aria-selected="true">Chat</button>
     <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
     <button type="button" class="tab" id="tab-sankpup" role="tab" aria-selected="false">SANKPUP</button>
+    <button type="button" class="tab" id="tab-muml" role="tab" aria-selected="false">MuML</button>
   </div>
   <section id="pane-chat">
     <div id="log" class="log" aria-live="polite"></div>
@@ -116,6 +117,17 @@
     <div class="card" id="sp-art" aria-live="polite" style="padding:8px;max-width:520px"></div>
     <div class="chips"><button type="button" class="chip" id="sp-png">Download PNG</button><button type="button" class="chip" id="sp-jpg">Download JPG</button><button type="button" class="chip" id="sp-svg">Download SVG code</button></div>
     <div class="row"><span class="k">Understood</span><span class="v" id="sp-info">-</span></div>
+  </section>
+  <section id="pane-muml" hidden>
+    <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. A seeded Markov note writer trained on the MuML 1.0 data (Nottingham folk tunes) writes the notes; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. Same prompt and seed give the same song as <code>terai_router.muml_wa</code> in Python.</p>
+    <textarea id="mu-in" placeholder="Describe the song in Thai or English: mood, BPM, key, length, e.g. เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที"></textarea>
+    <div class="chips" id="mu-chips"></div>
+    <div class="row"><span class="k">Style</span><span class="v"><select id="mu-style" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"><option value="auto">Auto (from prompt)</option><option value="folk">Folk</option><option value="rock">Rock</option></select></span></div>
+    <div class="row"><span class="k">Seed</span><span class="v"><input id="mu-seed" type="number" value="0" min="0" style="width:7em;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"> <button type="button" class="chip" id="mu-next">New seed</button></span></div>
+    <div class="chips"><button type="button" class="chip" id="mu-play">&#9654; Play</button><button type="button" class="chip" id="mu-stop">&#9632; Stop</button><button type="button" class="chip" id="mu-wav">Download .wav</button><button type="button" class="chip" id="mu-mid">Download .mid</button></div>
+    <div class="card" style="padding:12px"><canvas id="mu-roll" width="680" height="160" style="width:100%;height:auto;display:block"></canvas></div>
+    <div class="row"><span class="k">Understood</span><span class="v" id="mu-info">-</span></div>
+    <div class="row"><span class="k">Note writer</span><span class="v" id="mu-writer">-</span></div>
   </section>
   <footer>Chat __CHAT_VERSION__: rules, tools, session memory and Thai Wikipedia (__KB_COUNT__ articles, CC BY-SA 4.0). The knowledge pack (__KB_MB__ MB, about __KB_GZ_MB__ MB compressed) downloads only when a question needs it. Router model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
 </main>
@@ -181,6 +193,53 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   $('sp-jpg').addEventListener('click', () => raster('image/jpeg', 'jpg'));
   $('sp-svg').addEventListener('click', () => download('sankpup.svg', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)));
   $('sp-in').value = 'แมวสีส้มนั่งบนดวงจันทร์'; draw();
+})();
+</script>
+<script>window.MUML_WA_TABLE = __MUML_WA_TABLE__;</script>
+<script>__MUML_WA_JS__</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  MUMLWA.setTable(window.MUML_WA_TABLE);
+  const KEYS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const COLORS = { lead_folk: '#5eead4', lead_rock: '#5eead4', chords_folk: '#64748b', power_rock: '#f87171', bass_folk: '#fbbf24', bass_rock: '#fbbf24' };
+  let song = null;
+  function gen() {
+    song = MUMLWA.generate($('mu-in').value, Math.max(0, parseInt($('mu-seed').value, 10) || 0), $('mu-style').value);
+    const p = song.prompt;
+    $('mu-info').textContent = `${p.style} | ${p.meter} | ${KEYS[p.tonic]} ${p.mode} | ${p.bpm} BPM | ${p.mood} | ${Math.round(MUMLWA.songSeconds(song))} s | form ${song.form}`;
+    $('mu-writer').textContent = 'Markov v1 (MuML 1.0 data). The trained MuML 1.0 network is not in the browser yet.';
+    draw();
+  }
+  function draw() {
+    const c = $('mu-roll'), g = c.getContext('2d');
+    g.fillStyle = '#14181d'; g.fillRect(0, 0, c.width, c.height);
+    const sx = c.width / song.total_ticks;
+    for (const tr of song.tracks) {
+      if (tr.name === 'drums') continue;
+      g.fillStyle = COLORS[tr.name] || '#8b95a3';
+      for (const [s, d, n] of tr.notes) g.fillRect(s * sx, c.height - (n - 24) * 2.2, Math.max(1, d * sx - 1), 2);
+    }
+  }
+  function download(name, bytes, type) {
+    const url = URL.createObjectURL(new Blob([bytes], { type }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  ['เพลงโฟล์คสนุกๆ จิ๊ก', 'เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'เพลงเศร้า วอลทซ์ คีย์ A minor', 'calm folk reel in G major 45 seconds', 'dark rock 6/8 in D minor'].forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t;
+    b.addEventListener('click', () => { $('mu-in').value = t; gen(); }); $('mu-chips').appendChild(b);
+  });
+  $('mu-in').addEventListener('input', gen); $('mu-seed').addEventListener('input', gen); $('mu-style').addEventListener('change', gen);
+  $('mu-next').addEventListener('click', () => { $('mu-seed').value = (parseInt($('mu-seed').value, 10) || 0) + 1; gen(); });
+  $('mu-play').addEventListener('click', () => { gen(); MUMLWA.play(song); });
+  $('mu-stop').addEventListener('click', () => MUMLWA.stop());
+  $('mu-mid').addEventListener('click', () => download('muml-wa.mid', MUMLWA.toMidi(song), 'audio/midi'));
+  $('mu-wav').addEventListener('click', async () => {
+    const b = $('mu-wav'); b.disabled = true; b.textContent = 'Rendering...';
+    try { download('muml-wa.wav', await MUMLWA.renderWav(song), 'audio/wav'); } finally { b.disabled = false; b.textContent = 'Download .wav'; }
+  });
+  $('mu-in').value = 'เพลงโฟล์คสนุกๆ จิ๊ก'; gen();
 })();
 </script>
 <script>
@@ -288,7 +347,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   });
   if (chat.state.history.length) { for (const h of chat.state.history) { bubble(h.user, 'user'); bubble(h.bot, 'bot'); } } else emptyNote();
   renderFacts();
-  const PANES = ['chat', 'router', 'sankpup'];
+  const PANES = ['chat', 'router', 'sankpup', 'muml'];
   function show(which) {
     for (const p of PANES) {
       const on = p === which;
