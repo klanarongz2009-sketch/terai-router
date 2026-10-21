@@ -12,6 +12,7 @@
   terai tth --dry-run "..."     print what TTH would say, chunk by chunk, without making audio
   terai temmo "idea" -o out     Temmo 1.0: build a complete small HTML5 game (BYOK; no key = local Gemma 4)
   terai muml --hiq "เพลงลูกทุ่ง 130 bpm" -o song.mp3  MUML 1.0 HIQ: text-to-music audio (ACE-Step 1.5, CPU)
+  terai term                    TERM AI, the original Terminal AI: limited-time trial, stops at 2027-01-01 00:00:00 UTC+7
 """
 import argparse
 import json
@@ -194,6 +195,10 @@ def main(argv=None):
         return chat_main(argv[1:])
     if argv and argv[0] == 'tth':
         return tth_main(argv[1:])
+    if argv and argv[0] == 'term':
+        # TERM AI limited-time trial: remove this branch on 2027-01-01 00:00:00 UTC+7 (docs/TERM-AI.md)
+        from .term_ai.cli import main as term_main
+        return term_main(argv[1:])
     if argv and argv[0] == 'temmo':
         from .temmo.cli import main as temmo_main
         return temmo_main(argv[1:])

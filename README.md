@@ -4,7 +4,7 @@
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
-What is released today (v0.13.0):
+What is released today (v0.14.0):
 
 | Part | What it does | Since |
 |---|---|---|
@@ -14,6 +14,7 @@ What is released today (v0.13.0):
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
 | MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Notes come from a seeded Markov note writer (Markov v1, not the trained MuML 1.0 model); every sound is made by the Web Audio API. | v0.12.0 |
 | MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
+| TERM AI (limited-time trial) | The original Terminal AI that TER-AI grew from: a Thai terminal chatbot made of rules plus the first own model, TER-AI-0.5. Offline, no dependencies. **Trial: stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.** | v0.14.0 |
 
 Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: https://github.com/klanarongz2009-sketch/terai-router · Wiki: https://github.com/klanarongz2009-sketch/terai-router/wiki
 
@@ -30,14 +31,14 @@ status  1.00  เสร็จหรือยัง
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.13.0, measured 2026-10-21)
+## Results (v0.14.0, measured 2026-10-22)
 
-Run on the v0.13.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+Run on the v0.14.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
 
 | Check | Command | Result |
 |---|---|---|
-| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.167 ms per message (1 thread) |
-| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.213 ms per message (1 thread) |
+| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.169 ms per message (1 thread) |
+| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.26 ms per message (1 thread) |
 | Chat eval, frozen (written before the Chat code) | `python eval/chat_eval.py eval/chat_eval_v08.json` | 81/81 turns, 18/18 conversations |
 | Chat eval, held out | `python eval/chat_eval.py eval/chat_heldout_v08.json` | 37/37 turns, 14/14 conversations |
 | Chat regressions (bugs fixed later) | `python eval/chat_eval.py eval/chat_regress_v08.json` | 16/16 turns, 3/3 conversations |
@@ -47,9 +48,10 @@ Run on the v0.13.0 code with the scripts in this repo. Machine: AMD EPYC, 8 core
 | Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
 | Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | 330/330 checks identical; web note table matches `markov.json` byte for byte |
 | Browser vs Python, Temmo remix rules | `python eval/parity.py` | 42/42 cases identical |
-| Unit tests | `pytest` | 293 passed, 4 skipped (real speech and real model runs, opt-in) |
+| TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
+| Unit tests | `pytest` | 347 passed, 4 skipped (real speech and real model runs, opt-in) |
 
-MUML 1.0 HIQ end to end (same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
+MUML 1.0 HIQ end to end (measured 2026-10-21 for v0.13.0, unchanged since; same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
 
 | Run | Wall time | Peak RSS | CER | Lyric words heard |
 |---|---|---|---|---|
@@ -382,6 +384,31 @@ Engines (`--vocal-engine yue2|ace|split`):
 
 Full details, ASR tables and why there is no LoRA yet: [docs/MUML-HIQ.md](docs/MUML-HIQ.md).
 
+## TERM AI: the original Terminal AI (limited-time trial, v0.14.0)
+
+> **Limited-time trial.** TERM AI works until **2027-01-01 00:00:00 Asia/Bangkok (UTC+7)** (2026-12-31 17:00:00 UTC). At or after that moment `terai term` refuses to run, and TERM AI will be removed from this repository.
+
+TERM AI is the program TER-AI grew from, written on 2026-10-10 before this repository existed: a Thai chatbot for the terminal. Regex rules answer first. When no rule matches, the first model the project trained, TER-AI-0.5 (character 1-3-gram Naive Bayes, 11 intents, 149 training sentences, a 34 KB JSON file), picks an intent; TERM AI answers from it only when the model is at least 90% sure and more than half of the message's 3+ character n-grams were seen in training, otherwise it says it does not understand. It is shipped as it was: same rules, same replies (in Thai), and the same model file, byte for byte, which the tests rebuild exactly from its training data. It is not the current intent router; it is here so you can try where TER-AI started.
+
+```
+terai term                              # interactive; type ออก, exit or quit to end
+terai term "คำนวณ (12+8)*3"
+TERM AI is a limited-time trial: it stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from terai-router then (70 days left).
+TERM AI> (12+8)*3 = 60
+terai term --debug "ช่วยคิดเลข 3 คูณ 4"
+TERM AI> 3 * 4 = 12 [model: calc p=1.00 cov=0.72]
+terai term --trial-info                 # print the end time and exit
+```
+
+The notice line goes to stderr, replies to stdout. It understands greetings, remembering your name (`ผมชื่อ ...`, `ผมชื่ออะไร`), a safe calculator (also with the Thai words บวก ลบ คูณ หาร), the time and date in Thai time, a random number (`สุ่ม 1-100`), reversing and counting text, stats, forget all, "who are you" and "thank you". Memory (only the name you give and a message count) is saved in `~/.terai/term_ai.json`; `--memory PATH` and `--reset` change that. `--config FILE` takes the original JSON config keys. From Python: `from terai_router.term_ai import TermAI; TermAI().reply('สวัสดี')`.
+
+- **Exact cutoff behaviour:** before 2027-01-01 00:00:00 UTC+7 every run prints that one-line notice with the end date and time, then runs (exit code 0). At that moment and after, `terai term` with any arguments, `--help` included, prints ``TERM AI trial ended at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7). It no longer runs and is being removed from terai-router. Use `terai chat` instead.`` to stderr, prints nothing to stdout, does not touch the memory file, and exits with **code 3**. An interactive session still open at midnight stops at the next message the same way. In Python, `TermAI(...)` and `TermAI.reply()` raise `TrialEnded`. Thailand has no daylight saving time, so the limit is a fixed UTC+7 offset. It reads the machine clock: a trial notice, not copy protection.
+- **Accuracy:** 101/149 (67.8%) leave-one-out on its training sentences. There is no held-out test set for this model.
+- **Not in the browser demo:** TERM AI replies only in Thai and the demo UI is English only, so it is CLI and Python only.
+- **License:** code and data MIT, written for this project; no third-party parts.
+
+Details, the full cutoff table and the list of files the removal deletes: [docs/TERM-AI.md](docs/TERM-AI.md).
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -400,12 +427,13 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 293 pass, 4 skipped (real speech and real model runs, opt-in)
+pytest                          # 347 pass, 4 skipped (real speech and real model runs, opt-in)
 python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
 python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
 python eval/muml_hiq_bench.py                      # MUML 1.0 HIQ: render the test prompts (needs --setup first)
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
+python -m terai_router.term_ai.intent_model eval   # TERM AI trial model: leave-one-out 101/149
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows
 python training/train.py        # train
@@ -424,6 +452,10 @@ In progress (not released):
 - MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. Not in this repository yet.
 - TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
 - Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
+
+Ending:
+
+- TERM AI (limited-time trial since v0.14.0): stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.
 
 ## FAQ
 
@@ -450,7 +482,7 @@ Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its o
 | Part | Files | License | In this repository? | Commercial use? |
 |---|---|---|---|---|
 | Code (Python, JavaScript, web demo, scripts) | everything not listed below | MIT ([LICENSE](LICENSE)) | Yes | Yes |
-| Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
+| Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json`; TERM AI trial: `src/terai_router/term_ai/data/model.json`, `train_data.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
 | Thai knowledge pack (from Thai Wikipedia) | `src/terai_router/data/knowledge_th.json` and its web copy `docs/knowledge_th.json` | CC BY-SA 4.0 ([DATA_LICENSE](DATA_LICENSE)) | Yes | Yes, with attribution to Wikipedia contributors and the same license on shared copies |
 | MuML 1.0 WA note table (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
 | Wayu-Paxa-TTS-Edge weights (TTH engine "wayu", by Paxa Labs / Wayu Research) | downloaded from Hugging Face on first use | CC-BY-NC-4.0 plus the Wayu Research Acceptable Use terms ([NOTICE](NOTICE) item 1) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research. Audio made with this engine is non-commercial too |

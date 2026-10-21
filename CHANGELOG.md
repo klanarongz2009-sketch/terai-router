@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.14.0 (2026-10-22)
+
+TERM AI, the original Terminal AI that TER-AI grew from, as a limited-time trial (`terai term`). It stops working at
+2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.
+
+- What it is: the first program of the project (2026-10-10, before this repository): a Thai terminal chatbot with
+  regex rules first, then the TER-AI-0.5 intent model (character 1-3-gram binary Naive Bayes, 11 intents, 149
+  training sentences) behind a confidence (>= 0.9) and n-gram coverage (> 0.5) guard. Rules, replies and thresholds
+  are the original ones; `term_ai/data/model.json` is byte-identical to the original and is rebuilt exactly from
+  `train_data.json` by the tests. Offline, CPU, no dependencies.
+- `terai term` (interactive), `terai term "text"`, `--memory`, `--reset`, `--config`, `--seed`, `--debug`,
+  `--trial-info`; Python API `terai_router.term_ai.TermAI`.
+- Time limit: before 2027-01-01 00:00:00 UTC+7 every run prints a one-line notice with the end date and time to
+  stderr. At or after it, `terai term` with any arguments prints that the trial ended, writes nothing, and exits with
+  code 3; a session open at midnight stops at the next message; the Python API raises `TrialEnded`. Not in the web
+  demo (Thai-only replies, English-only demo UI).
+- Removal list for 2027-01-01: `REMOVAL_PATHS` / `REMOVAL_EDITS` in `term_ai/trial.py` and docs/TERM-AI.md; a test
+  checks the paths exist and that only `cli.py` imports `term_ai`.
+- Results: TERM AI leave-one-out 101/149 (67.8%). pytest 347 passed, 4 skipped (54 new tests, clock injected for
+  before, at and after the cutoff). Parity: router 607 with no diff, chat 790/790, web 24/24, TTH 1700/1700, SANKPUP
+  688/688, MuML WA 330/330, Temmo remix 42/42. Router frozen 121/124, held-out 111/112.
+
 ## v0.13.0 (2026-10-21)
 
 MUML 1.0 HIQ: text-to-music audio on CPU (`terai muml --hiq`), released. Built on other open models; no weights

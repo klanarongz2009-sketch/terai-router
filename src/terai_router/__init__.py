@@ -7,7 +7,7 @@
 from .model import IntentModel, features
 from .normalizer import normalize, skeleton
 
-__version__ = '0.13.0'
+__version__ = '0.14.0'
 __all__ = ['IntentModel', 'route', 'normalize', 'skeleton', 'features', 'INTENTS', 'Chat', 'Knowledge', '__version__']
 
 INTENTS = {
