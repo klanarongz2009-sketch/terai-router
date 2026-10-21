@@ -116,7 +116,7 @@
   function play(entry) {
     current = entry;
     $('temmo-frame').srcdoc = entry.html;
-    $('temmo-now').textContent = (entry.game.title_th || entry.game.title) + (entry.game.remix_of ? '  (remix)' : '');
+    $('temmo-now').textContent = (entry.game.title || entry.game.title_th) + (entry.game.remix_of ? '  (remix)' : '');
     $('temmo-remix-box').hidden = false;
   }
 
@@ -125,9 +125,12 @@
     el.className = 'temmo-card';
     el.style.cssText = 'border:1px solid #2b3445;border-radius:8px;padding:10px;margin:6px 0;background:#121722';
     const sw = PALETTE_KEYS.map((k) => '<span title="' + k + '" style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + esc((g.palette || {})[k] || '#333') + '"></span>').join(' ');
-    el.innerHTML = '<b>' + esc(g.title_th || g.title) + '</b> <small>' + esc(g.title) + '</small><br><small>' + esc(g.tagline) + '</small><br>' + sw +
-      '<br><small>' + esc(entry.by || (mine ? 'รีมิกซ์ของฉัน' : '')) + ' · ' + (g.levels || []).length + ' ด่าน</small><br>' +
-      '<button data-a="play">เล่น</button> <button data-a="remix">Remix</button> <button data-a="share">แชร์ (.html)</button>';
+    // The card is English: the English title and the English tagline (tagline_en in games/index.json).
+    // A tagline typed in a remix is the player's own text and is shown as typed.
+    const n = (g.levels || []).length;
+    el.innerHTML = '<b>' + esc(g.title || g.title_th) + '</b><br><small>' + esc(entry.tagline_en || '') + '</small><br>' + sw +
+      '<br><small>' + esc(entry.by || (mine ? 'my remix' : '')) + ' · ' + n + (n === 1 ? ' level' : ' levels') + '</small><br>' +
+      '<button data-a="play">Play</button> <button data-a="remix">Remix</button> <button data-a="share">Share (.html)</button>';
     el.querySelector('[data-a=play]').onclick = () => play(entry);
     el.querySelector('[data-a=remix]').onclick = () => { play(entry); $('temmo-remix-text').focus(); };
     el.querySelector('[data-a=share]').onclick = () => share(entry);
@@ -139,13 +142,13 @@
     const a = doc.createElement('a');
     a.href = URL.createObjectURL(new Blob([entry.html], { type: 'text/html' }));
     a.download = name; doc.body.appendChild(a); a.click(); a.remove();
-    log('ส่งออกแล้ว: ' + name + ' ไฟล์เดียว เปิดเล่นได้ใน browser ไม่ต้องต่อเน็ต');
+    log('Saved ' + name + ': one file that plays in any browser, offline.');
   }
 
   function renderMine() {
     const box = $('temmo-mine'); box.innerHTML = '';
     const mine = JSON.parse(localStorage.getItem(MINE) || '[]');
-    if (!mine.length) { box.innerHTML = '<small>ยังไม่มี remix</small>'; return; }
+    if (!mine.length) { box.innerHTML = '<small>No remixes yet</small>'; return; }
     for (const e of mine) box.appendChild(card(e, true));
   }
 
@@ -154,7 +157,7 @@
     let st = await r.json();
     if (!r.ok) throw new Error(st.message || st.error);
     for (let i = 0; i < 120 && st.state !== 'done' && st.state !== 'failed'; i++) {
-      log('คิวที่ ' + (st.position || '-') + ' · เหลือ remix วันนี้ ' + (st.left == null ? '?' : st.left));
+      log('Queue position ' + (st.position || '-') + ' · remixes left today: ' + (st.left == null ? '?' : st.left));
       await new Promise((ok) => setTimeout(ok, 1500));
       st = await (await fetch(url.replace(/\/$/, '') + '/api/job?id=' + st.id)).json();
     }
@@ -165,17 +168,18 @@
   $('temmo-remix-go').onclick = async () => {
     if (!current) return;
     const text = $('temmo-remix-text').value.trim();
-    if (!text) { log('พิมพ์สิ่งที่อยากแก้ก่อน'); return; }
+    if (!text) { log('Type what you want to change first.'); return; }
     const url = $('temmo-server').value.trim();
     let res;
     try { res = url ? await serverRemix(url, current.game, text) : remix(current.game, text); }
-    catch (e) { log('server ไม่ตอบ (' + e.message + ') ใช้ตัวแก้ในหน้าเว็บแทน'); res = remix(current.game, text); }
-    if (!Object.keys(res.patch).length) { log('ยังไม่เจอสิ่งที่แก้ได้ ลองเช่น "พื้นหลังสีชมพู ยากขึ้น" หรือ ชื่อเกม "..."'); return; }
-    const entry = { html: writeGame(current.html, res.game), game: res.game, by: 'remix (' + res.source + ')' };
+    catch (e) { log('The server did not answer (' + e.message + '); using the remix rules in this page instead.'); res = remix(current.game, text); }
+    if (!Object.keys(res.patch).length) { log('Found nothing to change. Try e.g. "pink background, harder" or title "..."'); return; }
+    const entry = { html: writeGame(current.html, res.game), game: res.game, by: 'remix (' + res.source + ')',
+      tagline_en: res.patch.tagline || current.tagline_en || '' };
     const mine = JSON.parse(localStorage.getItem(MINE) || '[]');
     mine.unshift(entry); localStorage.setItem(MINE, JSON.stringify(mine.slice(0, 5)));
     renderMine(); play(entry);
-    log('remix แล้ว (' + res.source + '): ' + JSON.stringify(res.patch));
+    log('Remixed (' + res.source + '): ' + JSON.stringify(res.patch));
   };
   $('temmo-share-now').onclick = () => current && share(current);
 
@@ -183,10 +187,10 @@
     const box = $('temmo-community'); box.innerHTML = '';
     for (const it of list.games) {
       const html = await (await fetch(BASE + it.file)).text();
-      const entry = { html: html, game: readGame(html), by: it.by };
+      const entry = { html: html, game: readGame(html), by: it.by, tagline_en: it.tagline_en || '' };
       box.appendChild(card(entry, false));
       if (!current) play(entry);
     }
     renderMine();
-  }).catch((e) => log('โหลดรายการเกมไม่ได้: ' + e.message));
+  }).catch((e) => log('Could not load the game list: ' + e.message));
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -17,6 +17,8 @@
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 22px; }
   .chip { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:6px 12px; font:inherit; font-size:14px; cursor:pointer; }
   .chip:hover { color:var(--text); border-color:var(--accent); }
+  .chip .gloss { color:var(--muted); font-size:12px; margin-left:6px; opacity:.8; }
+  .chips-label { color:var(--muted); font-size:13px; margin:12px 0 -14px; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
   .intent { font-size:30px; font-weight:700; color:var(--accent); letter-spacing:.3px; }
   .intent.low { color:var(--warn); }
@@ -77,17 +79,18 @@
     <div id="log" class="log" aria-live="polite"></div>
     <div id="kbload" class="kbload" hidden></div>
     <form id="chatform" class="chatform" autocomplete="off">
-      <input id="msg" type="text" enterkeyhint="send" placeholder="พิมพ์ข้อความ เช่น ดาวอังคารคืออะไร" aria-label="Message">
+      <input id="msg" type="text" enterkeyhint="send" placeholder="Type a message in Thai, e.g. What is Mars? (ดาวอังคารคืออะไร)" aria-label="Message">
       <button type="submit" id="send">Send</button>
     </form>
     <div class="webrow">
       <label class="switch" for="webtoggle"><input type="checkbox" id="webtoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Web search (Wikipedia)</span></label>
-      <span id="webstate" class="webnote">Off: every answer comes from this page. On: questions the built-in knowledge cannot answer, and questions about current facts (ปัจจุบัน, ล่าสุด, ตอนนี้), are sent to th.wikipedia.org and en.wikipedia.org. Your name, memory and chat history are never sent.</span>
+      <span id="webstate" class="webnote">Off: every answer comes from this page. On: questions the built-in knowledge cannot answer, and questions about current facts (asking for what is current, latest or happening now), are sent to th.wikipedia.org and en.wikipedia.org. Your name, memory and chat history are never sent.</span>
     </div>
     <div class="webrow">
       <label class="switch" for="speaktoggle"><input type="checkbox" id="speaktoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Speak replies (TTH)</span></label>
       <span id="speakstate" class="webnote">Reads each reply aloud with a Thai (th-TH) voice already on your device, through the browser's Web Speech API. Nothing is downloaded or sent by this page. The Wayu voice of TTH runs only in the Python package (terai tth).</span>
     </div>
+    <div class="chips-label">Try an example. Chat understands Thai; the English meaning is shown in grey.</div>
     <div class="chips" id="cchips"></div>
     <details id="mem" class="mem" open>
       <summary>Memory: facts stored in this browser</summary>
@@ -98,6 +101,7 @@
   <section id="pane-router" hidden>
 
   <textarea id="in" placeholder="Type Thai here, typos welcome"></textarea>
+  <div class="chips-label">Try an example. The router reads Thai (typos on purpose); the English meaning is shown in grey.</div>
   <div class="chips" id="chips"></div>
 
   <div class="card" id="out" aria-live="polite">
@@ -111,8 +115,9 @@
 
   </section>
   <section id="pane-sankpup" hidden>
-    <p class="sub">SANKPUP (from สร้างภาพ): pictures made purely from code. Here the built-in offline generator writes SVG in your browser (byte-identical to <code>terai sankpup --engine offline</code>); the Python package can also let a local Gemma 4 model write the SVG. No pixel model, no cloud API.</p>
-    <textarea id="sp-in" placeholder="Describe a picture in Thai or English, e.g. แมวสีส้มนั่งบนดวงจันทร์"></textarea>
+    <p class="sub">SANKPUP (from the Thai words "sang phap", make a picture): pictures made purely from code. Here the built-in offline generator writes SVG in your browser (byte-identical to <code>terai sankpup --engine offline</code>); the Python package can also let a local Gemma 4 model write the SVG. No pixel model, no cloud API.</p>
+    <textarea id="sp-in" placeholder="Describe a picture in Thai or English, e.g. an orange cat sitting on the moon"></textarea>
+    <div class="chips-label">Examples in English and Thai (English meaning shown in grey).</div>
     <div class="chips" id="sp-chips"></div>
     <div class="row"><span class="k">Seed</span><span class="v"><input id="sp-seed" type="number" value="0" min="0" style="width:7em"> <button type="button" class="chip" id="sp-next">New seed</button></span></div>
     <div class="card" id="sp-art" aria-live="polite" style="padding:8px;max-width:520px"></div>
@@ -121,7 +126,8 @@
   </section>
   <section id="pane-muml" hidden>
     <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. A seeded Markov note writer trained on the MuML 1.0 data (Nottingham folk tunes) writes the notes; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. Same prompt and seed give the same song as <code>terai_router.muml_wa</code> in Python. The note writer is Markov v1, not the trained MuML 1.0 model yet. License: code MIT; the note table (<a href="muml_wa_table.js">muml_wa_table.js</a>, built from the <a href="https://github.com/jukedeck/nottingham-dataset">Nottingham dataset</a>) is <a href="LICENSE-GPL-3.0.txt">GPL-3.0</a>.</p>
-    <textarea id="mu-in" placeholder="Describe the song in Thai or English: mood, BPM, key, length, e.g. เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที"></textarea>
+    <textarea id="mu-in" placeholder="Describe the song in Thai or English: mood, BPM, key, length, e.g. energetic rock 140 bpm in E minor 20 seconds"></textarea>
+    <div class="chips-label">Examples in English and Thai (English meaning shown in grey).</div>
     <div class="chips" id="mu-chips"></div>
     <div class="row"><span class="k">Style</span><span class="v"><select id="mu-style" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"><option value="auto">Auto (from prompt)</option><option value="folk">Folk</option><option value="rock">Rock</option></select></span></div>
     <div class="row"><span class="k">Seed</span><span class="v"><input id="mu-seed" type="number" value="0" min="0" style="width:7em;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"> <button type="button" class="chip" id="mu-next">New seed</button></span></div>
@@ -131,29 +137,29 @@
     <div class="row"><span class="k">Note writer</span><span class="v" id="mu-writer">-</span></div>
   </section>
 <section id="pane-temmo" hidden>
-  <h2>Temmo 1.0 <small>AI สร้างเกม indie แบบเต็มเกม (prototype, ยังไม่ release)</small></h2>
-  <p class="note">เกมตัวอย่างข้างล่างสร้างโดย <code>terai temmo</code> ด้วย Gemma 4 E2B ที่รันในเครื่อง (ฟรี ไม่ต้องมี key) มีเมนู 3 ด่าน ชนะ/แพ้ เสียง เพลง และ high score กดเริ่มแล้วใช้ลูกศร/WASD หรือแตะจอ</p>
-  <h3>ชุมชน Temmo <small>เล่น · remix · แชร์ ไม่ต้องมี key</small></h3>
+  <h2>Temmo 1.0 <small>AI that makes a complete indie game (prototype, not released yet)</small></h2>
+  <p class="note">The sample game below was made by <code>terai temmo</code> with Gemma 4 E2B running locally (free, no key needed). It has a menu, 3 levels, win and lose screens, sound, music and a high score table. Press Start, then use the arrow keys, WASD or tap the screen. The game's own story and spoken lines are Thai game content.</p>
+  <h3>Temmo community <small>play · remix · share, no key needed</small></h3>
   <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
-    <div style="flex:1 1 260px;min-width:240px"><div id="temmo-community"><small>กำลังโหลดเกม...</small></div>
-      <h4>remix ของฉัน <small>(เก็บในเครื่องนี้ 5 อันล่าสุด)</small></h4><div id="temmo-mine"></div></div>
+    <div style="flex:1 1 260px;min-width:240px"><div id="temmo-community"><small>Loading games...</small></div>
+      <h4>My remixes <small>(the last 5, kept on this device)</small></h4><div id="temmo-mine"></div></div>
     <div style="flex:2 1 420px">
-      <div><b id="temmo-now"></b> <button id="temmo-share-now">แชร์เกมนี้ (.html)</button></div>
+      <div><b id="temmo-now"></b> <button id="temmo-share-now">Share this game (.html)</button></div>
       <iframe id="temmo-frame" title="Temmo game" style="width:100%;max-width:720px;aspect-ratio:4/3;border:1px solid #2b3445;border-radius:8px;background:#0b0d10"></iframe>
       <div id="temmo-remix-box" hidden>
-        <label>Remix เกมนี้ <input id="temmo-remix-text" size="44" placeholder='เช่น พื้นหลังสีชมพู กำแพงสีน้ำตาล ยากขึ้น หรือ ชื่อเกม "..."'></label>
+        <label>Remix this game <input id="temmo-remix-text" size="44" placeholder='e.g. pink background, brown wall, harder, or title "..."'></label>
         <button id="temmo-remix-go">Remix</button><br>
-        <label><small>Temmo server (ไม่ใส่ก็ได้ ถ้ามีจะใช้ AI ฟรีของ server ผ่านคิว มี quota ต่อวัน)</small> <input id="temmo-server" size="30" placeholder="http://127.0.0.1:8765"></label>
+        <label><small>Temmo server (optional: if set, the remix uses the server's free AI through a queue with a daily quota)</small> <input id="temmo-server" size="30" placeholder="http://127.0.0.1:8765"></label>
       </div>
       <pre id="temmo-c-log" style="white-space:pre-wrap;max-height:90px;overflow:auto"></pre>
     </div>
   </div>
-  <details style="margin-top:12px"><summary>สร้างเกมใหม่ด้วย key ของคุณเอง (BYOK)</summary>
-    <p class="note">key อยู่ในหน้านี้เท่านั้น ไม่ถูกบันทึกและไม่ส่งไปที่อื่นนอกจาก provider ที่เลือก ใช้ได้เฉพาะคนที่ผ่านเงื่อนไขอายุและ Terms ของ provider นั้น</p>
-    <label>Provider <select id="temmo-provider"><option value="gemini">Gemini (gemini-3.6-flash)</option><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="deepseek">DeepSeek (อาจติด CORS)</option></select></label>
+  <details style="margin-top:12px"><summary>Make a new game with your own key (BYOK)</summary>
+    <p class="note">Your key stays in this page only. It is not saved and is sent nowhere except the provider you pick. Use it only if you meet that provider's age requirement and Terms.</p>
+    <label>Provider <select id="temmo-provider"><option value="gemini">Gemini (gemini-3.6-flash)</option><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="deepseek">DeepSeek (may be blocked by CORS)</option></select></label>
     <label>API key <input id="temmo-key" type="password" autocomplete="off" size="28"></label><br>
-    <label>ไอเดียเกม <input id="temmo-idea" size="48" value="นินจาเก็บม้วนคัมภีร์ในวัดร้าง หลบผีกระสือ"></label>
-    <button id="temmo-go">สร้าง GDD แล้วเล่น</button>
+    <label>Game idea <input id="temmo-idea" size="48" value="A ninja collects scrolls in an abandoned temple and dodges Krasue ghosts"></label>
+    <button id="temmo-go">Make the GDD and play</button>
     <pre id="temmo-log" style="white-space:pre-wrap;max-height:160px;overflow:auto"></pre>
   </details>
 </section>
@@ -164,7 +170,13 @@
 const MODEL = __MODEL_JSON__;
 const TYPO = __TYPO_JSON__;
 const R = TERAI.create(MODEL, TYPO);
-const EXAMPLES = ["เส็ดหรือยัง", "ช้วยบวก 2+3", "ทำต่อ", "หวัดดีคับ", "ตอนนี้กี่โมงแล้ว", "สุ่มเลขให้หน่อย", "ลืมทั้งหมด", "ขอบคุนนะ"];
+// Example chips: [prompt, English meaning]. A Thai prompt shows its English meaning in grey; clicking uses the prompt.
+function exampleChip(box, prompt, meaning, pick) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = prompt;
+  if (meaning) { const s = document.createElement('span'); s.className = 'gloss'; s.textContent = meaning; b.appendChild(s); b.title = meaning; }
+  b.addEventListener('click', () => pick(prompt)); document.getElementById(box).appendChild(b);
+}
+const EXAMPLES = [["เส็ดหรือยัง", "done yet? (typo)"], ["ช้วยบวก 2+3", "please add 2+3 (typo)"], ["ทำต่อ", "keep going"], ["หวัดดีคับ", "hi (casual spelling)"], ["ตอนนี้กี่โมงแล้ว", "what time is it?"], ["สุ่มเลขให้หน่อย", "pick a random number"], ["ลืมทั้งหมด", "forget everything"], ["ขอบคุนนะ", "thanks (typo)"]];
 const $ = id => document.getElementById(id);
 const LOW = 0.5;
 function run() {
@@ -183,7 +195,7 @@ function run() {
   $('top').innerHTML = r.ranking.map(([c, p]) => `<div><span>${c}</span><span class="bar"><i style="width:${(p*100).toFixed(1)}%"></i></span><span>${(p*100).toFixed(1)}%</span></div>`).join('');
 }
 $('in').addEventListener('input', run);
-EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = x; b.onclick = () => { $('in').value = x; run(); $('in').focus(); }; $('chips').appendChild(b); });
+EXAMPLES.forEach(([x, en]) => exampleChip('chips', x, en, t => { $('in').value = t; run(); $('in').focus(); }));
 </script>
 <script>__CHAT_JS__</script>
 <script>__TTH_JS__</script>
@@ -211,16 +223,15 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
-  ['แมวสีส้มนั่งบนดวงจันทร์', 'บ้านหลังเล็กกับต้นไม้สองต้น ตอนกลางคืน', 'เรือใบสีแดงกลางทะเล', 'หุ่นยนต์ถือดอกไม้', 'a rocket flying to Mars', 'mountains at sunset'].forEach(t => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t;
-    b.addEventListener('click', () => { $('sp-in').value = t; draw(); }); $('sp-chips').appendChild(b);
-  });
+  [['an orange cat sitting on the moon', ''], ['a robot holding a flower', ''], ['a rocket flying to Mars', ''], ['mountains at sunset', ''],
+   ['แมวสีส้มนั่งบนดวงจันทร์', 'an orange cat sitting on the moon'], ['บ้านหลังเล็กกับต้นไม้สองต้น ตอนกลางคืน', 'a small house with two trees at night'], ['เรือใบสีแดงกลางทะเล', 'a red sailboat at sea'], ['หุ่นยนต์ถือดอกไม้', 'a robot holding a flower']]
+    .forEach(([t, en]) => exampleChip('sp-chips', t, en, p => { $('sp-in').value = p; draw(); }));
   $('sp-in').addEventListener('input', draw); $('sp-seed').addEventListener('input', draw);
   $('sp-next').addEventListener('click', () => { $('sp-seed').value = (parseInt($('sp-seed').value, 10) || 0) + 1; draw(); });
   $('sp-png').addEventListener('click', () => raster('image/png', 'png'));
   $('sp-jpg').addEventListener('click', () => raster('image/jpeg', 'jpg'));
   $('sp-svg').addEventListener('click', () => download('sankpup.svg', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)));
-  $('sp-in').value = 'แมวสีส้มนั่งบนดวงจันทร์'; draw();
+  $('sp-in').value = 'an orange cat sitting on the moon'; draw();
 })();
 </script>
 <script src="muml_wa_table.js"></script>
@@ -254,10 +265,9 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  ['เพลงโฟล์คสนุกๆ จิ๊ก', 'เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'เพลงเศร้า วอลทซ์ คีย์ A minor', 'calm folk reel in G major 45 seconds', 'dark rock 6/8 in D minor'].forEach(t => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t;
-    b.addEventListener('click', () => { $('mu-in').value = t; gen(); }); $('mu-chips').appendChild(b);
-  });
+  [['happy folk jig', ''], ['energetic rock 140 bpm in E minor 20 seconds', ''], ['calm folk reel in G major 45 seconds', ''], ['dark rock 6/8 in D minor', ''],
+   ['เพลงโฟล์คสนุกๆ จิ๊ก', 'a fun folk jig'], ['เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'a high-energy rock song, 140 bpm, E minor, 20 seconds'], ['เพลงเศร้า วอลทซ์ คีย์ A minor', 'a sad waltz in A minor']]
+    .forEach(([t, en]) => exampleChip('mu-chips', t, en, p => { $('mu-in').value = p; gen(); }));
   $('mu-in').addEventListener('input', gen); $('mu-seed').addEventListener('input', gen); $('mu-style').addEventListener('change', gen);
   $('mu-next').addEventListener('click', () => { $('mu-seed').value = (parseInt($('mu-seed').value, 10) || 0) + 1; gen(); });
   $('mu-play').addEventListener('click', () => { gen(); MUMLWA.play(song); });
@@ -267,7 +277,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
     const b = $('mu-wav'); b.disabled = true; b.textContent = 'Rendering...';
     try { download('muml-wa.wav', await MUMLWA.renderWav(song), 'audio/wav'); } finally { b.disabled = false; b.textContent = 'Download .wav'; }
   });
-  $('mu-in').value = 'เพลงโฟล์คสนุกๆ จิ๊ก'; gen();
+  $('mu-in').value = 'happy folk jig'; gen();
 })();
 </script>
 <script>
@@ -370,9 +380,8 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   }
   $('chatform').addEventListener('submit', ev => { ev.preventDefault(); ask(msg.value); });
   $('reset').addEventListener('click', () => { chat.forget(); emptyNote(); renderFacts(); });
-  ['สวัสดี', 'ผมชื่อบอส', '12*7', 'แล้ว 5 ล่ะ', 'ผมชื่ออะไร', 'ผมอยู่ ม.4', 'ดาวอังคารคืออะไร', 'เล่าต่อ', '100 กิโลเมตรเป็นกี่ไมล์', 'จำอะไรเกี่ยวกับผมได้บ้าง'].forEach(t => {
-    const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.addEventListener('click', () => ask(t)); $('cchips').appendChild(c);
-  });
+  [['สวัสดี', 'hello'], ['ผมชื่อบอส', 'my name is Boss'], ['12*7', ''], ['แล้ว 5 ล่ะ', 'and 5?'], ['ผมชื่ออะไร', 'what is my name?'], ['ผมอยู่ ม.4', 'I am in grade 10'], ['ดาวอังคารคืออะไร', 'what is Mars?'], ['เล่าต่อ', 'tell me more'], ['100 กิโลเมตรเป็นกี่ไมล์', 'how many miles is 100 km?'], ['จำอะไรเกี่ยวกับผมได้บ้าง', 'what do you remember about me?']]
+    .forEach(([t, en]) => exampleChip('cchips', t, en, ask));
   if (chat.state.history.length) { for (const h of chat.state.history) { bubble(h.user, 'user'); bubble(h.bot, 'bot'); } } else emptyNote();
   renderFacts();
   const PANES = ['chat', 'router', 'sankpup', 'muml', 'temmo'];

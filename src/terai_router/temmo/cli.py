@@ -51,7 +51,7 @@ def main(argv=None) -> int:
             print(f"{r:7s} -> {n:12s} {DEFAULT_MODELS.get(n, '')}{note}")
         return 0
     if not a.idea:
-        print("terai temmo: give a game idea, e.g. terai temmo \"แมวเก็บปลาหนีหมา\"", file=sys.stderr)
+        print("terai temmo: give a game idea, e.g. terai temmo \"a cat collects fish and runs from a dog\"", file=sys.stderr)
         return 2
     from .pipeline import build
     rep = build(" ".join(a.idea), a.out, roles=over, seed=a.seed, test=not a.no_test, voice=not a.no_voice, mod=not a.no_mod,

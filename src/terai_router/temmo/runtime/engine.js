@@ -217,12 +217,12 @@
     text(G.title, cv.width / 2, 110, 42, P.gem); if (G.title_th) text(G.title_th, cv.width / 2, 148, 22);
     wrap(G.tagline || '', cv.width / 2, 186, cv.width - 80, 16);
     const s = store.get();
-    btn('เริ่มเกม / Start', cv.width / 2 - 120, 240, 240, 44, () => startGame(0));
-    if (s.unlocked && s.unlocked < G.levels.length) btn('เล่นต่อ ด่าน ' + (s.unlocked + 1), cv.width / 2 - 120, 294, 240, 44, () => startGame(s.unlocked));
-    btn(muted ? 'เสียง: ปิด (M)' : 'เสียง: เปิด (M)', cv.width / 2 - 120, 348, 240, 44, () => setMuted(!muted));
-    text('คะแนนสูงสุด', cv.width / 2, 420, 18, P.gem);
-    (s.scores || []).slice(0, 5).forEach((r, i) => text((i + 1) + '. ' + r.name + '  ' + r.score + '  (ด่าน ' + r.cleared + '/' + G.levels.length + ')', cv.width / 2, 446 + i * 22, 15));
-    text('ลูกศร/WASD หรือแตะจอ เก็บ ' + (G.gem_name || 'อัญมณี') + ' ให้ครบแล้วไปที่ประตู หลบ ' + (G.enemy_name || 'ศัตรู'), cv.width / 2, cv.height - 18, 13);
+    btn('Start', cv.width / 2 - 120, 240, 240, 44, () => startGame(0));
+    if (s.unlocked && s.unlocked < G.levels.length) btn('Continue: level ' + (s.unlocked + 1), cv.width / 2 - 120, 294, 240, 44, () => startGame(s.unlocked));
+    btn(muted ? 'Sound: off (M)' : 'Sound: on (M)', cv.width / 2 - 120, 348, 240, 44, () => setMuted(!muted));
+    text('High scores', cv.width / 2, 420, 18, P.gem);
+    (s.scores || []).slice(0, 5).forEach((r, i) => text((i + 1) + '. ' + r.name + '  ' + r.score + '  (level ' + r.cleared + '/' + G.levels.length + ')', cv.width / 2, 446 + i * 22, 15));
+    text('Arrows/WASD or tap: collect every ' + (G.gem_name || 'gem') + ', then reach the door. Avoid ' + (G.enemy_name || 'enemies'), cv.width / 2, cv.height - 18, 13);
   }
   function drawLevel() {
     const top = 40, cs = Math.floor(Math.min(cv.width / L.w, (cv.height - top) / L.h)), ox = Math.floor((cv.width - cs * L.w) / 2);
@@ -239,22 +239,22 @@
     }
     L.enemies.forEach(e => cell('enemy', e.x, e.y, P.enemy));
     if (!(L.inv > 0 && (L.tick % 2))) cell('player', L.px, L.py, P.player, 'circle');
-    text('ด่าน ' + (state.level + 1) + '/' + G.levels.length + ': ' + (L.spec.name || ''), 12, 26, 16, P.ui, 'left');
-    text('คะแนน ' + state.score + '   ชีวิต ' + '♥'.repeat(Math.max(0, state.lives)) + '   เวลา ' + Math.ceil(state.time) + '   เหลือ ' + L.gems, cv.width - 12, 26, 16, P.ui, 'right');
+    text('Level ' + (state.level + 1) + '/' + G.levels.length + ': ' + (L.spec.name || ''), 12, 26, 16, P.ui, 'left');
+    text('Score ' + state.score + '   Lives ' + '♥'.repeat(Math.max(0, state.lives)) + '   Time ' + Math.ceil(state.time) + '   Left ' + L.gems, cv.width - 12, 26, 16, P.ui, 'right');
   }
   function drawEnd(title, sub) {
     text(title, cv.width / 2, 150, 40, state.result === 'win' ? P.gem : P.enemy); wrap(sub, cv.width / 2, 200, cv.width - 80, 17);
-    text('คะแนน ' + state.score + ' | ผ่าน ' + state.cleared + '/' + G.levels.length + ' ด่าน', cv.width / 2, 270, 20);
+    text('Score ' + state.score + ' | cleared ' + state.cleared + '/' + G.levels.length + ' levels', cv.width / 2, 270, 20);
     (state.highscores || []).forEach((r, i) => text((i + 1) + '. ' + r.name + '  ' + r.score, cv.width / 2, 310 + i * 22, 15));
-    btn('เมนู / Menu', cv.width / 2 - 120, 440, 240, 44, () => { state.screen = 'menu'; });
+    btn('Menu', cv.width / 2 - 120, 440, 240, 44, () => { state.screen = 'menu'; });
   }
   function draw() {
     buttons.length = 0; g.fillStyle = P.bg; g.fillRect(0, 0, cv.width, cv.height);
     if (state.screen === 'menu') drawMenu();
     else if (state.screen === 'playing') drawLevel();
-    else if (state.screen === 'levelclear') { drawLevel(); g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(0, 0, cv.width, cv.height); text('ผ่านด่าน ' + (state.level + 1) + '!', cv.width / 2, 200, 36, P.gem); btn('ด่านต่อไป', cv.width / 2 - 120, 260, 240, 44, next); }
-    else if (state.screen === 'victory') drawEnd(G.win_title || 'ชนะแล้ว!', G.win_text || '');
-    else if (state.screen === 'gameover') drawEnd('Game Over', state.result === 'lose:time' ? 'หมดเวลา' : 'โดนจับได้');
+    else if (state.screen === 'levelclear') { drawLevel(); g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(0, 0, cv.width, cv.height); text('Level ' + (state.level + 1) + ' clear!', cv.width / 2, 200, 36, P.gem); btn('Next level', cv.width / 2 - 120, 260, 240, 44, next); }
+    else if (state.screen === 'victory') drawEnd(G.win_title || 'You win!', G.win_text || '');
+    else if (state.screen === 'gameover') drawEnd('Game Over', state.result === 'lose:time' ? 'Time is up' : 'Caught');
     if (toast && performance.now() < toast.until) text(toast.text, cv.width / 2, cv.height - 40, 18, P.gem);
   }
 

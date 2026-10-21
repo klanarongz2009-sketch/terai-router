@@ -45,7 +45,7 @@ def _voice_arg(ap):
                     help='auto (default): Wayu if installed, else edge-tts')
     ap.add_argument('--no-fallback', action='store_true', help='do not try the other engine when one fails')
     ap.add_argument('--polite', choices=['ครับ', 'ค่ะ'], default=None,
-                    help='how to say the ครับ/ค่ะ slash (default: from the voice gender)')
+                    help='polite particle for replies: the male (ครับ) or female (ค่ะ) form (default: from the voice gender)')
 
 
 def _make_tth(a):

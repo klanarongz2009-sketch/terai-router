@@ -69,7 +69,7 @@ def main(argv=None) -> int:
     if prompt == "-":
         prompt = sys.stdin.read().strip()
     if not prompt:
-        print("terai sankpup: give a prompt, e.g. terai sankpup \"แมวสีส้มนั่งบนดวงจันทร์\" -o cat.png", file=sys.stderr)
+        print("terai sankpup: give a prompt, e.g. terai sankpup \"an orange cat sitting on the moon\" -o cat.png", file=sys.stderr)
         return 2
     if not MIN_SIZE <= a.size <= MAX_SIZE:
         print(f"terai sankpup: --size must be between {MIN_SIZE} and {MAX_SIZE}", file=sys.stderr)

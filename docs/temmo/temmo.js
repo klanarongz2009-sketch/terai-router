@@ -73,13 +73,13 @@
   $('temmo-go').addEventListener('click', async () => {
     $('temmo-log').textContent = '';
     const key = $('temmo-key').value.trim(), provider = $('temmo-provider').value, idea = $('temmo-idea').value.trim();
-    if (!key) { log('ใส่ API key ของคุณก่อน'); return; }
+    if (!key) { log('Enter your API key first.'); return; }
     try {
-      log('ขอ GDD จาก ' + provider + ' (' + MODELS[provider] + ') ...');
+      log('Asking ' + provider + ' (' + MODELS[provider] + ') for a GDD ...');
       const design = firstJson(await call(provider, key, idea));
       if (!design) throw new Error('reply was not JSON');
-      log('ได้ GDD: ' + (design.title || '?'));
+      log('Got the GDD: ' + (design.title || '?'));
       await build(design);
-    } catch (e) { log('ผิดพลาด: ' + e.message); }
+    } catch (e) { log('Error: ' + e.message); }
   });
 })();
