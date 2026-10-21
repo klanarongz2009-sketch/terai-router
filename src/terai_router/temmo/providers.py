@@ -176,7 +176,9 @@ class LocalGemma(Provider):
         if not llama_cpp_available() and os.environ.get("TEMMO_GEMMA_PYTHON"):
             return self._complete_subprocess(system, prompt, max_tokens, seed, timeout)
         if self._backend is None:
-            self._backend = GemmaBackend(model=self.model.replace("gemma-4-", "").lower() or "e2b", n_ctx=4096)
+            # $TEMMO_GEMMA_THREADS: fewer threads than cores is much faster when other jobs share the CPU
+            self._backend = GemmaBackend(model=self.model.replace("gemma-4-", "").lower() or "e2b", n_ctx=4096,
+                                         threads=int(os.environ.get("TEMMO_GEMMA_THREADS", "0")) or None)
         text, usage = self._backend.complete([{"role": "system", "content": system}, {"role": "user", "content": prompt}],
                                              max_tokens=max_tokens, temperature=0.5, seed=seed, timeout=timeout)
         self.calls.append(dict(usage, role_prompt_chars=len(prompt)))
@@ -188,10 +190,11 @@ class LocalGemma(Provider):
         from pathlib import Path
         src = str(Path(__file__).resolve().parents[2])
         code = ("import sys,json; sys.path.insert(0, %r); from terai_router.sankpup.gemma import GemmaBackend; "
-                "a=json.load(sys.stdin); b=GemmaBackend(model=a['model'], n_ctx=4096); "
+                "a=json.load(sys.stdin); b=GemmaBackend(model=a['model'], n_ctx=4096, threads=a.get('threads') or None); "
                 "t,u=b.complete(a['messages'], max_tokens=a['max_tokens'], temperature=0.5, seed=a['seed'], timeout=a['timeout']); "
                 "print(json.dumps({'text': t, 'usage': u}))") % src
         arg = {"model": self.model.replace("gemma-4-", "").lower() or "e2b", "max_tokens": max_tokens, "seed": seed,
+               "threads": int(os.environ.get("TEMMO_GEMMA_THREADS", "0")) or None,
                "timeout": timeout, "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}]}
         p = subprocess.run([os.environ["TEMMO_GEMMA_PYTHON"], "-c", code], input=json.dumps(arg), capture_output=True,
                            text=True, timeout=timeout + 300)
