@@ -223,6 +223,7 @@ class Chat:
             out = step(text, n)
             if out is not None:
                 break
+        self.last_step = step.__name__  # which rule answered (read by TERAI1BETA, brain/agent.py)
         if self.state['turns'] == 0:  # forget ran: start counting again from this message
             self.state['turns'] = 1
         h = self.state['history']

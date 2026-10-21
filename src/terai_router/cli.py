@@ -151,10 +151,33 @@ def chat_main(argv=None):
     ap.add_argument('--player', default=None,
                     help="command that plays a WAV file (default: first of ffplay, paplay, aplay, afplay, mpv, "
                          "termux-media-player); 'none' only saves the files")
+    ap.add_argument('--brain', choices=['auto', 'terai1beta', 'rules'], default='auto',
+                    help='auto (default): model TERAI1BETA (local Gemma 4 writes the replies, the rules are its tools) '
+                         'when it is installed, else the rule chat; terai1beta: always the model (downloads it); '
+                         'rules: the rule chat only')
+    ap.add_argument('--model', default=None, help='Gemma 4 size for TERAI1BETA: e2b (default) or e4b')
+    ap.add_argument('--threads', type=int, default=None, help='CPU threads for the model (default: all)')
+    ap.add_argument('--image', metavar='FILE', help='ask about this image first (TERAI1BETA vision), then keep chatting')
+    ap.add_argument('--setup', action='store_true', help='download the TERAI1BETA weights (text + vision) and exit')
+    ap.add_argument('--trace', action='store_true', help='print which tool answered and the grounding check')
     _voice_arg(ap)
     a = ap.parse_args(argv)
+    if a.setup:
+        from .brain.local import setup as brain_setup
+        try:
+            for p in brain_setup(a.model or 'e2b', vision=True):
+                print(p)
+        except Exception as e:
+            print('terai chat --setup: ' + str(e), file=sys.stderr)
+            return 2
+        return 0
     from .chat import Chat
+    from .brain.cli import make_brain
     c = Chat(path=a.session, web=a.web, searx=a.searx)
+    engine = 'terai1beta' if (a.image and a.brain == 'auto') else a.brain
+    brain = make_brain(c, engine, a.model, a.threads, quiet=not sys.stdin.isatty())
+    if brain is not None and a.image:
+        brain.lm.vision = True
     tth = None
     if a.speak:
         try:
@@ -166,10 +189,14 @@ def chat_main(argv=None):
         c.forget()
     tty = sys.stdin.isatty()
     if tty:
-        print('TER-AI chat ' + __version__ + (' (web search on)' if c.web else ' (offline)') + (' (speaking with TTH)' if tth else '') + '. Session: ' + c.path + '. Ctrl-D or /quit to exit.')
+        print('TER-AI chat ' + __version__ + ' / model ' + ('TERAI1BETA' if brain else 'rules') + (' (web search on)' if c.web else ' (offline)') + (' (speaking with TTH)' if tth else '') + '. Session: ' + c.path + '. Ctrl-D or /quit to exit.')
+    pending_image = a.image
     try:
         while True:
-            line = input('you> ' if tty else '')
+            if pending_image and not tty:
+                line = '/image ' + pending_image
+            else:
+                line = input('you> ' if tty else '')
             line = line.strip()
             if not line:
                 continue
@@ -177,8 +204,28 @@ def chat_main(argv=None):
                 break
             if not tty:
                 print('you> ' + line)
-            answer = c.reply(line)
+            image = None
+            if pending_image or line.startswith('/image '):
+                if line.startswith('/image '):
+                    parts = line[7:].strip().split(None, 1)
+                    image, line = parts[0], (parts[1] if len(parts) > 1 else '')
+                else:
+                    image = pending_image
+                pending_image = None
+                if brain is None:
+                    print('terai> reading images needs model TERAI1BETA: terai chat --setup', flush=True)
+                    continue
+                brain.lm.vision = True
+            try:
+                answer = brain.reply(line, image=image) if brain is not None else c.reply(line)
+            except Exception as e:  # model or image problem: say it and keep the chat going
+                answer = 'TERAI1BETA error: ' + str(e)
             print('terai> ' + answer, flush=True)
+            if a.trace and brain is not None:
+                L = brain.last
+                print('       [' + str(L.get('kind')) + ' tool=' + str(L.get('tool') or '-') + ' fallback=' +
+                      str(L.get('fallback')) + ' ' + str(L.get('seconds')) + ' s' +
+                      ((' problems: ' + '; '.join(L['problems'])) if L.get('problems') else '') + ']', flush=True)
             if tth is not None:
                 turn += 1
                 _speak_reply(tth, answer, os.path.expanduser(a.speak_dir), turn, a.player)
@@ -195,6 +242,12 @@ def main(argv=None):
         return chat_main(argv[1:])
     if argv and argv[0] == 'tth':
         return tth_main(argv[1:])
+    if argv and argv[0] == 'vision':
+        from .brain.cli import vision_main
+        return vision_main(argv[1:])
+    if argv and argv[0] == 'models':
+        from .brain.cli import models_main
+        return models_main(argv[1:])
     if argv and argv[0] == 'term':
         # TERM AI limited-time trial: remove this branch on 2027-01-01 00:00:00 UTC+7 (docs/TERM-AI.md)
         from .term_ai.cli import main as term_main
@@ -220,11 +273,13 @@ def main(argv=None):
             print('terai muml: MuML 1.0 is not in this build; use --hiq for MUML 1.0 HIQ', file=sys.stderr)
             return 2
         return muml_main(argv[1:])
-    ap = argparse.ArgumentParser(prog='terai', description='TER-AI: offline Thai intent router that tolerates typos (made with Sesame)')
+    ap = argparse.ArgumentParser(prog='terai', description='TER-AI: offline Thai intent router that tolerates typos (made with Sesame). '
+                                 'Subcommands: chat, vision, models, tth, sankpup, muml, muml-wa, temmo, term')
     ap.add_argument('text', nargs='*', help="text to classify; '-' reads lines from stdin")
     ap.add_argument('--json', action='store_true', help='print JSON')
     ap.add_argument('--threshold', type=float, default=0.0, help="below this confidence print 'unknown'")
-    ap.add_argument('--version', action='version', version=f'terai-router {__version__}')
+    from .versions import version_line
+    ap.add_argument('--version', action='version', version=version_line())
     a = ap.parse_args(argv)
     if a.text == ['-']:
         for line in sys.stdin:

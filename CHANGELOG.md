@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.16.0 (2026-10-22)
+
+Repository v0.16.0, first release of the model **TERAI1BETA**. This release writes down the versioning scheme for every model: the repository stays 0.X.Y, each model has its own id (MuML 1.0 was the first, in v0.15.0). See "Versions: repository and models" in README.md.
+
+### Added
+- Model TERAI1BETA for `terai chat`: local Gemma 4 E2B (official QAT Q4_0 GGUF, CPU, llama-cpp-python) writes the replies instead of fixed templates. The existing rules are its tools: calculator, date and time, unit conversion, memory and the bundled Thai Wikipedia pack. Every fact in a reply names its source; with no source the reply says it does not know. A grounding check rejects replies with numbers no tool returned (or missing the tool's number); the model gets one retry, then the rule answer is used.
+- Image input: `terai chat --image FILE` (ask about an image, then keep chatting) and `terai vision FILE` (describe, read Thai/English text, answer a question about the image), through the Gemma 4 vision projector (mmproj).
+- `terai chat --setup` downloads the TERAI1BETA weights (about 4.3 GB: 3.35 GB model + 0.99 GB vision projector, SHA-256 checked) into `~/.cache/terai/models`. New flags: `--brain auto|terai1beta|rules`, `--model e2b|e4b`, `--threads`, `--image`, `--trace`. Environment: `TERAI_MODELS_DIR`, `TERAI_THREADS`.
+- `terai models` lists every model id; `terai --version` prints `terai-router 0.16.0 / model TERAI1BETA`. Model ids and the rule for them live in `src/terai_router/versions.py`.
+- Optional extra `llm` (llama-cpp-python).
+- Evals: `eval/brain_eval.py` on the fixed set `eval/terai1beta_cases_v15.json` (52 cases), `eval/vision_eval.py` on 12 generated test images in `eval/vision/`; `tests/test_brain.py`.
+
+### Unchanged
+- Without the model (or with `--brain rules`) the chat is the rule chat of v0.8.0 to v0.14.0: chat eval 81/81, 37/37, 16/16 and browser parity 790/790.
+- The web demo keeps the rule chat; TERAI1BETA and image reading are CLI only (a 4 GB model does not run in the demo page).
+- The repository's own 1.0 criteria. The "1.0" in MuML 1.0, MUML 1.0 HIQ and Temmo 1.0 is a model id, not the repository version.
+
 ## v0.15.0 (2026-10-22)
 
 MuML 1.0 WA now writes notes with the trained MuML 1.0 network instead of the Markov chain. Markov v1 stays only as

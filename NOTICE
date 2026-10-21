@@ -112,3 +112,13 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    engine romanises Thai lyrics with it (`royin`). Installed separately by the user; not bundled.
 
 MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.
+
+TERAI1BETA (chat model and image reading, `terai chat` / `terai vision`, since v0.16.0)
+TERAI1BETA is TER-AI's rules used as tools by Google's Gemma 4. No weights are fine-tuned or redistributed here.
+
+14. Gemma 4 E2B (default) or E4B, by Google DeepMind, official QAT Q4_0 GGUF builds plus the vision projector
+   (gemma-4-E2B-it-mmproj.gguf / gemma-4-E4B-it-mmproj.gguf): https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf
+   License of the weights: Apache License 2.0 (https://ai.google.dev/gemma/docs/gemma_4_license), the same weights
+   as item 4. `terai chat --setup` downloads them on first use into ~/.cache/terai/models and checks the published
+   SHA-256; they are never committed to this repository. Runtime: llama-cpp-python (item 5), installed by the
+   "llm" extra. Use of Gemma also follows Google's Gemma terms and prohibited use policy linked from that page.
