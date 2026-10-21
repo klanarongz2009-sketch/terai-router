@@ -48,7 +48,7 @@ terai = "terai_router.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-terai_router = ["data/*.json", "sankpup/data/*.json", "muml_wa/data/*.json", "muml_wa/data/*.txt"]
+terai_router = ["data/*.json", "sankpup/data/*.json", "muml_wa/data/*.json", "muml_wa/data/*.txt", "temmo/runtime/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

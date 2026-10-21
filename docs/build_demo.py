@@ -76,6 +76,9 @@ def main():
         shutil.copyfile(gpl, DOCS / 'LICENSE-GPL-3.0.txt')
     html = html.replace('__MUML_WA_JS__', (DOCS / 'muml_wa.js').read_text(encoding='utf-8'))
     (DOCS / 'index.html').write_text(html, encoding='utf-8')
+    # Temmo tab: the runtime is copied byte for byte from the package (docs/temmo/sample is a built game)
+    (DOCS / 'temmo').mkdir(exist_ok=True)
+    (DOCS / 'temmo' / 'engine.js').write_bytes((ROOT / 'src' / 'terai_router' / 'temmo' / 'runtime' / 'engine.js').read_bytes())
     print('wrote', DOCS / 'index.html', round((DOCS / 'index.html').stat().st_size / 1e6, 2), 'MB')
 
 

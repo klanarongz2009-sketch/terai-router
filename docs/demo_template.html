@@ -71,6 +71,7 @@
     <button type="button" class="tab" id="tab-router" role="tab" aria-selected="false">Router</button>
     <button type="button" class="tab" id="tab-sankpup" role="tab" aria-selected="false">SANKPUP</button>
     <button type="button" class="tab" id="tab-muml" role="tab" aria-selected="false">MuML</button>
+    <button type="button" class="tab" id="tab-temmo" role="tab" aria-selected="false">Temmo</button>
   </div>
   <section id="pane-chat">
     <div id="log" class="log" aria-live="polite"></div>
@@ -129,6 +130,33 @@
     <div class="row"><span class="k">Understood</span><span class="v" id="mu-info">-</span></div>
     <div class="row"><span class="k">Note writer</span><span class="v" id="mu-writer">-</span></div>
   </section>
+<section id="pane-temmo" hidden>
+  <h2>Temmo 1.0 <small>AI สร้างเกม indie แบบเต็มเกม (prototype, ยังไม่ release)</small></h2>
+  <p class="note">เกมตัวอย่างข้างล่างสร้างโดย <code>terai temmo</code> ด้วย Gemma 4 E2B ที่รันในเครื่อง (ฟรี ไม่ต้องมี key) มีเมนู 3 ด่าน ชนะ/แพ้ เสียง เพลง และ high score กดเริ่มแล้วใช้ลูกศร/WASD หรือแตะจอ</p>
+  <h3>ชุมชน Temmo <small>เล่น · remix · แชร์ ไม่ต้องมี key</small></h3>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1 1 260px;min-width:240px"><div id="temmo-community"><small>กำลังโหลดเกม...</small></div>
+      <h4>remix ของฉัน <small>(เก็บในเครื่องนี้ 5 อันล่าสุด)</small></h4><div id="temmo-mine"></div></div>
+    <div style="flex:2 1 420px">
+      <div><b id="temmo-now"></b> <button id="temmo-share-now">แชร์เกมนี้ (.html)</button></div>
+      <iframe id="temmo-frame" title="Temmo game" style="width:100%;max-width:720px;aspect-ratio:4/3;border:1px solid #2b3445;border-radius:8px;background:#0b0d10"></iframe>
+      <div id="temmo-remix-box" hidden>
+        <label>Remix เกมนี้ <input id="temmo-remix-text" size="44" placeholder='เช่น พื้นหลังสีชมพู กำแพงสีน้ำตาล ยากขึ้น หรือ ชื่อเกม "..."'></label>
+        <button id="temmo-remix-go">Remix</button><br>
+        <label><small>Temmo server (ไม่ใส่ก็ได้ ถ้ามีจะใช้ AI ฟรีของ server ผ่านคิว มี quota ต่อวัน)</small> <input id="temmo-server" size="30" placeholder="http://127.0.0.1:8765"></label>
+      </div>
+      <pre id="temmo-c-log" style="white-space:pre-wrap;max-height:90px;overflow:auto"></pre>
+    </div>
+  </div>
+  <details style="margin-top:12px"><summary>สร้างเกมใหม่ด้วย key ของคุณเอง (BYOK)</summary>
+    <p class="note">key อยู่ในหน้านี้เท่านั้น ไม่ถูกบันทึกและไม่ส่งไปที่อื่นนอกจาก provider ที่เลือก ใช้ได้เฉพาะคนที่ผ่านเงื่อนไขอายุและ Terms ของ provider นั้น</p>
+    <label>Provider <select id="temmo-provider"><option value="gemini">Gemini (gemini-3.6-flash)</option><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="deepseek">DeepSeek (อาจติด CORS)</option></select></label>
+    <label>API key <input id="temmo-key" type="password" autocomplete="off" size="28"></label><br>
+    <label>ไอเดียเกม <input id="temmo-idea" size="48" value="นินจาเก็บม้วนคัมภีร์ในวัดร้าง หลบผีกระสือ"></label>
+    <button id="temmo-go">สร้าง GDD แล้วเล่น</button>
+    <pre id="temmo-log" style="white-space:pre-wrap;max-height:160px;overflow:auto"></pre>
+  </details>
+</section>
   <footer>Chat __CHAT_VERSION__: rules, tools, session memory and Thai Wikipedia (__KB_COUNT__ articles, CC BY-SA 4.0). The knowledge pack (__KB_MB__ MB, about __KB_GZ_MB__ MB compressed) downloads only when a question needs it. Router model __VERSION__, __CLASSES__ intents, __SIZE__ model file. Accuracy __ACC__ on the frozen test set.</footer>
 </main>
 <script>__TERAI_JS__</script>
@@ -347,7 +375,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   });
   if (chat.state.history.length) { for (const h of chat.state.history) { bubble(h.user, 'user'); bubble(h.bot, 'bot'); } } else emptyNote();
   renderFacts();
-  const PANES = ['chat', 'router', 'sankpup', 'muml'];
+  const PANES = ['chat', 'router', 'sankpup', 'muml', 'temmo'];
   function show(which) {
     for (const p of PANES) {
       const on = p === which;
@@ -358,5 +386,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   show(PANES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'chat');
 })();
 </script>
+<script src="temmo/temmo.js"></script>
+<script src="temmo/community.js"></script>
 </body>
 </html>

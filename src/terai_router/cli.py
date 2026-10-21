@@ -10,6 +10,7 @@
   terai chat --speak            also speak each reply with TTH (needs a TTH engine; plays it if a player exists)
   terai tth "ข้อความ" -o out.wav  TTH: Thai text-to-speech (Wayu local engine, edge-tts fallback)
   terai tth --dry-run "..."     print what TTH would say, chunk by chunk, without making audio
+  terai temmo "idea" -o out     Temmo 1.0: build a complete small HTML5 game (BYOK; no key = local Gemma 4)
 """
 import argparse
 import json
@@ -192,6 +193,9 @@ def main(argv=None):
         return chat_main(argv[1:])
     if argv and argv[0] == 'tth':
         return tth_main(argv[1:])
+    if argv and argv[0] == 'temmo':
+        from .temmo.cli import main as temmo_main
+        return temmo_main(argv[1:])
     if argv and argv[0] == 'sankpup':
         from .sankpup.cli import main as sankpup_main
         return sankpup_main(argv[1:])
