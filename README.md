@@ -398,7 +398,7 @@ Email: klanarongz2009@gmail.com
 
 ## License
 
-Copyright (c) 2026 Clanarong Tammaketuek (Bogus). Each part keeps its own license. The full texts and attributions are in [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) and [NOTICE](NOTICE); if this table and those files ever differ, those files win.
+Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its own license. The full texts and attributions are in [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) and [NOTICE](NOTICE); if this table and those files ever differ, those files win.
 
 | Part | Files | License | In this repository? | Commercial use? |
 |---|---|---|---|---|

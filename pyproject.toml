@@ -9,7 +9,7 @@ description = "Offline Thai intent router that tolerates typos. Small, CPU-only,
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "DATA_LICENSE", "NOTICE"]
-authors = [{ name = "Clanarong Tammaketuek (Bogus)" }]
+authors = [{ name = "Clanarong Tammaketuek (klanarongz2009)" }]
 requires-python = ">=3.9"
 dependencies = []
 keywords = ["thai", "nlp", "intent", "intent-classification", "typo", "offline", "chatbot", "iot", "tts", "text-to-speech"]
