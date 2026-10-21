@@ -25,10 +25,15 @@ PARTS = {
     "พื้นหลัง": "bg", "background": "bg", "bg": "bg", "กำแพง": "wall", "wall": "wall", "พื้น": "floor",
     "floor": "floor", "ผู้เล่น": "player", "ตัวละคร": "player", "player": "player", "ไอเทม": "gem",
     "ของ": "gem", "gem": "gem", "ศัตรู": "enemy", "enemy": "enemy", "ประตู": "exit", "exit": "exit",
+    # v0.13: "enemies" and "door" ("walls", "gems"... already start with a part word)
+    "enemies": "enemy", "door": "exit",
 }
 # longest first so "พื้นหลัง" wins over "พื้น"
 _PART_WORDS = sorted(PARTS, key=len, reverse=True)
 _COLOR_WORDS = sorted(COLORS, key=len, reverse=True)
+# a clause break between two words: "pink background, blue walls" pairs inside each clause
+_SEP = re.compile(r"[,;.!?\n&+]|(?:^|[^a-z])(?:and|then)(?:[^a-z]|$)|และ|แล้ว")
+MAX_LEVELS = 10
 
 AI_SYSTEM = ("You edit small maze games. Reply with ONE JSON object (a patch) and nothing else. Allowed keys: "
              "title, title_th, tagline, win_title, win_text, gem_name, enemy_name (strings), "
@@ -40,6 +45,73 @@ AI_PROMPT = "Game: {title} ({title_th}) - {tagline}\nPalette: {palette}\nPlayer 
 def clean_text(v, limit: int = 80) -> str:
     s = re.sub(r"[<>{}`\\]", "", str(v)).strip()
     return re.sub(r"\s+", " ", s)[:limit]
+
+
+def _tokens(low: str) -> list:
+    """Part and colour words, left to right (longest word first at each position)."""
+    toks, i = [], 0
+    while i < len(low):
+        w = next((w for w in _PART_WORDS if low.startswith(w, i)), None)
+        kind, table = ("part", PARTS) if w else ("color", COLORS)
+        if not w:
+            w = next((c for c in _COLOR_WORDS if low.startswith(c, i)), None)
+        if w:
+            toks.append({"kind": kind, "val": table[w], "en": w.isascii(), "start": i, "end": i + len(w), "used": False})
+            i += len(w)
+            continue
+        i += 1
+    return toks
+
+
+def _palette(low: str) -> dict:
+    """Thai order and "background pink" (part, then colour) work as before v0.13: each part word takes the
+    first colour word after it. English order ("pink background", "blue walls") is read only for English
+    words: a colour right before a part word in the same clause, when that part has no colour yet."""
+    t = _tokens(low)
+
+    def sep(a, b):
+        return bool(_SEP.search(low[a["end"]:b["start"]]))
+
+    def en_part(j, after):
+        return j < len(t) and t[j]["kind"] == "part" and t[j]["en"] and not t[j]["used"] and not sep(after, t[j])
+
+    pal: dict = {}
+    part, pi = None, -1
+    for j, tok in enumerate(t):
+        if tok["kind"] == "part":
+            if not tok["used"]:
+                part, pi = tok, j
+            continue
+        if part is None:
+            continue
+        if tok["en"] and part["en"]:
+            prev = t[pi - 1] if pi > 0 else None
+            claimed = bool(prev and prev["kind"] == "color" and prev["en"] and not prev["used"] and not sep(prev, part))
+            if (sep(part, tok) or claimed) and en_part(j + 1, tok):
+                nxt = t[j + 1]  # "pink background, blue walls": blue goes to walls, not background
+                pal[nxt["val"]] = tok["val"]
+                tok["used"] = nxt["used"] = True
+                part = None
+                continue
+        pal[part["val"]] = tok["val"]
+        tok["used"] = part["used"] = True
+        part = None
+    for j, tok in enumerate(t):  # English order: colour, then its part
+        if tok["kind"] == "color" and tok["en"] and not tok["used"] and en_part(j + 1, tok) and t[j + 1]["val"] not in pal:
+            pal[t[j + 1]["val"]] = tok["val"]
+            tok["used"] = t[j + 1]["used"] = True
+    return pal
+
+
+def _add_levels(low: str) -> int:
+    m = re.search(r"(?:add|plus)\s+(\d+)\s+(?:more\s+|extra\s+|new\s+)?levels?|(\d+)\s+(?:more|extra|new)\s+levels?", low)
+    if m:
+        return int(m.group(1) or m.group(2))
+    if re.search(r"(?:more|extra|add|new)\s+levels", low):
+        return 2
+    if re.search(r"(?:one more|another|an extra|add an?|extra|new)\s+level", low):
+        return 1
+    return 0
 
 
 def rule_patch(instruction: str) -> dict:
@@ -54,27 +126,20 @@ def rule_patch(instruction: str) -> dict:
     m = re.search(r"(?:คำโปรย|tagline)\s*[:=]?\s*[\"“']?([^\"”'\n]{1,100})", s, re.I)
     if m:
         patch["tagline"] = clean_text(m.group(1), 100)
-    pal = {}
-    part = None
-    i = 0
-    while i < len(low):  # scan left to right: each part word takes the first colour word after it
-        w = next((w for w in _PART_WORDS if low.startswith(w, i)), None)
-        if w:
-            part, i = PARTS[w], i + len(w)
-            continue
-        c = next((c for c in _COLOR_WORDS if low.startswith(c, i)), None)
-        if c:
-            if part:
-                pal[part], part = COLORS[c], None
-            i += len(c)
-            continue
-        i += 1
+    pal = _palette(low)
     if pal:
         patch["palette"] = pal
     if re.search(r"ง่ายขึ้น|ง่ายลง|easier|เวลาเพิ่ม|more time", low):
         patch["time_delta"], patch["enemy_speed"] = 20, "slower"
     elif re.search(r"ยากขึ้น|harder|เวลาน้อยลง|less time", low):
         patch["time_delta"], patch["enemy_speed"] = -15, "faster"
+    if re.search(r"faster enem|enem[a-z]* (?:move |are |go )?faster|speed up (?:the )?enem|quicker enem", low):
+        patch["enemy_speed"] = "faster"
+    elif re.search(r"slower enem|enem[a-z]* (?:move |are |go )?slower|slow down (?:the )?enem", low):
+        patch["enemy_speed"] = "slower"
+    n = _add_levels(low)
+    if n:
+        patch["add_levels"] = n
     return patch
 
 
@@ -96,6 +161,11 @@ def validate_patch(p) -> dict:
         pass
     if p.get("enemy_speed") in ("faster", "slower"):
         out["enemy_speed"] = p["enemy_speed"]
+    try:
+        if "add_levels" in p and int(float(p["add_levels"])) >= 1:
+            out["add_levels"] = min(3, int(float(p["add_levels"])))
+    except (TypeError, ValueError):
+        pass
     return out
 
 
@@ -107,6 +177,16 @@ def apply_patch(game: dict, patch: dict) -> dict:
             g[k] = patch[k]
     if "palette" in patch:
         g["palette"] = dict(g.get("palette") or {}, **patch["palette"])
+    levels = g.get("levels")
+    if patch.get("add_levels") and isinstance(levels, list) and levels:
+        orig = len(levels)
+        for k in range(patch["add_levels"]):  # a new level = an earlier one, mirrored left to right
+            if len(levels) >= MAX_LEVELS:
+                break
+            lv = copy.deepcopy(levels[k % orig])
+            lv["grid"] = [str(row)[::-1] for row in lv.get("grid") or []]
+            lv["name"] = str(lv.get("name") or "Level") + " (mirror)"
+            levels.append(lv)
     for lv in g.get("levels") or []:
         if "time_delta" in patch:
             lv["time"] = max(40, min(180, int(lv.get("time", 90)) + patch["time_delta"]))

@@ -17,14 +17,71 @@
   const PARTS = {
     'พื้นหลัง': 'bg', background: 'bg', bg: 'bg', 'กำแพง': 'wall', wall: 'wall', 'พื้น': 'floor',
     floor: 'floor', 'ผู้เล่น': 'player', 'ตัวละคร': 'player', player: 'player', 'ไอเทม': 'gem',
-    'ของ': 'gem', gem: 'gem', 'ศัตรู': 'enemy', enemy: 'enemy', 'ประตู': 'exit', exit: 'exit'
+    'ของ': 'gem', gem: 'gem', 'ศัตรู': 'enemy', enemy: 'enemy', 'ประตู': 'exit', exit: 'exit',
+    // v0.13: "enemies" and "door" ("walls", "gems"... already start with a part word)
+    enemies: 'enemy', door: 'exit'
   };
   const byLen = (o) => Object.keys(o).sort((a, b) => b.length - a.length);
   const PART_WORDS = byLen(PARTS), COLOR_WORDS = byLen(COLORS);
+  // a clause break between two words: "pink background, blue walls" pairs inside each clause
+  const SEP = /[,;.!?\n&+]|(?:^|[^a-z])(?:and|then)(?:[^a-z]|$)|และ|แล้ว/;
+  const MAX_LEVELS = 10;
+  const isAscii = (w) => /^[\x00-\x7f]*$/.test(w);
 
   function cleanText(v, limit) {
     const s = String(v).replace(/[<>{}`\\]/g, '').trim().replace(/\s+/g, ' ');
     return Array.from(s).slice(0, limit || 80).join('');
+  }
+
+  function tokens(low) { // part and colour words, left to right (longest word first at each position)
+    const toks = [];
+    for (let i = 0; i < low.length;) {
+      let w = PART_WORDS.find((x) => low.startsWith(x, i)), kind = 'part', table = PARTS;
+      if (!w) { w = COLOR_WORDS.find((x) => low.startsWith(x, i)); kind = 'color'; table = COLORS; }
+      if (w) { toks.push({ kind, val: table[w], en: isAscii(w), start: i, end: i + w.length, used: false }); i += w.length; continue; }
+      i += 1;
+    }
+    return toks;
+  }
+
+  // Thai order and "background pink" (part, then colour) work as before v0.13: each part word takes the
+  // first colour word after it. English order ("pink background", "blue walls") is read only for English
+  // words: a colour right before a part word in the same clause, when that part has no colour yet.
+  function palette(low) {
+    const t = tokens(low);
+    const sep = (a, b) => SEP.test(low.slice(a.end, b.start));
+    const enPart = (j, after) => j < t.length && t[j].kind === 'part' && t[j].en && !t[j].used && !sep(after, t[j]);
+    const pal = {};
+    let part = null, pi = -1;
+    for (let j = 0; j < t.length; j++) {
+      const tok = t[j];
+      if (tok.kind === 'part') { if (!tok.used) { part = tok; pi = j; } continue; }
+      if (part === null) continue;
+      if (tok.en && part.en) {
+        const prev = pi > 0 ? t[pi - 1] : null;
+        const claimed = !!(prev && prev.kind === 'color' && prev.en && !prev.used && !sep(prev, part));
+        if ((sep(part, tok) || claimed) && enPart(j + 1, tok)) {
+          const nxt = t[j + 1]; // "pink background, blue walls": blue goes to walls, not background
+          pal[nxt.val] = tok.val; tok.used = nxt.used = true; part = null; continue;
+        }
+      }
+      pal[part.val] = tok.val; tok.used = part.used = true; part = null;
+    }
+    for (let j = 0; j < t.length; j++) { // English order: colour, then its part
+      const tok = t[j];
+      if (tok.kind === 'color' && tok.en && !tok.used && enPart(j + 1, tok) && !(t[j + 1].val in pal)) {
+        pal[t[j + 1].val] = tok.val; tok.used = t[j + 1].used = true;
+      }
+    }
+    return pal;
+  }
+
+  function addLevels(low) {
+    const m = low.match(/(?:add|plus)\s+(\d+)\s+(?:more\s+|extra\s+|new\s+)?levels?|(\d+)\s+(?:more|extra|new)\s+levels?/);
+    if (m) return parseInt(m[1] || m[2], 10);
+    if (/(?:more|extra|add|new)\s+levels/.test(low)) return 2;
+    if (/(?:one more|another|an extra|add an?|extra|new)\s+level/.test(low)) return 1;
+    return 0;
   }
 
   function rulePatch(instruction) {
@@ -36,18 +93,14 @@
     }
     m = s.match(/(?:คำโปรย|tagline)\s*[:=]?\s*["“']?([^"”'\n]{1,100})/i);
     if (m) patch.tagline = cleanText(m[1], 100);
-    const pal = {};
-    let part = null;
-    for (let i = 0; i < low.length;) { // each part word takes the first colour word after it
-      const w = PART_WORDS.find((x) => low.startsWith(x, i));
-      if (w) { part = PARTS[w]; i += w.length; continue; }
-      const c = COLOR_WORDS.find((x) => low.startsWith(x, i));
-      if (c) { if (part) { pal[part] = COLORS[c]; part = null; } i += c.length; continue; }
-      i += 1;
-    }
+    const pal = palette(low);
     if (Object.keys(pal).length) patch.palette = pal;
     if (/ง่ายขึ้น|ง่ายลง|easier|เวลาเพิ่ม|more time/.test(low)) { patch.time_delta = 20; patch.enemy_speed = 'slower'; }
     else if (/ยากขึ้น|harder|เวลาน้อยลง|less time/.test(low)) { patch.time_delta = -15; patch.enemy_speed = 'faster'; }
+    if (/faster enem|enem[a-z]* (?:move |are |go )?faster|speed up (?:the )?enem|quicker enem/.test(low)) patch.enemy_speed = 'faster';
+    else if (/slower enem|enem[a-z]* (?:move |are |go )?slower|slow down (?:the )?enem/.test(low)) patch.enemy_speed = 'slower';
+    const n = addLevels(low);
+    if (n) patch.add_levels = n;
     return patch;
   }
 
@@ -64,6 +117,7 @@
     }
     if ('time_delta' in p && isFinite(parseFloat(p.time_delta))) out.time_delta = Math.max(-30, Math.min(30, Math.trunc(parseFloat(p.time_delta))));
     if (p.enemy_speed === 'faster' || p.enemy_speed === 'slower') out.enemy_speed = p.enemy_speed;
+    if ('add_levels' in p && Math.trunc(parseFloat(p.add_levels)) >= 1) out.add_levels = Math.min(3, Math.trunc(parseFloat(p.add_levels)));
     return out;
   }
 
@@ -72,6 +126,17 @@
     patch = validatePatch(patch);
     for (const k of TEXT_FIELDS) if (k in patch) g[k] = patch[k];
     if (patch.palette) g.palette = Object.assign({}, g.palette || {}, patch.palette);
+    const levels = g.levels;
+    if (patch.add_levels && Array.isArray(levels) && levels.length) {
+      const orig = levels.length;
+      for (let k = 0; k < patch.add_levels; k++) { // a new level = an earlier one, mirrored left to right
+        if (levels.length >= MAX_LEVELS) break;
+        const lv = JSON.parse(JSON.stringify(levels[k % orig]));
+        lv.grid = (lv.grid || []).map((row) => Array.from(String(row)).reverse().join(''));
+        lv.name = String(lv.name || 'Level') + ' (mirror)';
+        levels.push(lv);
+      }
+    }
     for (const lv of g.levels || []) {
       if ('time_delta' in patch) lv.time = Math.max(40, Math.min(180, parseInt(lv.time == null ? 90 : lv.time, 10) + patch.time_delta));
       if (patch.enemy_speed) lv.enemy_every = Math.max(1, Math.min(4, parseInt(lv.enemy_every == null ? 2 : lv.enemy_every, 10) + (patch.enemy_speed === 'slower' ? 1 : -1)));
@@ -173,7 +238,7 @@
     let res;
     try { res = url ? await serverRemix(url, current.game, text) : remix(current.game, text); }
     catch (e) { log('The server did not answer (' + e.message + '); using the remix rules in this page instead.'); res = remix(current.game, text); }
-    if (!Object.keys(res.patch).length) { log('Found nothing to change. Try e.g. "background pink, harder" or title "..."'); return; }
+    if (!Object.keys(res.patch).length) { log('Found nothing to change. Try e.g. "pink background, harder" or title "..."'); return; }
     const entry = { html: writeGame(current.html, res.game), game: res.game, by: 'remix (' + res.source + ')',
       tagline_en: res.patch.tagline || current.tagline_en || '' };
     const mine = JSON.parse(localStorage.getItem(MINE) || '[]');

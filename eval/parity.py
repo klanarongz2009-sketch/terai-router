@@ -242,6 +242,50 @@ def muml_wa_parity():
     return bad + (0 if same else 1)
 
 
+# v0.13: Temmo remix rules (docs/temmo/community.js vs src/terai_router/temmo/remix.py).
+# Thai commands and the "background pink" order must read as before; English order is new.
+REMIX_CASES = [
+    # Thai commands (as before v0.13)
+    'พื้นหลังสีชมพู ง่ายขึ้น', 'พื้นหลังสีชมพู กำแพงสีน้ำตาล ยากขึ้น', 'พื้นสีเทา พื้นหลังสีดำ ศัตรูสีแดง',
+    'ชื่อเกม "แมวส้มตะลุยตลาด" กำแพงสีน้ำตาล และพื้นหลังสีฟ้า ยากขึ้น', 'คำโปรย: เก็บปลาทูให้ครบ', 'สีสวยขึ้น',
+    'ผู้เล่นสีเขียว ประตูสีเหลือง เวลาเพิ่ม', 'ตัวละครสีม่วง ไอเทมสีส้ม เวลาน้อยลง', 'ของสีขาว ศัตรูสีดำ ง่ายลง',
+    'ชื่อ <b>{x}</b>', 'แดง พื้นหลังสีชมพู', 'ขอสีแดงของผู้เล่น',
+    # "background pink" order (as before v0.13)
+    'background pink, harder', 'background pink, wall brown, harder', 'title: Market Cat, wall blue and enemy red',
+    'player white, exit yellow; more time', 'floor grey, bg black, easier', 'red, background pink', 'wall brown background pink',
+    'gem orange and exit purple, less time', 'tagline: collect every fish', 'enemy sky',
+    # English order (new in v0.13)
+    'pink background, harder', 'pink background', 'make the player blue', 'faster enemies', 'more levels', 'harder',
+    'pink background, blue walls', 'pink background blue walls', 'blue player, red enemies, faster enemies',
+    'green floor and yellow door', 'slower enemies, more time', 'add 3 levels', 'one more level', 'add 5 more levels',
+    'make it easier with 2 extra levels', 'white gems, black exit', 'speed up the enemies', 'enemies move slower',
+    'purple walls, pink background, harder, more levels', 'make the background brown and the walls gray',
+]
+
+REMIX_JS = r"""
+const C = require(process.argv[1]);
+const d = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(d.cases.map((c) => { const r = C.remix(d.game, c); return [r.patch, r.game]; })));
+"""
+
+
+def remix_parity():
+    from terai_router.temmo import remix as R
+    game = R.read_game((ROOT / 'docs' / 'temmo' / 'games' / 'orange-cat-fish-collector.html').read_text(encoding='utf-8'))
+    res = subprocess.run(['node', '-e', REMIX_JS, str(ROOT / 'docs' / 'temmo' / 'community.js')],
+                         input=json.dumps({'game': game, 'cases': REMIX_CASES}, ensure_ascii=False),
+                         capture_output=True, text=True, check=True)
+    bad = 0
+    for case, (patch, new) in zip(REMIX_CASES, json.loads(res.stdout)):
+        py_new, py_patch, _ = R.remix(game, case)
+        if json.loads(json.dumps([py_patch, py_new], ensure_ascii=False)) != [patch, new]:
+            bad += 1
+            if bad <= 5:
+                print('REMIX_DIFF', repr(case), '\n  py:', py_patch, '\n  js:', patch)
+    print(f'temmo remix: cases={len(REMIX_CASES)} identical={len(REMIX_CASES) - bad} diff={bad}')
+    return bad
+
+
 def _bench_prompts():
     import ast
     src = (ROOT / 'eval' / 'sankpup_gemma_bench.py').read_text(encoding='utf-8')
@@ -284,7 +328,8 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
     tth_bad = tth_parity()
     sankpup_bad = sankpup_parity()
     muml_wa_bad = muml_wa_parity()
-    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad or muml_wa_bad else 0
+    remix_bad = remix_parity()
+    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad or muml_wa_bad or remix_bad else 0
 
 
 if __name__ == '__main__':
