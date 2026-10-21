@@ -4,6 +4,7 @@ TER-AI data licenses
 The code of terai-router is MIT licensed (see LICENSE). One bundled data file is not:
 
 src/terai_router/data/knowledge_th.json  (TER-AI Thai knowledge pack, v0.8.0)
+docs/knowledge_th.json                   (byte copy of the same pack for the web demo)
 
   Source:    Thai Wikipedia (https://th.wikipedia.org), lead sections of articles,
              retrieved 2026-10-16.

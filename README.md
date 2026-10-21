@@ -1,18 +1,22 @@
 # TER-AI
 
-Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame.
+TER-AI คือชุด AI ภาษาไทยที่รันออฟไลน์บน CPU ได้ฟรี ไม่ต้องใช้ GPU และไม่ต้องส่งข้อมูลขึ้น cloud
+
+TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
+
+What is released today (v0.12.0):
+
+| Part | What it does | Since |
+|---|---|---|
+| Intent router | Reads one Thai or Thai-English message, fixes common typos and returns one of 15 intents with a confidence score. 1.1 MB model, no dependencies. | v0.7.0 |
+| Chat | Offline Thai chat with real tools (calculator, date and time, unit conversion), answers from a bundled Thai Wikipedia pack with the source named, memory across restarts, says "I don't know" instead of guessing. No language model inside. Optional Wikipedia web search since v0.9.0. | v0.8.0 |
+| TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
+| SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
+| MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Notes come from a seeded Markov note writer (Markov v1, not the trained MuML 1.0 model); every sound is made by the Web Audio API. | v0.12.0 |
 
 Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: https://github.com/klanarongz2009-sketch/terai-router · Wiki: https://github.com/klanarongz2009-sketch/terai-router/wiki
 
-TER-AI reads one Thai (or Thai-English) message and tells you what the user wants: one of 15 intents, a confidence score, and the message with common typos fixed. It runs fully offline on CPU, so it fits phones, Raspberry Pi, IoT devices and chat bots that should not send every message to a large model.
-
-Since v0.8.0 it also ships `Chat`: an offline Thai chat that answers with real tools (calculator, date and time, unit conversion), answers knowledge questions from a bundled Thai Wikipedia pack with the source named, remembers what the user tells it across restarts, and says it does not know instead of guessing. There is no language model inside.
-
-Since v0.10.0 it can also speak: TTH reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge) and falls back to edge-tts, both optional. See [TTH: Thai speech](#tth-thai-speech-v0100).
-
-Since v0.11.0 it can also make pictures: SANKPUP writes a picture as SVG code, either with a local Gemma 4 model or with a built-in offline generator, then renders it to PNG or JPG. It is not an image model and no cloud API is used. See [SANKPUP: pictures from code](#sankpup-pictures-from-code-v0110).
-
-Since v0.12.0 it can also write and play music in the browser: MuML 1.0 WA reads a Thai or English prompt (mood, BPM, key, length), writes the notes with a seeded Markov note writer and synthesizes every sound with the Web Audio API. The note writer is Markov v1, not the trained MuML 1.0 model yet. See [MuML 1.0 WA: music in the browser](#muml-10-wa-music-in-the-browser-v0120).
+Licenses differ by part: the code is MIT, but some data and optional models are not. Check the [license table](#license) before commercial use.
 
 ```
 $ terai "เส็ดหรือยัง"
@@ -23,9 +27,29 @@ status  1.00  เสร็จหรือยัง
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.8.0)
+## Results (v0.12.0, measured 2026-10-21)
 
-The intent model is unchanged since v0.7.0; its numbers come from `eval/results_v07.json` and `bench/typhoon_results.json` in this repo (rechecked on v0.8.0 with `python training/evaluate.py`: 121/124 and 111/112).
+Run on commit `4867fa4` (v0.12.0) with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+
+| Check | Command | Result |
+|---|---|---|
+| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.169 ms per message (1 thread) |
+| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.209 ms per message (1 thread) |
+| Chat eval, frozen (written before the Chat code) | `python eval/chat_eval.py eval/chat_eval_v08.json` | 81/81 turns, 18/18 conversations |
+| Chat eval, held out | `python eval/chat_eval.py eval/chat_heldout_v08.json` | 37/37 turns, 14/14 conversations |
+| Chat regressions (bugs fixed later) | `python eval/chat_eval.py eval/chat_regress_v08.json` | 16/16 turns, 3/3 conversations |
+| Browser vs Python, intent router | `python eval/parity.py` | 607/607 sentences same intent and text, max confidence difference 6.66e-16 |
+| Browser vs Python, chat | `python eval/parity.py` | 790/790 turns identical; 24/24 with mocked web search |
+| Browser vs Python, TTH text frontend | `python eval/parity.py` | 1,700/1,700 checks identical |
+| Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
+| Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | 330/330 checks identical; web note table matches `markov.json` byte for byte |
+| Unit tests | `pytest` | 169 passed, 1 skipped (real speech, runs with `TERAI_TTH_REAL=1`) |
+
+Test set by subset: clean 33/36 and 20/20, real user messages 13/13, profile typos 11/11, pattern typos 44/44. The test set is frozen (SHA-256 in `eval/SHA256SUMS`) and never used for training; `training/leak_check.py` reports the closest training sentence for each test sentence. Latency depends on the machine and its load.
+
+Earlier results, not rerun for v0.12.0 (they need large downloads):
+
+- **Against a 1B general model (v0.7.0 result).** The intent model has not changed since v0.7.0. Sources: `eval/results_v07.json` and `bench/typhoon_results.json`.
 
 | | TER-AI v0.7.0 | Typhoon2 1B instruct (zero-shot) |
 |---|---|---|
@@ -33,18 +57,9 @@ The intent model is unchanged since v0.7.0; its numbers come from `eval/results_
 | Mean latency per message, CPU | 0.24 ms (1 thread) | 2,325 ms (8 threads) |
 | Model size | 1.1 MB | 2.49 GB download (1.24B params, float32) |
 
-- Held-out set built before training (112 sentences): 99.1% (111/112).
-- Test set by subset: clean 33/36 and 20/20, real user messages 13/13, profile typos 11/11, pattern typos 44/44.
-- Typhoon model: `typhoon-ai/llama3.2-typhoon2-1b-instruct`, revision `7513a054`, greedy decoding, max 6 new tokens, system prompt listing the 15 intents. Hardware: AMD EPYC, 8 threads, torch 2.14.1+cpu, transformers 5.19.0, Python 3.13.7.
-- The test set is frozen (SHA-256 in `eval/SHA256SUMS`) and never used for training. `training/leak_check.py` reports the closest training sentence for each test sentence.
+  Typhoon model: `typhoon-ai/llama3.2-typhoon2-1b-instruct`, revision `7513a054`, greedy decoding, max 6 new tokens, system prompt listing the 15 intents. Hardware: AMD EPYC, 8 threads, torch 2.14.1+cpu, transformers 5.19.0, Python 3.13.7. Reproduce with `python bench/bench_typhoon.py` (downloads about 2.5 GB).
 
-Chat (v0.8.0), scored with `python eval/chat_eval.py <file>`:
-
-| Chat eval | Turns passed | Conversations passed |
-|---|---|---|
-| `eval/chat_eval_v08.json` (frozen, written before the Chat code) | 81/81 | 18/18 |
-| `eval/chat_heldout_v08.json` (held out) | 37/37 | 14/14 |
-| `eval/chat_regress_v08.json` (regressions for bugs fixed later) | 16/16 | 3/3 |
+- **SANKPUP with Gemma 4 E2B (v0.11.0 result).** 11 of 12 prompts gave a valid picture (Thai 5/6, English 6/6); time per picture p50 24.2 s, p95 49.1 s; model load 38 to 125 s, on an 8-core CPU with 8 GB RAM and no GPU. Details in [SANKPUP](#sankpup-pictures-from-code-v0110). Reproduce with `python eval/sankpup_gemma_bench.py --model e2b` (needs the `sankpup-gemma` extra and the Gemma 4 E2B weights).
 
 ## Install
 
@@ -54,7 +69,7 @@ pip install git+https://github.com/klanarongz2009-sketch/terai-router.git
 
 From a local clone: `pip install .`
 
-Python 3.9+, no runtime dependencies.
+Python 3.9+, no runtime dependencies for the intent router and Chat. TTH and SANKPUP have optional extras, described in their sections.
 
 ## Use
 
@@ -352,7 +367,16 @@ python bench/bench_typhoon.py   # Typhoon comparison (downloads about 2.5 GB)
 
 ## Roadmap
 
-v1.0 will add more languages, starting with English, each with its own training data, frozen test set and a 90% accuracy bar.
+Planned:
+
+- v1.0 will add more languages, starting with English, each with its own training data, frozen test set and a 90% accuracy bar.
+
+กำลังทำ (in progress, not released, not in this repository yet):
+
+- MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. กำลังทำ
+- MuML HIQ: higher-quality music, tuned from another model. กำลังทำ
+- TTH-MTL: more and better Thai voices for TTH. กำลังทำ
+- Temmo: an AI that makes small indie games. กำลังทำ
 
 ## FAQ
 
@@ -360,23 +384,33 @@ v1.0 will add more languages, starting with English, each with its own training 
 Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model.
 
 ### Can I download the model?
-Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection.
+Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH and SANKPUP models are downloaded separately on first use and keep their own licenses (see below).
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
-- 97.6% accuracy on its test set, against 44.4% for a 1B general model asked zero-shot
-- About 0.24 ms per message on one CPU thread and 1.1 MB in size, so it runs on small devices
-- Our own model, trained from scratch, not a wrapper around another company's model
+- 97.6% accuracy on its frozen test set, against 44.4% for a 1B general model asked zero-shot (v0.7.0 comparison)
+- About 0.17 ms per message on one CPU thread (measured 2026-10-21) and 1.1 MB in size, so it runs on small devices
+- The intent model is our own, trained from scratch, not a wrapper around another company's model
+- Everything released runs offline on CPU; the browser demo and its parity checks keep the JavaScript and Python versions identical
 
 ### Where can I contact the team?
 Email: klanarongz2009@gmail.com
 
 ## License
 
-Code: MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
+Copyright (c) 2026 Clanarong Tammaketuek (Bogus). Each part keeps its own license. The full texts and attributions are in [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) and [NOTICE](NOTICE); if this table and those files ever differ, those files win.
 
-Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. The MuML 1.0 WA note table (`src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js`) is built from the Nottingham Music Database as cleaned by [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset) and is licensed under GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file). Details and the list of changes are in `DATA_LICENSE`.
+| Part | Files | License | In this repository? | Commercial use? |
+|---|---|---|---|---|
+| Code (Python, JavaScript, web demo, scripts) | everything not listed below | MIT ([LICENSE](LICENSE)) | Yes | Yes |
+| Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
+| Thai knowledge pack (from Thai Wikipedia) | `src/terai_router/data/knowledge_th.json` and its web copy `docs/knowledge_th.json` | CC BY-SA 4.0 ([DATA_LICENSE](DATA_LICENSE)) | Yes | Yes, with attribution to Wikipedia contributors and the same license on shared copies |
+| MuML 1.0 WA note table (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
+| Wayu-Paxa-TTS-Edge weights (TTH engine "wayu", by Paxa Labs / Wayu Research) | downloaded from Hugging Face on first use | CC-BY-NC-4.0 plus the Wayu Research Acceptable Use terms ([NOTICE](NOTICE) item 1) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research. Audio made with this engine is non-commercial too |
+| wayu-tts inference code | installed by the `tth` extra | Apache-2.0 ([NOTICE](NOTICE) item 1) | No | Yes |
+| edge-tts (TTH engine "edge", online fallback) | installed by the `tth` or `tth-edge` extra | library LGPL-3.0; it sends text to Microsoft's online read-aloud service, whose voices follow Microsoft's terms ([NOTICE](NOTICE) item 2) | No | Library: yes. The Microsoft service and voices: only as Microsoft's terms allow; TER-AI grants nothing for them |
+| Gemma 4 weights (SANKPUP engine "gemma", by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
+| llama-cpp-python, resvg-py (wrapping resvg), Pillow | installed by the `sankpup` / `sankpup-gemma` extras | MIT; MIT (resvg Apache-2.0); MIT-CMU ([NOTICE](NOTICE) items 5 and 6) | No | Yes |
+| Browser speech in the web demo | the device's own Thai voice (Web Speech API) | the device or browser maker's terms ([NOTICE](NOTICE) item 3) | No | Depends on the device maker |
 
-Speech (TTH, optional, not included in this repository): the Wayu-Paxa-TTS-Edge weights by Paxa Labs / Wayu Research are CC-BY-NC-4.0 (non-commercial, attribution required) and are downloaded from Hugging Face on first use; edge-tts (LGPL-3.0) uses an online Microsoft service. Attribution and details are in `NOTICE`.
-
-Pictures (SANKPUP, optional, not included in this repository): Gemma 4 weights by Google are released under the Apache License 2.0 (https://ai.google.dev/gemma/docs/gemma_4_license) and are downloaded from Hugging Face on first use. Rendering uses resvg-py (MIT, wrapping resvg, Apache-2.0) and Pillow (MIT-CMU); llama-cpp-python is MIT. Details: [NOTICE](NOTICE).
+TTH does not use the Paxa Labs cloud API, SANKPUP does not call any cloud API, and MuML 1.0 WA uses no soundfont, samples or server.
