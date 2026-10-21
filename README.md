@@ -8,6 +8,8 @@ TER-AI reads one Thai (or Thai-English) message and tells you what the user want
 
 Since v0.8.0 it also ships `Chat`: an offline Thai chat that answers with real tools (calculator, date and time, unit conversion), answers knowledge questions from a bundled Thai Wikipedia pack with the source named, remembers what the user tells it across restarts, and says it does not know instead of guessing. There is no language model inside.
 
+Since v0.10.0 it can also speak: TTH reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge) and falls back to edge-tts, both optional. See [TTH: Thai speech](#tth-thai-speech-v0100).
+
 ```
 $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
@@ -191,6 +193,53 @@ The chat in the [live demo](https://klanarongz2009-sketch.github.io/terai-router
 
 **Privacy (browser):** with the switch off, the page makes no request except loading itself and the knowledge pack from GitHub Pages. With it on, only the question text (minus question words) goes to th.wikipedia.org and en.wikipedia.org, directly from your browser. Your name, memory and chat history stay in your browser and are never sent.
 
+
+## TTH: Thai speech (v0.10.0)
+
+TTH is the text-to-speech part of TER-AI. The name comes from "TTS", with H for Thai. It reads a Thai or
+Thai-English message aloud. The core install stays dependency-free; the speech engines are optional extras.
+
+```bash
+# local engine Wayu + edge-tts fallback (Python 3.10+, pulls torch; weights download once, about 315 MB)
+pip install "terai-router[tth] @ git+https://github.com/klanarongz2009-sketch/terai-router.git"
+# or only the small online fallback
+pip install "terai-router[tth-edge] @ git+https://github.com/klanarongz2009-sketch/terai-router.git"
+
+terai tth "สวัสดีครับ/ค่ะ นี่คือ TTH ของ TER-AI" -o hello.wav
+terai tth -f note.txt -o note.mp3 --voice m_young_clear --speed 1.1
+terai tth --dry-run "TER-AI v0.10.0 ได้ 97.6% เวลา 14:05 น."   # show what would be said, no audio
+terai tth --list-voices          # 12 Wayu voices + 3 edge-tts voices
+terai tth --engines              # which engines are installed
+terai chat --speak               # speak every chat reply (saved in ~/.terai/tth, played if a player exists)
+```
+
+```python
+from terai_router.tth import TTH, prepare
+TTH(voice='f_young_clear').synthesize('12 × 7 = 84 ครับ/ค่ะ', 'out.wav')   # returns engine, voice, seconds, ...
+prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')   # 'สิบสอง คูณ เจ็ด เท่ากับ แปดสิบสี่ ค่ะ'
+```
+
+| | `wayu` (default) | `edge` (fallback) |
+|---|---|---|
+| Model | Wayu-Paxa-TTS-Edge, 82M open weights by Paxa Labs / Wayu Research (Kokoro-based) | Microsoft Edge read-aloud voices (th-TH-PremwadeeNeural, NiwatNeural, AcharaNeural) |
+| Runs | locally on CPU, no internet after the first download | online: the text is sent to Microsoft |
+| License | weights **CC-BY-NC-4.0**: non-commercial only, attribution to Paxa Labs; inference code Apache-2.0 | edge-tts LGPL-3.0; the service follows Microsoft's terms |
+
+- **Engine choice:** `--engine auto` uses Wayu when it is installed and edge-tts when Wayu is missing or fails
+  (`--no-fallback` turns that off). A voice the engine does not have is swapped for its voice of the same gender.
+- **Text frontend:** before speaking, TTH rewrites the message: numbers in Thai words (8,192, 97.6, ๑๒๓), times
+  (14:05 น.), versions (v0.10.0), maths (× ÷ = + − √ ^ %), units and abbreviations (กม., พ.ศ., ม.4), acronyms
+  spelled with Thai letter names (GPU, API), fixed readings (TER-AI = เธอเอไอ, TTH, Wikipedia), the ครับ/ค่ะ slash
+  (from the voice gender or `--polite`). Links and emoji are dropped; a web citation keeps only its source name.
+  Then it cuts the text into chunks of at most 90 characters, at line breaks and Thai phrase spaces.
+- **Web demo:** the Chat tab has a "Speak replies (TTH)" switch (off by default). It reads replies with a Thai
+  voice already on your device through the browser's Web Speech API (th-TH): nothing is downloaded or sent.
+  `docs/tth.js` is a line-by-line port of the frontend; `eval/parity.py` checks it gives the same spoken text and
+  chunks as Python on 850 texts × 2 politeness settings (1,700 of 1,700 identical).
+- **Not used:** the Paxa Labs cloud API (Paxa TTS Flash). TTH is local first.
+- **Synthetic voice:** audio from TTH is machine-made. Do not present it as a real person's voice. Audio made with
+  the Wayu engine is for non-commercial use (CC-BY-NC-4.0). Details and attribution: [NOTICE](NOTICE).
+
 ## How it works
 
 1. A normalizer fixes common Thai typos and speech-to-text errors (context rules, a guarded typo table, repeated-character collapse).
@@ -203,12 +252,14 @@ The chat in the [live demo](https://klanarongz2009-sketch.github.io/terai-router
 
 The demo has two modes: the intent router and a chat mode. The chat mode runs `docs/chat.js`, a JavaScript port of `Chat`: tools, follow-ups, memory saved in the browser (localStorage, with a reset button) and knowledge answers. The knowledge pack (`docs/knowledge_th.json`, about 2.8 MB over the network with gzip) is downloaded only the first time a knowledge question is asked. `python eval/parity.py` also runs the JavaScript chat against the Python chat with a fixed clock and seed: 790 of 790 turns give identical replies (chat eval, held-out, regression and probe sets), and 24 of 24 with web search on and mocked Wikipedia responses.
 
+Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by default) with the browser's Web Speech API and a Thai voice already on the device. `docs/tth.js` prepares the text the same way as the Python TTH; `python eval/parity.py` checks 1,700 of 1,700 frontend outputs are identical.
+
 ## Development
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 63 tests
-python eval/parity.py           # JS vs Python: router, chat, mocked web search
+pytest                          # 108 tests (1 more, real speech, with TERAI_TTH_REAL=1)
+python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend
 python eval/chat_eval.py eval/chat_eval_v08.json   # chat eval
 python training/build_knowledge.py                 # rebuild the Thai Wikipedia pack
 python training/gen_data.py     # rebuild training rows
@@ -243,3 +294,5 @@ Email: klanarongz2009@gmail.com
 Code: MIT. Copyright (c) 2026 Clanarong Tammaketuek (Bogus).
 
 Data: `src/terai_router/data/knowledge_th.json` is adapted from Thai Wikipedia (text by Wikipedia contributors) and is licensed under CC BY-SA 4.0. Details and the list of changes are in `DATA_LICENSE`.
+
+Speech (TTH, optional, not included in this repository): the Wayu-Paxa-TTS-Edge weights by Paxa Labs / Wayu Research are CC-BY-NC-4.0 (non-commercial, attribution required) and are downloaded from Hugging Face on first use; edge-tts (LGPL-3.0) uses an online Microsoft service. Attribution and details are in `NOTICE`.

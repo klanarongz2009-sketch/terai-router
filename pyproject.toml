@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "terai-router"
-version = "0.9.0"
+version = "0.10.0"
 description = "Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame."
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE", "DATA_LICENSE"]
+license-files = ["LICENSE", "DATA_LICENSE", "NOTICE"]
 authors = [{ name = "Clanarong Tammaketuek (Bogus)" }]
 requires-python = ">=3.9"
 dependencies = []
-keywords = ["thai", "nlp", "intent", "intent-classification", "typo", "offline", "chatbot", "iot"]
+keywords = ["thai", "nlp", "intent", "intent-classification", "typo", "offline", "chatbot", "iot", "tts", "text-to-speech"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -29,6 +29,15 @@ Demo = "https://klanarongz2009-sketch.github.io/terai-router/"
 [project.optional-dependencies]
 train = ["numpy", "scipy"]
 dev = ["pytest"]
+# TTH speech engines (the core install stays dependency-free).
+# tth: local Wayu-Paxa-TTS-Edge (inference code Apache-2.0; weights CC-BY-NC-4.0, non-commercial, downloaded from
+#      Hugging Face on first use, never shipped here) plus the edge-tts fallback. Needs Python 3.10+ (pulls torch).
+# tth-edge: only the online edge-tts fallback (Microsoft service), small.
+tth = [
+    "wayu-tts @ git+https://github.com/wayu-research/wayu-tts-inference@07ab898d516649313926f0b843b809a962f993ad ; python_version >= '3.10'",
+    "edge-tts>=6.1",
+]
+tth-edge = ["edge-tts>=6.1"]
 
 [project.scripts]
 terai = "terai_router.cli:main"

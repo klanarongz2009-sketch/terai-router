@@ -1,0 +1,34 @@
+TER-AI (terai-router)
+Copyright (c) 2026 Clanarong Tammaketuek (Bogus). Made with Sesame.
+
+The code in this repository is MIT licensed (see LICENSE). The knowledge pack is CC BY-SA 4.0 (see DATA_LICENSE).
+This file lists third-party work that TTH, the text-to-speech part of TER-AI, can use. None of it is included in
+this repository; each part is installed or downloaded separately and keeps its own license.
+
+1. Wayu-Paxa-TTS-Edge (TTH engine "wayu", optional, runs locally)
+   Model weights: https://huggingface.co/wayu-ai/wayu-paxa-tts-edge
+   By Paxa Labs / Wayu Research (Kunat Pipatanakul, Potsawee Manakul, Warit Sirichotedumrong,
+   Sittipong Sripaisarnmongkol, Pakorn Nathong, Phatrasek Jirabovonvisut).
+   License of the weights: CC-BY-NC-4.0 (https://creativecommons.org/licenses/by-nc/4.0/).
+   Attribution is required and commercial use is NOT permitted. Using or downloading the weights also means
+   agreeing to the Wayu Research Acceptable Use terms (https://www.wayuresearch.org/terms#acceptable-use).
+   The weights are fetched from Hugging Face by the wayu_tts package on first use and are never stored in or
+   shipped with this repository. Audio made with the "wayu" engine is therefore for non-commercial use only.
+   The voices are synthetic: do not present the audio as a recording of a real person, and say that it is
+   machine-generated wherever a listener could be misled.
+   Paper: "Building and Evaluating Fixed-Voice Thai TTS from Synthetic Speech", arXiv:2609.03502 (2026).
+
+   Inference code: wayu-tts, https://github.com/wayu-research/wayu-tts-inference
+   (commit 07ab898d516649313926f0b843b809a962f993ad), Apache-2.0. Installed by the "tth" extra.
+   It builds on Kokoro (https://github.com/hexgrad/kokoro, Apache-2.0), tltk and PyThaiNLP.
+
+2. edge-tts (TTH engine "edge", optional fallback, online)
+   https://github.com/rany2/edge-tts, LGPL-3.0, installed by the "tth" or "tth-edge" extra.
+   It sends the text to the Microsoft Edge read-aloud service over the internet to make the audio; the service
+   and its voices (for example th-TH-PremwadeeNeural) belong to Microsoft and follow Microsoft's terms.
+
+3. Web demo speech (docs/index.html, "Speak replies (TTH)")
+   Uses the browser's Web Speech API with a Thai voice already installed on the device. TER-AI ships no voice
+   for it and sends nothing; how the device or browser makes the speech is up to its maker.
+
+TTH does not use the Paxa Labs cloud API (Paxa TTS Flash).

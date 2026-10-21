@@ -81,6 +81,10 @@
       <label class="switch" for="webtoggle"><input type="checkbox" id="webtoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Web search (Wikipedia)</span></label>
       <span id="webstate" class="webnote">Off: every answer comes from this page. On: questions the built-in knowledge cannot answer, and questions about current facts (ปัจจุบัน, ล่าสุด, ตอนนี้), are sent to th.wikipedia.org and en.wikipedia.org. Your name, memory and chat history are never sent.</span>
     </div>
+    <div class="webrow">
+      <label class="switch" for="speaktoggle"><input type="checkbox" id="speaktoggle" role="switch"><span class="track" aria-hidden="true"></span><span>Speak replies (TTH)</span></label>
+      <span id="speakstate" class="webnote">Reads each reply aloud with a Thai (th-TH) voice already on your device, through the browser's Web Speech API. Nothing is downloaded or sent by this page. The Wayu voice of TTH runs only in the Python package (terai tth).</span>
+    </div>
     <div class="chips" id="cchips"></div>
     <details id="mem" class="mem" open>
       <summary>Memory: facts stored in this browser</summary>
@@ -132,6 +136,7 @@ $('in').addEventListener('input', run);
 EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = x; b.onclick = () => { $('in').value = x; run(); $('in').focus(); }; $('chips').appendChild(b); });
 </script>
 <script>__CHAT_JS__</script>
+<script>__TTH_JS__</script>
 <script>
 (function () {
   const CHITCHAT = __CHITCHAT_JSON__;
@@ -172,6 +177,24 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
   try { webSaved = localStorage.getItem(WEB_KEY); } catch (e) { webSaved = null; }
   setWeb(webSaved === '1');
   webToggle.addEventListener('change', () => setWeb(webToggle.checked));
+  const SPEAK_KEY = 'terai.chat.speak.v1';
+  const speakToggle = $('speaktoggle');
+  let speakOn = false;
+  function setSpeak(on) {
+    speakOn = on && TERAI_TTH.available();
+    speakToggle.checked = speakOn;
+    if (!speakOn) TERAI_TTH.stop();
+    try { localStorage.setItem(SPEAK_KEY, speakOn ? '1' : '0'); } catch (e) { /* private mode */ }
+  }
+  if (!TERAI_TTH.available()) {
+    speakToggle.disabled = true;
+    $('speakstate').textContent = 'This browser has no Web Speech API, so replies cannot be spoken here. Use terai tth or terai chat --speak.';
+  } else {
+    let sp = null;
+    try { sp = localStorage.getItem(SPEAK_KEY); } catch (e) { sp = null; }
+    setSpeak(sp === '1');
+    speakToggle.addEventListener('change', () => setSpeak(speakToggle.checked));
+  }
   function bubble(text, who, err) {
     const e = log.querySelector('.empty'); if (e) e.remove();
     const d = document.createElement('div');
@@ -206,6 +229,7 @@ EXAMPLES.forEach(x => { const b = document.createElement('button'); b.className 
         on => { kbload.hidden = !on; if (on) kbload.textContent = 'Loading Thai Wikipedia knowledge pack (only the first time)...'; },
         on => { kbload.hidden = !on; if (on) kbload.textContent = 'Searching Wikipedia...'; });
       bubble(out, 'bot');
+      if (speakOn) TERAI_TTH.speak(out, { polite: 'ค่ะ' });
     } catch (e) {
       bubble('Could not load the knowledge pack (' + (e && e.message ? e.message : e) + '). Check the connection and send again.', 'bot', true);
     }

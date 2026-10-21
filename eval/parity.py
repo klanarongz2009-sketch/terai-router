@@ -5,6 +5,8 @@
    chat_regress_v08, with the files' fixed clock and seed. Replies must be identical, character for character.
 3. Chat with web search on (v0.9): chat_web_v09 with every MediaWiki API request answered from the frozen
    eval/web_fixtures_v09.json (offline conversations get a network error), JS through Chat.replyAsync.
+4. TTH text frontend (v0.10): docs/tth.js prepare()/chunk() vs terai_router.tth on eval/tth_cases_v10.json and on
+   every Python chat reply from 2 and 3, with both politeness settings (ครับ and ค่ะ).
 
 Usage: python eval/parity.py   (needs node on PATH)
 """
@@ -135,6 +137,43 @@ def web_parity():
     return bad
 
 
+TTH_JS = r"""
+const T = require(process.argv[1]);
+const items = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+const out = [];
+for (const [text, polite] of items) { const s = T.prepare(text, polite); out.push([s, T.chunk(s)]); }
+process.stdout.write(JSON.stringify(out));
+"""
+
+
+def tth_corpus():
+    texts_ = json.loads((ROOT / 'eval' / 'tth_cases_v10.json').read_text(encoding='utf-8'))['cases']
+    for f in CHAT_FILES:
+        for conv in python_chat(str(ROOT / 'eval' / f)):
+            texts_.extend(conv)
+    for conv in python_web_chat(str(ROOT / 'eval' / 'web_fixtures_v09.json'), str(ROOT / 'eval' / 'chat_web_v09.json')):
+        texts_.extend(conv)
+    return texts_
+
+
+def tth_parity():
+    from terai_router.tth import chunk, prepare
+    texts_ = tth_corpus()
+    items = [[t, p] for t in texts_ for p in ('ครับ', 'ค่ะ')]
+    res = subprocess.run(['node', '-e', TTH_JS, str(ROOT / 'docs' / 'tth.js')], input=json.dumps(items, ensure_ascii=False),
+                         capture_output=True, text=True, check=True)
+    js = json.loads(res.stdout)
+    bad = 0
+    for (text, polite), (js_s, js_c) in zip(items, js):
+        s = prepare(text, polite)
+        c = chunk(s)
+        if s != js_s or c != js_c:
+            bad += 1
+            print('TTH_DIFF', repr(text), polite, '\n  py:', s, c, '\n  js:', js_s, js_c)
+    print(f'tth frontend: texts={len(texts_)} checks={len(items)} identical={len(items) - bad} diff={bad}')
+    return bad
+
+
 def main():
     items = texts(ROOT / 'eval' / 'test_set.json') + texts(ROOT / 'eval' / 'heldout_v07.json')
     js = r"""
@@ -164,7 +203,8 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
     print(f'n={len(items)} intent_diff={intent_diff} normalized_diff={norm_diff} max_confidence_diff={max_conf:.2e}')
     chat_bad = chat_parity()
     web_bad = web_parity()
-    return 1 if intent_diff or norm_diff or chat_bad or web_bad else 0
+    tth_bad = tth_parity()
+    return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad else 0
 
 
 if __name__ == '__main__':
