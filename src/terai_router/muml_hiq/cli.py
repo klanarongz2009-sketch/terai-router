@@ -11,6 +11,8 @@ from typing import List, Optional
 from . import CREDITS, DEFAULT_LM, DEFAULT_QUANT, DIT_FILES, LM_FILES, NAME, VERSION
 from .adapter import THAI_LYRICS_LM, adapt, lyrics_language, prepare_lyrics
 from .engine import HiqError, generate, setup, status
+from .split import DEFAULT_KEY as SPLIT_DEFAULT_KEY, SplitError, generate_split, lyric_lines
+from .split import DEFAULT_STYLE as SPLIT_DEFAULT_STYLE, DEFAULT_VOICE as SPLIT_DEFAULT_VOICE, STYLES as SPLIT_STYLES
 
 
 def is_hiq_request(argv: List[str]) -> bool:
@@ -57,6 +59,14 @@ def build_parser() -> argparse.ArgumentParser:
                         f"Thai lyrics {THAI_LYRICS_LM})")
     p.add_argument("--thai-lyrics", choices=("roman", "native"), default=None,
                    help="Thai lyrics: romanise before singing (default) or keep Thai script")
+    p.add_argument("--thai-vocal", choices=("sing", "split"), default="sing",
+                   help="Thai lyrics: sing = ACE-Step sings them (default); split = instrumental from ACE-Step + "
+                        "the local TTH Wayu voice on top, much clearer (CER 0.27 vs 0.84). Wayu weights are "
+                        "CC-BY-NC-4.0, so split songs are non-commercial only")
+    p.add_argument("--split-style", choices=SPLIT_STYLES, default=SPLIT_DEFAULT_STYLE,
+                   help="with --thai-vocal split: snap = voice pitch snapped to the key (default), rap = spoken "
+                        "in rhythm, melody = one note per syllable")
+    p.add_argument("--voice", default=SPLIT_DEFAULT_VOICE, help="Wayu voice for --thai-vocal split")
     p.add_argument("--raw", action="store_true", help="skip the prompt adapter (prompt goes in verbatim)")
     p.add_argument("--dry-run", action="store_true", help="print the request that would be sent, generate nothing")
     p.add_argument("--json", action="store_true", help="machine-readable output")
@@ -95,8 +105,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     lm = a.lm_model or DEFAULT_LM
     if a.lyrics:
         lp = Path(a.lyrics)
-        lyrics = lp.read_text(encoding="utf-8") if lp.is_file() else a.lyrics
+        try:
+            is_file = "\n" not in a.lyrics and lp.is_file()
+        except OSError:  # lyrics text longer than a file name
+            is_file = False
+        lyrics = lp.read_text(encoding="utf-8") if is_file else a.lyrics
     lang = ""
+    split_lyrics = None
+    if lyrics and a.thai_vocal == "split":
+        if lyrics_language(lyrics) != "th":
+            print("terai muml --hiq: --thai-vocal split needs Thai lyrics", file=sys.stderr)
+            return 2
+        split_lyrics, lyrics = lyrics, None  # ACE-Step renders the instrumental; Wayu says the lines
+        print("note: split vocal uses Wayu-Paxa-TTS-Edge (CC-BY-NC-4.0): this song is non-commercial only",
+              file=sys.stderr)
+    elif a.thai_vocal == "split":
+        print("terai muml --hiq: --thai-vocal split needs --lyrics", file=sys.stderr)
+        return 2
     if lyrics:
         if lyrics_language(lyrics) == "th" and not a.lm_model:
             lm = THAI_LYRICS_LM
@@ -116,6 +141,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             fields["lyrics"] = lyrics
             # vocal_language follows the lyrics, not the prompt.
             fields["vocal_language"] = lang
+        elif split_lyrics:
+            fields["lyrics"] = "[Instrumental]"
+            fields["vocal_language"] = ""
         elif not fields["lyrics"]:
             # vocals asked for but no lyrics: this prototype renders without the LM
             # lyric writer, so fall back to instrumental and say so.
@@ -123,14 +151,24 @@ def main(argv: Optional[List[str]] = None) -> int:
             fields["lyrics"] = "[Instrumental]"
             fields["vocal_language"] = ""
 
+    if split_lyrics and not fields.get("keyscale"):
+        fields["keyscale"] = SPLIT_DEFAULT_KEY  # fixed key so the vocal can follow it
     if a.dry_run:
         from .engine import build_request
         fmt = "mp3" if a.out.lower().endswith(".mp3") else "wav16"
-        print(json.dumps(build_request(fields, a.quant, a.seed, a.steps, fmt, lm=lm), ensure_ascii=False, indent=2))
+        req = build_request(fields, a.quant, a.seed, a.steps, fmt, lm=lm)
+        if split_lyrics:
+            req = {"instrumental": req, "thai_vocal": "split", "split_style": a.split_style, "voice": a.voice,
+                   "lines": lyric_lines(split_lyrics)}
+        print(json.dumps(req, ensure_ascii=False, indent=2))
         return 0
     try:
-        r = generate(fields, Path(a.out), quant=a.quant, seed=a.seed, steps=a.steps, lm=lm)
-    except HiqError as e:
+        if split_lyrics:
+            r = generate_split(fields, split_lyrics, Path(a.out), style=a.split_style, voice=a.voice,
+                               quant=a.quant, seed=a.seed, steps=a.steps)
+        else:
+            r = generate(fields, Path(a.out), quant=a.quant, seed=a.seed, steps=a.steps, lm=lm)
+    except (HiqError, SplitError) as e:
         print(f"terai muml --hiq: {e}", file=sys.stderr)
         return 1
     if a.json:

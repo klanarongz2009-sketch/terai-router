@@ -83,4 +83,13 @@ wrapper. The model and runtime below are downloaded or built separately and keep
    https://github.com/ServeurpersoCom/acestep.cpp , pinned commit de858d8e1a94f0e1939cf9bdd8ff7d9631953077.
    Cloned and built by `terai muml --hiq --setup`.
 
+11. Thai vocal "split" mode (`terai muml --hiq --lyrics ... --thai-vocal split`, prototype)
+   ACE-Step renders an instrumental and the Thai lyrics are voiced by the local TTH engine, Wayu-Paxa-TTS-Edge
+   (item 1 above). The Wayu weights are CC-BY-NC-4.0: commercial use is NOT permitted and Paxa Labs / Wayu
+   Research must be credited. Every song made with --thai-vocal split contains that voice, so the song is for
+   non-commercial use only, even though the ACE-Step part is MIT. The voice is synthetic: say that it is
+   machine-generated wherever a listener could be misled.
+   Optional pitch retuning (--split-style snap or melody) uses pyworld (WORLD vocoder by Masanori Morise,
+   modified BSD license; https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder), installed separately.
+
 MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.
