@@ -173,7 +173,7 @@
     let res;
     try { res = url ? await serverRemix(url, current.game, text) : remix(current.game, text); }
     catch (e) { log('The server did not answer (' + e.message + '); using the remix rules in this page instead.'); res = remix(current.game, text); }
-    if (!Object.keys(res.patch).length) { log('Found nothing to change. Try e.g. "pink background, harder" or title "..."'); return; }
+    if (!Object.keys(res.patch).length) { log('Found nothing to change. Try e.g. "background pink, harder" or title "..."'); return; }
     const entry = { html: writeGame(current.html, res.game), game: res.game, by: 'remix (' + res.source + ')',
       tagline_en: res.patch.tagline || current.tagline_en || '' };
     const mine = JSON.parse(localStorage.getItem(MINE) || '[]');
