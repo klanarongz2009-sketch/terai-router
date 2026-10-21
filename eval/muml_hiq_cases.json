@@ -1,0 +1,10 @@
+[
+  {"id": "th_lukthung", "lang": "th", "prompt": "เพลงลูกทุ่งสนุกๆ มีพิณกับแคน จังหวะ 130", "bpm": 130, "ref": "upbeat Thai luk thung folk pop with phin lute and khaen"},
+  {"id": "th_piano_rain", "lang": "th", "prompt": "เปียโนเศร้าๆ ตอนฝนตก 70 bpm", "bpm": 70, "ref": "sad melancholic solo piano on a rainy day"},
+  {"id": "th_edm", "lang": "th", "prompt": "อีดีเอ็มมันส์ๆ สำหรับออกกำลังกาย 128 bpm", "bpm": 128, "ref": "energetic EDM dance track with big synth leads for a workout"},
+  {"id": "th_thai_classical", "lang": "th", "prompt": "ดนตรีไทยเดิม ระนาด ขลุ่ย ผ่อนคลาย จังหวะ 90", "bpm": 90, "ref": "relaxing traditional Thai classical music with ranat xylophone and bamboo flute"},
+  {"id": "en_lofi", "lang": "en", "prompt": "Lo-fi hip hop beat with warm Rhodes piano and vinyl crackle, 85 BPM", "bpm": 85, "ref": "lo-fi hip hop beat with mellow electric piano"},
+  {"id": "en_rock", "lang": "en", "prompt": "Heavy rock with distorted electric guitars and live drums, 140 BPM", "bpm": 140, "ref": "heavy rock with distorted electric guitars and drums"},
+  {"id": "en_jazz", "lang": "en", "prompt": "Smooth jazz with saxophone and upright bass, 100 BPM", "bpm": 100, "ref": "smooth jazz with saxophone and upright bass"},
+  {"id": "en_chiptune", "lang": "en", "prompt": "8-bit chiptune video game music, exciting, 150 BPM", "bpm": 150, "ref": "exciting 8-bit chiptune video game music"}
+]

@@ -65,3 +65,22 @@ Unlike TTH and SANKPUP, MuML 1.0 WA includes third-party-derived data in this re
 
 The note writer in v0.12.0 is a seeded Markov chain ("markov-v1"), not the trained MuML 1.0 network. All sound is
 synthesized by the Web Audio API in the browser: no soundfont, no samples, no server, no cloud API.
+
+MUML 1.0 HIQ (text-to-music audio, prototype, not released)
+MUML 1.0 HIQ ships only TER-AI code (MIT) in this repository: the Thai/English prompt adapter and the
+wrapper. The model and runtime below are downloaded or built separately and keep their own licenses.
+
+8. ACE-Step 1.5 (turbo DiT "acestep-v15-turbo", VAE) by ACE Studio and StepFun
+   https://huggingface.co/ACE-Step/Ace-Step1.5 , https://github.com/ace-step/ACE-Step-1.5
+   License: MIT (code and weights). Not gated on Hugging Face.
+   GGUF conversions used at run time: https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF (MIT).
+   Downloaded on first use into ~/.cache/terai/muml-hiq/models (or $TERAI_MUML_HIQ_MODELS).
+
+9. Qwen3-Embedding-0.6B (ACE-Step 1.5 text encoder) by the Qwen team, Apache License 2.0
+   https://huggingface.co/Qwen/Qwen3-Embedding-0.6B (GGUF Q8_0 from the repository in 8).
+
+10. acestep.cpp by ServeurpersoCom, MIT, built on ggml (MIT)
+   https://github.com/ServeurpersoCom/acestep.cpp , pinned commit de858d8e1a94f0e1939cf9bdd8ff7d9631953077.
+   Cloned and built by `terai muml --hiq --setup`.
+
+MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.

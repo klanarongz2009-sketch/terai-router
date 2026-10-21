@@ -11,6 +11,7 @@
   terai tth "ข้อความ" -o out.wav  TTH: Thai text-to-speech (Wayu local engine, edge-tts fallback)
   terai tth --dry-run "..."     print what TTH would say, chunk by chunk, without making audio
   terai temmo "idea" -o out     Temmo 1.0: build a complete small HTML5 game (BYOK; no key = local Gemma 4)
+  terai muml --hiq "เพลงลูกทุ่ง 130 bpm" -o song.mp3  MUML 1.0 HIQ: text-to-music audio (ACE-Step 1.5, CPU)
 """
 import argparse
 import json
@@ -199,6 +200,18 @@ def main(argv=None):
     if argv and argv[0] == 'sankpup':
         from .sankpup.cli import main as sankpup_main
         return sankpup_main(argv[1:])
+    if argv and argv[0] in ('muml', 'muml-hiq'):
+        # Contract with MuML 1.0: see docs/MUML-CLI-CONTRACT.md. `--hiq` / `--model hiq`
+        # (or the `muml-hiq` alias) goes to MUML 1.0 HIQ; everything else is MuML 1.0.
+        from .muml_hiq.cli import is_hiq_request, main as muml_hiq_main
+        if argv[0] == 'muml-hiq' or is_hiq_request(argv[1:]):
+            return muml_hiq_main(argv[1:])
+        try:
+            from .muml.cli import main as muml_main
+        except ImportError:
+            print('terai muml: MuML 1.0 is not in this build; use --hiq for MUML 1.0 HIQ', file=sys.stderr)
+            return 2
+        return muml_main(argv[1:])
     ap = argparse.ArgumentParser(prog='terai', description='TER-AI: offline Thai intent router that tolerates typos (made with Sesame)')
     ap.add_argument('text', nargs='*', help="text to classify; '-' reads lines from stdin")
     ap.add_argument('--json', action='store_true', help='print JSON')
