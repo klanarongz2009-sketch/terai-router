@@ -14,8 +14,17 @@ This is an advance notice. TER-AI is an indie project run by one person, so it c
 - **An upstream model or service changes:** a model's license may change, its weights may be removed from its host, or an online service (for example edge-tts or the Wikipedia API) may stop working. The parts that depend on it may break or be removed.
 - **A platform action:** GitHub may disable the repository, the demo site or the wiki after a report (for example a DMCA notice) or a policy change.
 - **A security problem:** if a serious vulnerability is found and cannot be fixed in time, the affected part or the project may be pulled.
-- **No time or no resources:** school, health, cost or loss of interest may stop the project.
+- **No time or no resources:** school, health, cost (see [Cost and free services](#cost-and-free-services)) or loss of interest may stop the project.
 - **Closed for good:** in the worst case, the project may be closed permanently.
+
+## Cost and free services
+
+TER-AI has no budget. Everything it uses is free today, so a change in any free service can stop the project.
+
+- **Built with an AI agent on Sesame:** most of the work (code, model training, releases, the wiki and automatic issue replies) is done by an AI agent in the [Sesame](https://sesame.com) app. Sesame is free during its launch window and has said that a subscription is planned, with no plans or prices announced yet. Free use already has limits on agent work; when the limit is reached, work waits until it resets.
+- **If Sesame starts charging, or free agent credits become too small:** training, new releases, demo updates and automatic issue replies may slow down or stop. If the free limit becomes too small to keep the project going, the project may close. The reason will be stated here, with a link to Sesame's announcement.
+- **Other free services:** the repository, the demo site and the wiki are hosted free on GitHub (GitHub Pages), and optional model weights are downloaded from Hugging Face and other hosts. If their free terms change, the affected parts may stop working.
+- **Sources:** [Sesame](https://sesame.com) for the app, its plans and its limits. Check there for the latest information, because plans may change after this notice was written.
 
 ## What happens when the project closes
 
