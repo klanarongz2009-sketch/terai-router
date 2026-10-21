@@ -6,11 +6,12 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from . import DEFAULT_LM, DEFAULT_QUANT, DIT_FILES, GGUF_REPO, LM_FILES, RUNTIME_COMMIT, RUNTIME_REPO, SHARED_FILES
 
@@ -25,6 +26,37 @@ def home() -> Path:
 
 def models_dir() -> Path:
     return Path(os.environ.get("TERAI_MUML_HIQ_MODELS", home() / "models"))
+
+
+CXX_COMPILERS = ("c++", "g++", "clang++")
+
+
+def build_tool(name: str) -> Optional[str]:
+    """A build tool on PATH, or next to this Python (`pip install cmake` in a venv that is not activated)."""
+    w = shutil.which(name)
+    if w:
+        return w
+    p = Path(sys.executable).parent / name
+    return str(p) if p.is_file() and os.access(p, os.X_OK) else None
+
+
+def missing_build_tools() -> List[str]:
+    miss = [t for t in ("git", "cmake") if not build_tool(t)]
+    cxx = os.environ.get("CXX")
+    if not ((cxx and (shutil.which(cxx) or Path(cxx).is_file())) or any(shutil.which(c) for c in CXX_COMPILERS)):
+        miss.append("a C++17 compiler (g++ or clang++)")
+    return miss
+
+
+def require_build_tools(runtime: str, env_var: str) -> Dict[str, str]:
+    """Fail before any download when the runtime cannot be built (a clean machine often has no cmake)."""
+    miss = missing_build_tools()
+    if miss:
+        raise HiqError(f"building {runtime} needs {', '.join(miss)}, not found on PATH. Install first: "
+                       "`pip install cmake` (in this venv) for cmake, and git plus a C++17 compiler from your OS "
+                       "(e.g. `sudo apt install git g++`), then run --setup again; "
+                       f"or set {env_var} to an already built binary.")
+    return {"git": build_tool("git") or "git", "cmake": build_tool("cmake") or "cmake"}
 
 
 def find_binary() -> Optional[Path]:
@@ -99,21 +131,24 @@ def _download(name: str, dest: Path, log) -> None:
 
 def setup(quant: str = DEFAULT_QUANT, build: bool = True, log=print, lm: Optional[str] = DEFAULT_LM) -> Dict[str, object]:
     """Fetch the GGUF weights and build ace-synth/ace-lm (needs git, cmake, a C++17 compiler)."""
+    need_build = build and not find_binary()
+    tools = require_build_tools("acestep.cpp", "TERAI_ACESTEP_BIN") if need_build else {}
     d = models_dir()
     d.mkdir(parents=True, exist_ok=True)
     for name in missing_files(quant, lm):
         log(f"fetching {name} from {GGUF_REPO}")
         _download(name, d / name, log)
-    if build and not find_binary():
+    if need_build:
+        git, cmake = tools["git"], tools["cmake"]
         src = home() / "acestep.cpp"
         if not src.exists():
-            subprocess.run(["git", "clone", "--recurse-submodules", RUNTIME_REPO, str(src)], check=True)
-            subprocess.run(["git", "checkout", RUNTIME_COMMIT], cwd=src, check=True)
-            subprocess.run(["git", "submodule", "update", "--init", "--recursive"], cwd=src, check=True)
+            subprocess.run([git, "clone", "--recurse-submodules", RUNTIME_REPO, str(src)], check=True)
+            subprocess.run([git, "checkout", RUNTIME_COMMIT], cwd=src, check=True)
+            subprocess.run([git, "submodule", "update", "--init", "--recursive"], cwd=src, check=True)
         bdir = src / "build"
         bdir.mkdir(exist_ok=True)
-        subprocess.run(["cmake", "..", "-DGGML_BLAS=OFF", "-DCMAKE_BUILD_TYPE=Release"], cwd=bdir, check=True)
-        subprocess.run(["cmake", "--build", ".", "--config", "Release", "-j", str(os.cpu_count() or 4)],
+        subprocess.run([cmake, "..", "-DGGML_BLAS=OFF", "-DCMAKE_BUILD_TYPE=Release"], cwd=bdir, check=True)
+        subprocess.run([cmake, "--build", ".", "--config", "Release", "-j", str(os.cpu_count() or 4)],
                        cwd=bdir, check=True)
     return status(quant)
 

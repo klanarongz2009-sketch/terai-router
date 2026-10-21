@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from terai_router.cli import main as terai_main
-from terai_router.muml_hiq import yue2
+from terai_router.muml_hiq import engine, yue2
 from terai_router.muml_hiq.cli import resolve_vocal_engine
 from terai_router.muml_hiq.engine import HiqError
 
@@ -103,6 +103,13 @@ def test_missing_runtime_error_says_how_to_fix(tmp_path, monkeypatch, capsys):
     assert "15 min per 30 s" in err and "CC-BY-NC-4.0" in err and "NON-COMMERCIAL" in err
 
 
+def _fake_bin(tmp_path, name):
+    b = tmp_path / name
+    b.write_text("#!/bin/sh\nexit 0\n")
+    b.chmod(0o755)
+    return b
+
+
 def _fake_yue(tmp_path, rc=0):
     b = tmp_path / "yue-synth"
     b.write_text("#!%s\nimport json,sys\na=sys.argv[1:]\nopen(%r,'w').write(json.dumps({'argv':a,"
@@ -162,12 +169,61 @@ def test_setup_pins_commit(tmp_path, monkeypatch):
     for f in (yue2.MODEL_FILES["Q5_K_M"], yue2.VAE_FILE):
         (m / f).write_bytes(b"")
     calls = []
+    monkeypatch.setattr(yue2, "require_build_tools", lambda *a: {"git": "git", "cmake": "cmake"})
     monkeypatch.setattr(yue2.subprocess, "run", lambda argv, **kw: calls.append(list(argv)))
     yue2.setup(log=lambda *_: None)
     assert ["git", "clone", yue2.RUNTIME_REPO, str(tmp_path / "home" / "yue2.cpp")] in calls
     assert ["git", "checkout", yue2.RUNTIME_COMMIT] in calls
     assert len(yue2.RUNTIME_COMMIT) == 40
     assert any(c[:2] == ["cmake", "--build"] and "yue-synth" in c for c in calls)
+
+
+def test_setup_without_cmake_fails_before_download(tmp_path, monkeypatch):
+    # Clean-machine run 2026-10-21: no cmake on PATH -> 3.2 GB fetched, then a bare
+    # "[Errno 2] No such file or directory: 'cmake'". Now: clear error, nothing fetched or run.
+    _no_runtime(tmp_path, monkeypatch)
+    monkeypatch.setattr(engine.sys, "executable", str(tmp_path / "empty" / "python"))
+    monkeypatch.delenv("CXX", raising=False)
+    fetched, calls = [], []
+    monkeypatch.setattr(yue2, "_download", lambda name, dest, log: fetched.append(name))
+    monkeypatch.setattr(yue2.subprocess, "run", lambda argv, **kw: calls.append(list(argv)))
+    with pytest.raises(HiqError) as e:
+        yue2.setup(log=lambda *_: None)
+    msg = str(e.value)
+    assert "cmake" in msg and "git" in msg and "C++17" in msg
+    assert "pip install cmake" in msg and "TERAI_YUE2_BIN" in msg
+    assert fetched == [] and calls == []
+
+
+def test_setup_without_cmake_cli_message(tmp_path, monkeypatch, capsys):
+    _no_runtime(tmp_path, monkeypatch)
+    monkeypatch.setattr(engine.sys, "executable", str(tmp_path / "empty" / "python"))
+    monkeypatch.setenv("TERAI_ACESTEP_BIN", str(_fake_bin(tmp_path, "ace-synth")))
+    m = tmp_path / "models"
+    m.mkdir()
+    for lm in engine.LM_FILES.values():
+        (m / lm).write_bytes(b"")
+    for f in [*engine.DIT_FILES.values(), *engine.SHARED_FILES]:
+        (m / f).write_bytes(b"")
+    monkeypatch.setattr(yue2, "_download", lambda *a: pytest.fail("downloaded before the cmake check"))
+    assert terai_main(["muml", "--hiq", "--setup"]) == 1
+    err = capsys.readouterr().err
+    assert "setup failed: building yue2.cpp needs" in err and "pip install cmake" in err
+    assert "Errno" not in err
+
+
+def test_build_tool_found_next_to_python(tmp_path, monkeypatch):
+    # `pip install cmake` in a venv that is not activated: cmake sits next to sys.executable.
+    venv_bin = tmp_path / "venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    cm = venv_bin / "cmake"
+    cm.write_text("#!/bin/sh\n")
+    cm.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    monkeypatch.setattr(engine.sys, "executable", str(venv_bin / "python"))
+    assert engine.build_tool("cmake") == str(cm)
+    assert "cmake" not in engine.missing_build_tools()
+    assert "git" in engine.missing_build_tools()
 
 
 def test_notice_and_docs_name_yue2():

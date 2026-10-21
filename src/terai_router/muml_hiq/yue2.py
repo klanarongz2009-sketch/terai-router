@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from .engine import HiqError, home, models_dir
+from .engine import HiqError, home, models_dir, require_build_tools
 
 MODEL_NAME = "YuE2-3B"
 MODEL_URL = "https://huggingface.co/m-a-p/YuE2-3B"
@@ -118,21 +118,26 @@ def _download(name: str, dest: Path, log) -> None:
 
 def setup(quant: str = DEFAULT_QUANT, build: bool = True, log=print) -> Dict[str, object]:
     """Fetch the YuE2 GGUF files and build yue2.cpp at the pinned commit (git, cmake, C++17)."""
+    # Check git/cmake/C++ before the ~3.2 GB download: a clean machine often has no cmake
+    # (2026-10-21 clean run: weights fetched, then "[Errno 2] No such file or directory: 'cmake'").
+    need_build = build and not find_binary()
+    tools = require_build_tools("yue2.cpp", "TERAI_YUE2_BIN") if need_build else {}
     d = models_dir()
     d.mkdir(parents=True, exist_ok=True)
     for name in missing_files(quant):
         log(f"fetching {name} from {GGUF_REPO}")
         _download(name, d / name, log)
-    if build and not find_binary():
+    if need_build:
+        git, cmake = tools["git"], tools["cmake"]
         src = home() / "yue2.cpp"
         if not src.exists():
-            subprocess.run(["git", "clone", RUNTIME_REPO, str(src)], check=True)
-        subprocess.run(["git", "checkout", RUNTIME_COMMIT], cwd=src, check=True)
-        subprocess.run(["git", "submodule", "update", "--init", "--recursive"], cwd=src, check=True)
+            subprocess.run([git, "clone", RUNTIME_REPO, str(src)], check=True)
+        subprocess.run([git, "checkout", RUNTIME_COMMIT], cwd=src, check=True)
+        subprocess.run([git, "submodule", "update", "--init", "--recursive"], cwd=src, check=True)
         bdir = src / "build"
         bdir.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["cmake", "..", "-DCMAKE_BUILD_TYPE=Release"], cwd=bdir, check=True)
-        subprocess.run(["cmake", "--build", ".", "--config", "Release", "-j", str(os.cpu_count() or 4),
+        subprocess.run([cmake, "..", "-DCMAKE_BUILD_TYPE=Release"], cwd=bdir, check=True)
+        subprocess.run([cmake, "--build", ".", "--config", "Release", "-j", str(os.cpu_count() or 4),
                         "--target", "yue-synth"], cwd=bdir, check=True)
     return status(quant)
 
