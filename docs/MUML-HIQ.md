@@ -34,6 +34,25 @@ TTS speech on a beat, not singing. yue2.cpp picks one thread per physical core
 (logical / 2) by itself; the CLI prints the time estimate and the licence warning
 before every yue2 render.
 
+## Song endings and length
+
+Both engines stop at the requested duration whether the song has ended or not. The
+yue2 Thai test song at 30 s stopped mid-phrase: its last 0.25 s was -19.6 dB RMS.
+yue-synth caps the semantic stage at duration x 25 frames (750 at 30 s) and the score
+it planned for the seed 42 test song was a 9 bar intro (24.8 s at 87 BPM) and a 10 bar
+verse (27.6 s), so the voice came in at 24.8 s and only the start of the first line fit.
+
+- `--fade-out SECONDS` (default 2.5, 0 = off): when the last 0.25 s is louder than
+  -40 dB the CLI fades the end out (quadratic curve, ffmpeg), for every engine.
+- yue2 sizes the duration from the lyrics when `--duration` is not given:
+  (9 intro bars + 5 bars a lyric line + 4 outro bars) at the BPM (90 if none), in 5 s
+  steps, at most 240 s; the 4-line test song gets 90 s. With a shorter `--duration`
+  the CLI warns and names the length to use. KV context grows past 8192 only when
+  the frames plus 3000 prompt tokens need it.
+- After a yue2 render the CLI keeps the replay request (`<out>.yue2.json`: score and
+  frames), reports which planned sections fit, and names lyric sections the score
+  left out (they are not sung at any length; another seed plans another score).
+
 ## How it works
 
 1. **Prompt adapter** (`terai_router/muml_hiq/adapter.py`, pure Python, deterministic).

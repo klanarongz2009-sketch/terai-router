@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from . import CREDITS, DEFAULT_LM, DEFAULT_QUANT, DIT_FILES, LM_FILES, NAME, VERSION
-from .adapter import THAI_LYRICS_LM, adapt, lyrics_language, prepare_lyrics
+from .adapter import THAI_LYRICS_LM, adapt, lyrics_language, parse_duration, prepare_lyrics
 from .engine import HiqError, generate, setup, status
+from .ending import DEFAULT_FADE_S, finish_ending
 from .split import DEFAULT_KEY as SPLIT_DEFAULT_KEY, SplitError, generate_split, lyric_lines
 from .split import DEFAULT_STYLE as SPLIT_DEFAULT_STYLE, DEFAULT_VOICE as SPLIT_DEFAULT_VOICE, STYLES as SPLIT_STYLES
 from . import yue2
@@ -95,6 +96,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="with --thai-vocal split: snap = voice pitch snapped to the key (default), rap = spoken "
                         "in rhythm, melody = one note per syllable")
     p.add_argument("--voice", default=SPLIT_DEFAULT_VOICE, help="Wayu voice for --thai-vocal split")
+    p.add_argument("--fade-out", type=float, default=DEFAULT_FADE_S, metavar="SECONDS",
+                   help=f"fade the end when the song stops while still loud (default {DEFAULT_FADE_S:g}; 0 = off)")
     p.add_argument("--raw", action="store_true", help="skip the prompt adapter (prompt goes in verbatim)")
     p.add_argument("--dry-run", action="store_true", help="print the request that would be sent, generate nothing")
     p.add_argument("--json", action="store_true", help="machine-readable output")
@@ -194,6 +197,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         fields["keyscale"] = SPLIT_DEFAULT_KEY  # fixed key so the vocal can follow it
     if yue2_lyrics and not fields.get("duration"):
         fields["duration"] = 30.0
+    if yue2_lyrics:
+        # yue-synth stops at the duration, mid-phrase if the lyrics need longer: size it from the lyrics.
+        rec = yue2.recommended_duration(yue2_lyrics, fields.get("bpm"))
+        given = a.duration is not None or (not a.raw and parse_duration(prompt) is not None)
+        if not given and rec > float(fields["duration"]):
+            print(f"note: duration {rec:g} s from the lyrics ({float(fields['duration']):g} s would stop "
+                  "before the last line); set --duration to change it", file=sys.stderr)
+            fields["duration"] = rec
+        elif rec > float(fields["duration"]):
+            print(f"warning: these lyrics need about {rec:g} s; at {float(fields['duration']):g} s the song stops "
+                  f"before the last line (it gets a {a.fade_out:g} s fade-out). Try --duration {rec:g}.",
+                  file=sys.stderr)
     if a.dry_run:
         from .engine import build_request
         fmt = "mp3" if a.out.lower().endswith(".mp3") else "wav16"
@@ -202,7 +217,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             b = yue2.find_binary() or Path("yue-synth")
             print(json.dumps({"engine": "yue2", "quant": a.yue2_quant, "threads": yue2.cpu_threads(), "eta_min": yue2.eta_minutes(req["duration"]),
                               "license": yue2.LICENSE, "request": req,
-                              "argv": yue2.build_argv(b, "request.json", a.out, a.yue2_quant)},
+                              "fade_out_s": a.fade_out,
+                              "argv": yue2.build_argv(b, "request.json", a.out, a.yue2_quant,
+                                                      duration=req["duration"])},
                              ensure_ascii=False, indent=2))
             return 0
         req = build_request(fields, a.quant, a.seed, steps, fmt, lm=lm)
@@ -226,6 +243,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (HiqError, SplitError) as e:
         print(f"terai muml --hiq: {e}", file=sys.stderr)
         return 1
+    try:
+        r["ending"] = finish_ending(Path(r["out"]), a.fade_out)
+    except RuntimeError as e:
+        r["ending"] = {"ending": f"fade failed: {e}", "fade_out_s": 0.0}
+    reach = r.get("reach")
+    if reach and reach.get("unplanned_lyrics"):
+        print("note: the score YuE2 planned leaves out these lyric sections, so they are not sung: "
+              + ", ".join(reach["unplanned_lyrics"]) + " (another --seed plans another score)", file=sys.stderr)
+    if reach and reach.get("cut_by_duration"):
+        left = [s["section"] for s in reach["sections"] if s["state"] != "complete"]
+        print(f"note: yue2 stopped at the {r['request'].get('duration')} s duration before the song ended (planned {reach['plan_s']:g} s; "
+              f"unfinished: {', '.join(left) or '-'}); a longer --duration lets it finish", file=sys.stderr)
     if a.json:
         print(json.dumps(r, ensure_ascii=False))
     else:
