@@ -8,6 +8,9 @@ import sys
 from .providers import DEFAULT_MODELS, DEFAULT_ROLES, ENV_KEYS, resolve_roles
 
 
+ENGINE_DEFAULT = "code"
+
+
 def build_parser(prog="terai temmo") -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=prog, description="Temmo 1.0: AI that builds a complete small indie game (BYOK).")
     p.add_argument("idea", nargs="*", help="game idea (Thai or English)")
@@ -21,6 +24,11 @@ def build_parser(prog="terai temmo") -> argparse.ArgumentParser:
     p.add_argument("--no-mod", action="store_true")
     p.add_argument("--providers", action="store_true", help="show which provider each role will use, then exit")
     p.add_argument("--replay", action="store_true", help="reuse model replies saved in OUT/replies (no new model calls)")
+    p.add_argument("--engine", choices=["code", "template"], default=ENGINE_DEFAULT,
+                   help="code: the model writes the rules and the game code, a playtest checks it, the maze template is "
+                        "only the last fallback; template: the model fills a design into the maze template "
+                        f"(default {ENGINE_DEFAULT})")
+    p.add_argument("--attempts", type=int, default=3, help="code engine: generate/repair attempts before the fallback")
     p.add_argument("--json", action="store_true")
     return p
 
@@ -53,6 +61,19 @@ def main(argv=None) -> int:
     if not a.idea:
         print("terai temmo: give a game idea, e.g. terai temmo \"a cat collects fish and runs from a dog\"", file=sys.stderr)
         return 2
+    if a.engine == "code" and not a.replay:
+        from .codegen import build as code_build
+        prov = over.get("code", "local")
+        rep = code_build(" ".join(a.idea), a.out, provider=prov, seed=a.seed, attempts=a.attempts,
+                         fallback_kwargs={"test": not a.no_test, "voice": not a.no_voice, "mod": not a.no_mod})
+        if a.json:
+            print(json.dumps(rep, ensure_ascii=False, indent=1))
+        else:
+            tries = len(rep["attempts"])
+            print(f"{rep.get('title')}: engine={rep['engine']} mechanic={rep.get('mechanic')} attempts={tries} -> {rep.get('html')}")
+            print(f"test: {'PASS' if rep['passed'] else 'FAIL'}" + (f" (fallback: {rep['fallback_reason'][:120]})"
+                                                                   if rep.get("fallback_reason") else ""))
+        return 0 if rep["passed"] else 1
     from .pipeline import build
     rep = build(" ".join(a.idea), a.out, roles=over, seed=a.seed, test=not a.no_test, voice=not a.no_voice, mod=not a.no_mod,
                 replay=a.replay)
