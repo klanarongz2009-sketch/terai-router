@@ -421,6 +421,6 @@
   }
   async function renderWav(song, sampleRate) { return wavBytes(await renderBuffer(song, sampleRate)); }
 
-  const api = { VERSION, NOTE_WRITER, setTable, Rng, parsePrompt, generate, toMidi, play, stop, isPlaying, renderBuffer, renderWav, wavBytes, songSeconds, schedule };
+  const api = { VERSION, NOTE_WRITER, METERS, arrange, setTable, Rng, parsePrompt, generate, toMidi, play, stop, isPlaying, renderBuffer, renderWav, wavBytes, songSeconds, schedule };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MUMLWA = api;
 })(typeof window !== 'undefined' ? window : globalThis);

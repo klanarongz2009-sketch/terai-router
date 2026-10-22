@@ -237,10 +237,31 @@ def _tonic_ref(tonic):
     return 60 + (tonic if tonic <= 6 else tonic - 12)
 
 
-def generate(prompt: str = '', seed: int = 0, style: str = 'auto') -> dict:
-    """prompt + seed -> {'prompt': reading, 'tokens': MuML tokens, 'tracks': arranged notes, ...}."""
+def writer_available() -> str:
+    """'net' when the MuML 1.0 network can run here (numpy and the weight file), else 'markov'."""
+    from . import net
+    return 'net' if net.numpy_available() and net.find_weights() else 'markov'
+
+
+def generate(prompt: str = '', seed: int = 0, style: str = 'auto', writer: str = 'auto', weights: str | None = None) -> dict:
+    """prompt + seed -> {'prompt': reading, 'tokens': MuML tokens, 'tracks': arranged notes, ...}.
+
+    writer: 'net' = the trained MuML 1.0 network (needs numpy and the weights, see net.setup()),
+    'markov' = Markov v1 (the v0.12.0 writer, kept as the fallback), 'auto' = net when it can run, else markov.
+    """
     p = parse_prompt(prompt, style)
     rng = Rng(seed)
+    if writer == 'auto':
+        writer = writer_available() if weights is None else 'net'
+    if writer == 'net':
+        from . import net
+        path = weights or net.find_weights()
+        if path is None:
+            raise FileNotFoundError('MuML 1.0 weights not found; run: terai muml-wa --setup')
+        toks, melody, harmony, tick, segs = net.write(p, rng, path)
+        tracks = arrange(p, melody, harmony, tick)
+        return {'version': VERSION, 'note_writer': net.NOTE_WRITER, 'model': net.MODEL_ID, 'seed': seed & M32,
+                'prompt': p, 'form': f'net x{segs}', 'tokens': toks, 'total_ticks': tick, 'tracks': tracks}
     w = _Writer(p, rng)
     parts = {'A': w.part(False)}
     parts['B'] = w.part(True)

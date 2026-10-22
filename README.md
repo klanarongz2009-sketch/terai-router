@@ -6,15 +6,15 @@
 
 TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
 
-What is released today (v0.14.0):
+What is released today (v0.16.0):
 
 | Part | What it does | Since |
 |---|---|---|
 | Intent router | Reads one Thai or Thai-English message, fixes common typos and returns one of 15 intents with a confidence score. 1.1 MB model, no dependencies. | v0.7.0 |
-| Chat | Offline Thai chat with real tools (calculator, date and time, unit conversion), answers from a bundled Thai Wikipedia pack with the source named, memory across restarts, says "I don't know" instead of guessing. No language model inside. Optional Wikipedia web search since v0.9.0. | v0.8.0 |
+| Chat | Offline Thai chat. Since v0.16.0 the replies are written by the local model **TERAI1BETA** (Gemma 4 E2B on CPU); the old rules (calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack) are its tools, every fact names its source, and it says "I don't know" when no source has the answer. It can also read images (`terai chat --image`). Without the model it falls back to the rule chat. Optional Wikipedia web search since v0.9.0. | v0.8.0 (model v0.16.0) |
 | TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
-| MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Notes come from a seeded Markov note writer (Markov v1, not the trained MuML 1.0 model); every sound is made by the Web Audio API. | v0.12.0 |
+| MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Since v0.15.0 the notes come from the trained MuML 1.0 network (3.3M-parameter transformer, int8 weights 3.4 MB, run in JavaScript); Markov v1 is the fallback. Every sound is made by the Web Audio API. | v0.12.0, network v0.15.0 |
 | MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
 | TERM AI (limited-time trial) | The original Terminal AI that TER-AI grew from: a Thai terminal chatbot made of rules plus the first own model, TER-AI-0.5. Offline, no dependencies. **Trial: stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.** | v0.14.0 |
 
@@ -29,13 +29,30 @@ $ terai "เส็ดหรือยัง"
 status  1.00  เสร็จหรือยัง
 ```
 
+## Versions: repository and models
+
+The repository version and the model versions are separate. MuML 1.0 was the first model with its own id (v0.15.0); v0.16.0 writes the scheme down for every model.
+
+- **Repository (package) version:** `0.X.Y`; this release is v0.16.0. It moves with every release. The criteria for the repository's own 1.0 are unchanged (see Roadmap).
+- **Model id:** each model has its own name and version, written exactly as below. A package release never changes a model id, and the "1.0" in a model id is not the repository's 1.0.
+
+| Model id | What it is | Since |
+|---|---|---|
+| TERAI1BETA | Chat model: local Gemma 4 E2B writes the replies, TER-AI's rules are its tools, reads images | v0.16.0 |
+| MuML 1.0 | Note writer behind MuML 1.0 WA (trained network `muml-1.0-net` since v0.15.0) | v0.12.0 |
+| MUML 1.0 HIQ | Text-to-music audio | v0.13.0 |
+| Temmo 1.0 | Small indie game maker (prototype, not released) | - |
+| TER-AI-0.5 | Intent model inside TERM AI (limited-time trial) | v0.14.0 |
+
+`terai --version` prints both, for example `terai-router 0.16.0 / model TERAI1BETA`, and `terai models` lists every model id. The rule lives in `src/terai_router/versions.py`; a new version of one model changes only its own row there.
+
 ## Why the name
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
 
-## Results (v0.14.0, measured 2026-10-22)
+## Results (v0.16.0, measured 2026-10-22)
 
-Run on the v0.14.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+Run on the v0.16.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
 
 | Check | Command | Result |
 |---|---|---|
@@ -48,10 +65,11 @@ Run on the v0.14.0 code with the scripts in this repo. Machine: AMD EPYC, 8 core
 | Browser vs Python, chat | `python eval/parity.py` | 790/790 turns identical; 24/24 with mocked web search |
 | Browser vs Python, TTH text frontend | `python eval/parity.py` | 1,700/1,700 checks identical |
 | Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
-| Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | 330/330 checks identical; web note table matches `markov.json` byte for byte |
+| Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | Markov v1 330/330 and MuML 1.0 network 30/30 songs identical (tokens, notes and `.mid` bytes); web note table matches `markov.json` byte for byte |
 | Browser vs Python, Temmo remix rules | `python eval/parity.py` | 42/42 cases identical |
 | TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
-| Unit tests | `pytest` | 347 passed, 4 skipped (real speech and real model runs, opt-in) |
+| Chat model TERAI1BETA vs the rule chat, fixed set of 52 cases | `python eval/brain_eval.py --engine both` | correct 30/30 vs 22/30, hallucination 1/52 vs 1/52; details in [TERAI1BETA](#terai1beta-the-model-writes-the-replies-v0160) |
+| Unit tests | `pytest` | 367 passed, 6 skipped (real speech and real model runs, opt-in) |
 
 MUML 1.0 HIQ end to end (measured 2026-10-21 for v0.13.0, unchanged since; same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
 
@@ -88,7 +106,7 @@ pip install git+https://github.com/klanarongz2009-sketch/terai-router.git
 
 From a local clone: `pip install .`
 
-Python 3.9+, no runtime dependencies for the intent router and Chat. TTH and SANKPUP have optional extras, described in their sections. MUML 1.0 HIQ needs no Python extra, but `terai muml --hiq --setup` needs git, cmake and a C++17 compiler to build its engines, and ffmpeg for .mp3 output and the fade-out.
+Python 3.9+, no runtime dependencies for the intent router and the rule Chat. TERAI1BETA (extra `llm`), TTH and SANKPUP have optional extras, described in their sections. MUML 1.0 HIQ needs no Python extra, but `terai muml --hiq --setup` needs git, cmake and a C++17 compiler to build its engines, and ffmpeg for .mp3 output and the fade-out.
 
 ## Use
 
@@ -183,6 +201,64 @@ terai> สิ่งที่ผมจำเกี่ยวกับคุณ: �
 ```
 
 The knowledge pack (`src/terai_router/data/knowledge_th.json`, 11.9 MB, 8,192 articles) is installed with the package. It has no live data: questions about prices, news or today's results get an honest "no data" reply.
+
+### TERAI1BETA: the model writes the replies (v0.16.0)
+
+Before v0.16.0 every chat reply came from a fixed template, so replies sounded scripted (the same words for the same kind of message). TERAI1BETA keeps the rules but moves them behind a local language model:
+
+1. The rules pick a tool and run it: calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack (and Wikipedia web search with `--web`).
+2. Gemma 4 E2B (official QAT Q4_0 GGUF, CPU only, through llama-cpp-python) writes the reply from the tool result in natural Thai, or English when you write in English.
+3. A grounding check reads the reply: every number must come from a tool result, your message or the memory; the calculator's result must be in it; a knowledge reply must overlap its source and names the source ("ที่มา: Wikipedia ..."). With no source the model must say it does not know. A reply that fails gets one retry, then the rule answer is used.
+
+```
+pip install "terai-router[llm] @ git+https://github.com/klanarongz2009-sketch/terai-router.git@v0.16.0"
+terai chat --setup                       # once: about 4.3 GB (3.35 GB model + 0.99 GB vision projector), SHA-256 checked
+terai chat                               # TERAI1BETA when installed, else the rule chat
+terai chat --image menu.png              # ask about an image first, then keep chatting
+terai vision sign.jpg                    # describe the image and read its Thai/English text
+terai vision receipt.png "ยอดรวมเท่าไร"   # answer a question about the image
+terai chat --brain rules                 # the rule chat only (v0.8.0 to v0.14.0 behaviour)
+terai chat --trace                       # show which tool answered and the grounding check
+```
+
+Weights go to `~/.cache/terai/models` (or `TERAI_MODELS_DIR`); `TERAI_THREADS` or `--threads` sets CPU threads. `--model e4b` uses Gemma 4 E4B (4.9 GB, slower). Without llama-cpp-python or the weights, `terai chat` is the rule chat and says so in its first line. The web demo keeps the rule chat: TERAI1BETA and image reading are CLI only.
+
+Measured on the fixed set `eval/terai1beta_cases_v15.json` (52 cases: 8 calculator, 4 date and time, 4 units, 4 memory, 10 knowledge with an answer in the pack, 10 questions with no source, 12 small-talk messages in 4 groups of 3 similar messages). Same machine as above, Gemma 4 E2B Q4_0, 4 threads. Other jobs were using the CPU at the same time (load average about 15 on 8 cores), so the latency below is pessimistic; the first test run of an earlier build measured p50 2.4 s, p95 9.6 s.
+
+| | Rule chat (before) | TERAI1BETA |
+|---|---|---|
+| Answer correct (30 cases with a known answer) | 22/30 (calculator 4/8, knowledge 6/10) | 30/30 |
+| Hallucination (a fact or number no source gave), all 52 cases | 1/52 | 1/52 |
+| Says "I don't know" when no source has the answer | 9/10 | 9/10 |
+| Small talk: different replies inside each group of 3 similar messages | 6/12 | 12/12 |
+| Word overlap between replies in the same group (lower = less scripted) | 0.598 | 0.371 |
+| Replies that fell back to the rule answer | - | 1/52 |
+| Latency per reply, p50 / p95 | under 1 ms | 15.9 s / 46.2 s |
+| Peak RAM (RSS) | 84 MB | 4.7 GB |
+| Model load | - | 2.9 s (weights already in the page cache) |
+
+Run it yourself: `python eval/brain_eval.py --engine both`.
+
+Image reading, measured with `python eval/vision_eval.py` on 14 checks over 12 generated test images in `eval/vision/` (Gemma 4 E2B + vision projector, 4 threads, same busy machine):
+
+| Image | Check | Result |
+|---|---|---|
+| Thai shop sign | read the text | exact (CER 0) |
+| Thai menu | read the text | CER 0.04 ("ต้มยำ" read as "ตำยำ") |
+| Thai notice | read the text | exact |
+| Small Thai text | read the text | CER 0.39 |
+| Thai text on a dark background | read the text | CER 0.56 |
+| English sign | read the text | exact |
+| English receipt | read the text | CER 0.21 |
+| Thai and English mixed | read the text | exact |
+| Shapes | how many shapes | correct |
+| Shapes | colour of the square | correct |
+| Bar chart | which month is highest | wrong |
+| Scene | day or night | correct |
+| Menu | which dish costs 120 baht | correct |
+| Receipt | total | correct |
+
+Text reading: mean CER 0.150 (Thai 0.165), 4 of 8 images exact. Questions: 5/6 correct. 35.8 s per image (p50, max 58.0 s), peak RAM 4.9 GB. Small or low-contrast Thai text and charts are the weak spots.
 
 ## Web search (opt-in, v0.9.0)
 
@@ -323,7 +399,7 @@ save(art, "house.png", save_code=True)   # house.png + house.svg
   byte-identical SVG (checked by `eval/parity.py`), and can download PNG, JPG or the SVG code. Gemma is not used in
   the browser.
 
-## MuML 1.0 WA: music in the browser (v0.12.0)
+## MuML 1.0 WA: music in the browser (v0.12.0; MuML 1.0 network since v0.15.0)
 
 MuML 1.0 WA (MuML 1.0 Web Audio API) is the browser member of the MuML music family. Type a prompt in Thai or
 English, for example `เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 30 วินาที` or `rock reel key of D 120 bpm 30 seconds`,
@@ -333,25 +409,55 @@ pick a style (Auto, Folk or Rock) and a seed, then play it or download `.wav` an
 ```python
 from terai_router import muml_wa
 song = muml_wa.generate("เพลงเศร้า วอลทซ์ คีย์ A minor 30 วินาที", seed=3, style="auto")
-print(song["prompt"]["meter"], song["form"], song["note_writer"])   # 3/4 AB markov-v1
+print(song["prompt"]["meter"], song["note_writer"])   # 3/4 muml-1.0-net (markov-v1 if the weights are missing)
 open("waltz.mid", "wb").write(muml_wa.to_midi(song))     # Standard MIDI File, format 1, 24 ticks per quarter
 ```
 
-- **Note writer: Markov v1, not the MuML 1.0 model.** A seeded Markov chain built from the MuML 1.0 training data
-  (Nottingham folk tunes): key-relative pitch order-2 with order-1 back-off, a chord per bar, whole-bar rhythm
-  patterns. It uses the MuML 1.0 token language and the same interface (prompt + seed in, MuML tokens out), so the
-  trained MuML 1.0 network can replace it later. The tab says which note writer is in use.
+```bash
+pip install numpy                    # the network runs on numpy in Python; the browser needs nothing
+terai muml-wa --setup                # downloads muml-1.0-int8.bin (3,421,372 bytes) and checks its SHA-256
+terai muml-wa "rock E minor 120 bpm 30 วินาที" --seed 1 -o rock.mid
+terai muml-wa "folk jig D major" --writer markov    # the old Markov v1 writer
+```
+
+- **Note writer (since v0.15.0): the trained MuML 1.0 network.** A decoder-only transformer (4 layers, d_model 256,
+  4 heads, context 512 tokens, 163 MuML tokens, 3,332,352 parameters) trained from scratch on the Nottingham folk
+  tunes for 30 epochs (val loss 1.3780). It writes melody, chords and rhythm token by token, conditioned on meter,
+  tune type, mode and key from the prompt. The forward pass is our own code (`docs/muml_wa_net.js`,
+  `src/terai_router/muml_wa/net.py`), float64 with a key/value cache; no onnxruntime, no server. Weights are int8 with
+  one scale per row (`docs/muml-1.0-int8.bin`, 3.4 MB, fetched once when you first press Write; val loss of the int8
+  file 1.3779, same as fp32). Decoding: temperature 0.9, top-p 0.95, a grammar mask (a duration after every note) and
+  a key guard (logit -2 for pitches outside the scale). Longer songs chain several tunes of up to 512 tokens.
+- **Before/after** (`python eval/muml_wa_writers.py`, 10 fixed prompts x 3 seeds, same prompts for both):
+
+  | Note writer | distinct 3-grams | distinct 4-grams | bars repeated | notes in key | ends on tonic | length / asked | time per song |
+  |---|---|---|---|---|---|---|---|
+  | Markov v1 (v0.12.0) | 0.648 | 0.757 | 22.3% | 97.6% | 100% | 1.04 | 0.002 s (Python) |
+  | MuML 1.0 network | 0.762 | 0.927 | 1.2% | 98.3% | 26.7% | 1.02 | 1.7 s (Python, numpy) |
+  | network, key guard off | 0.840 | 0.965 | 0% | 88.2% | 13.3% | 1.02 | 3.1 s |
+
+  Browser (headless Chromium on the 8-core VM while other jobs ran): weights downloaded and parsed in about 0.5 s
+  from a local server, a 30-second waltz (154 tokens) written in 1.8 s.
+- **Markov v1 (v0.12.0) stays as the fallback**: used when the weights cannot load (browser) or numpy or the weights
+  are missing (Python), or when you pick it. Key-relative pitch order-2 with order-1 back-off, a chord per bar,
+  whole-bar rhythm patterns. The tab says which note writer wrote the song.
+
 - **Sound:** everything is synthesized by the Web Audio API: fiddle-like lead, strummed chords and oom-pah bass for
   Folk; distorted lead, palm-muted power chords, bass and a synthesized drum kit for Rock; a compressor on the
   master. No soundfont, no samples, no server, no cloud API. `.wav` is rendered with OfflineAudioContext.
 - **Same in Python and JavaScript:** `terai_router.muml_wa` is the reference; `docs/muml_wa.js` gives the same
-  prompt reading, tokens, notes and `.mid` bytes for the same prompt, seed and style (`eval/parity.py`: 330 of 330).
-- **Limits:** length is rounded to whole 8-bar parts (30 s asked as a jig gives 36.5 s); Folk is quieter than Rock
-  (no loudness normalization); the notes come from a Markov chain, so long-range structure is simple (AABB or AB).
-- **License: code MIT, data GPL-3.0.** The note table is built from the Nottingham Music Database as cleaned by
+  prompt reading, tokens, notes and `.mid` bytes for the same prompt, seed and style (`eval/parity.py`: Markov v1
+  330 of 330, MuML 1.0 network 30 of 30). The network draws from integer weights (parts per million) with the same
+  seeded generator, so float rounding between numpy and JavaScript does not change the song.
+- **Limits:** the network almost never repeats a bar (1.2% against about 22% for Markov v1), so tunes wander instead
+  of having clear AABB parts, and only 27% end on the tonic (a long song is cut at the bar where the asked length is
+  reached); repeat signs it writes are not expanded; Python needs numpy; writing takes seconds, not milliseconds
+  (Markov v1 is instant); the network is folk-trained, so Rock changes the arrangement, not the melody style.
+  Markov v1 length is rounded to whole 8-bar parts (30 s asked as a jig gives 36.5 s); Folk is quieter than Rock.
+- **License: code MIT, data GPL-3.0.** The network weights and the note table are built from the Nottingham Music Database as cleaned by
   [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset), which is GPL-3.0, so the table
-  is GPL-3.0 too. It is kept in its own files, `src/terai_router/muml_wa/data/markov.json` and
-  `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
+  and the weights are GPL-3.0 too. They are kept in their own files, `docs/muml-1.0-int8.bin` (license entry in its
+  header; not in the Python package), `src/terai_router/muml_wa/data/markov.json` and `docs/muml_wa_table.js` (license header), each next to the full GPL-3.0 text (`LICENSE-GPL-3.0.txt`). The code
   that reads it stays MIT. Details: [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE).
 
 ## MUML 1.0 HIQ: text-to-music audio (v0.13.0)
@@ -429,7 +535,7 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 347 pass, 4 skipped (real speech and real model runs, opt-in)
+pytest                          # 353 pass, 4 skipped (real speech and real model runs, opt-in)
 python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
 python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
@@ -447,11 +553,13 @@ python bench/bench_typhoon.py   # Typhoon comparison (downloads about 2.5 GB)
 
 Planned:
 
+- The repository's 1.0 criteria are unchanged by the model ids (TERAI1BETA, MuML 1.0, MUML 1.0 HIQ, Temmo 1.0); the repository stays 0.X.Y until they are met.
 - v1.0 will add more languages, starting with English, each with its own training data, frozen test set and a 90% accuracy bar.
 
 In progress (not released):
 
-- MuML 1.0: the trained MuML 1.0 note model, to replace Markov v1 in MuML 1.0 WA. Not in this repository yet.
+- MuML 1.0 training code and a CLI that writes from the network outside MuML 1.0 WA: the training scripts are not in
+  this repository yet (only the export script `training/muml_wa/export_net.py` is).
 - TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
 - Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
@@ -462,10 +570,10 @@ Ending:
 ## FAQ
 
 ### Does the model have a context window?
-Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model.
+Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model. With TERAI1BETA (v0.16.0) the Gemma 4 model sees only the current message, the tool result, the user memory and the last 3 turns, inside a 4,096-token window; the history itself still lives in `Chat`.
 
 ### Can I download the model?
-Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH, SANKPUP and MUML 1.0 HIQ models are downloaded separately (on first use, or with `terai muml --hiq --setup`) and keep their own licenses (see below).
+Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH, SANKPUP, MUML 1.0 HIQ and TERAI1BETA models are downloaded separately (on first use, or with `terai muml --hiq --setup` / `terai chat --setup`) and keep their own licenses (see below).
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
@@ -486,12 +594,12 @@ Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its o
 | Code (Python, JavaScript, web demo, scripts) | everything not listed below | MIT ([LICENSE](LICENSE)) | Yes | Yes |
 | Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json`; TERM AI trial: `src/terai_router/term_ai/data/model.json`, `train_data.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
 | Thai knowledge pack (from Thai Wikipedia) | `src/terai_router/data/knowledge_th.json` and its web copy `docs/knowledge_th.json` | CC BY-SA 4.0 ([DATA_LICENSE](DATA_LICENSE)) | Yes | Yes, with attribution to Wikipedia contributors and the same license on shared copies |
-| MuML 1.0 WA note table (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json` and its web copy `docs/muml_wa_table.js` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
+| MuML 1.0 WA note table and MuML 1.0 network weights (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json`, its web copy `docs/muml_wa_table.js`, and `docs/muml-1.0-int8.bin` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
 | Wayu-Paxa-TTS-Edge weights (TTH engine "wayu", by Paxa Labs / Wayu Research) | downloaded from Hugging Face on first use | CC-BY-NC-4.0 plus the Wayu Research Acceptable Use terms ([NOTICE](NOTICE) item 1) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research. Audio made with this engine is non-commercial too |
 | wayu-tts inference code | installed by the `tth` extra | Apache-2.0 ([NOTICE](NOTICE) item 1) | No | Yes |
 | edge-tts (TTH engine "edge", online fallback) | installed by the `tth` or `tth-edge` extra | library LGPL-3.0; it sends text to Microsoft's online read-aloud service, whose voices follow Microsoft's terms ([NOTICE](NOTICE) item 2) | No | Library: yes. The Microsoft service and voices: only as Microsoft's terms allow; TER-AI grants nothing for them |
-| Gemma 4 weights (SANKPUP engine "gemma", by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
-| llama-cpp-python, resvg-py (wrapping resvg), Pillow | installed by the `sankpup` / `sankpup-gemma` extras | MIT; MIT (resvg Apache-2.0); MIT-CMU ([NOTICE](NOTICE) items 5 and 6) | No | Yes |
+| Gemma 4 weights and vision projector (SANKPUP engine "gemma" and model TERAI1BETA, by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
+| llama-cpp-python, resvg-py (wrapping resvg), Pillow | installed by the `sankpup` / `sankpup-gemma` / `llm` extras | MIT; MIT (resvg Apache-2.0); MIT-CMU ([NOTICE](NOTICE) items 5 and 6) | No | Yes |
 | ACE-Step 1.5 weights and GGUF conversions (MUML 1.0 HIQ engine "ace", by ACE Studio and StepFun) | downloaded by `terai muml --hiq --setup` | MIT ([NOTICE](NOTICE) item 8) | No | Yes |
 | Qwen3-Embedding-0.6B (ACE-Step text encoder) | downloaded by `--setup` | Apache License 2.0 ([NOTICE](NOTICE) item 9) | No | Yes |
 | YuE2-3B and YuE2-Vae weights and GGUF conversions (MUML 1.0 HIQ engine "yue2", default for Thai lyrics, by m-a-p) | downloaded by `--setup` | CC-BY-NC-4.0 ([NOTICE](NOTICE) item 12) | No | **No.** Non-commercial only; credit m-a-p. Songs made with this engine are non-commercial too |

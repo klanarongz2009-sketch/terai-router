@@ -37,7 +37,7 @@ def test_style_override():
 @pytest.mark.parametrize('prompt', ['', 'rock 140 bpm', 'sad waltz', 'calm reel key of G 45 seconds', 'dark rock in c# minor 2 minutes'])
 @pytest.mark.parametrize('seed', [0, 5, 99])
 def test_tokens_valid_and_bars_full(prompt, seed):
-    s = m.generate(prompt, seed)
+    s = m.generate(prompt, seed, writer='markov')
     toks = s['tokens']
     assert toks[0] == 'BOS' and toks[-1] == 'EOS'
     assert all(t.startswith(VOCAB_PREFIXES) for t in toks)
@@ -59,20 +59,20 @@ def test_tokens_valid_and_bars_full(prompt, seed):
 
 
 def test_deterministic_and_seed_changes_song():
-    a, b, c = m.generate('folk', 3), m.generate('folk', 3), m.generate('folk', 4)
+    a, b, c = m.generate('folk', 3, writer='markov'), m.generate('folk', 3, writer='markov'), m.generate('folk', 4, writer='markov')
     assert a == b and a['tokens'] != c['tokens']
 
 
 def test_length_follows_prompt():
-    short = m.generate('rock 10 วินาที', 1)
-    long = m.generate('rock 2 นาที', 1)
+    short = m.generate('rock 10 วินาที', 1, writer='markov')
+    long = m.generate('rock 2 นาที', 1, writer='markov')
     spt = 60 / (120 * 24)
     assert short['total_ticks'] * spt < long['total_ticks'] * spt
     assert abs(long['total_ticks'] * spt - 120) <= 8 * 2  # within one 8-bar block
 
 
 def test_rock_arrangement_matches_rockify_layout():
-    s = m.generate('rock', 0)
+    s = m.generate('rock', 0, writer='markov')
     names = [t['name'] for t in s['tracks']]
     assert names == ['lead_rock', 'power_rock', 'bass_rock', 'drums']
     drums = s['tracks'][3]['notes']
@@ -81,7 +81,7 @@ def test_rock_arrangement_matches_rockify_layout():
 
 
 def test_midi_layout():
-    s = m.generate('rock 12 วินาที', 2)
+    s = m.generate('rock 12 วินาที', 2, writer='markov')
     b = m.to_midi(s)
     assert b[:4] == b'MThd'
     _, fmt, ntrk, tpq = struct.unpack('>IHHH', b[4:14])

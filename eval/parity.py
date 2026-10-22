@@ -227,7 +227,7 @@ def muml_wa_parity():
                          input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, check=True)
     bad = 0
     for (p, s, st), (song, mid) in zip(items, json.loads(res.stdout)):
-        py = muml_wa.generate(p, s, st)
+        py = muml_wa.generate(p, s, st, writer='markov')
         if json.loads(json.dumps(py, ensure_ascii=False)) != song or muml_wa.to_midi(py).hex() != mid:
             bad += 1
             if bad <= 5:
@@ -240,6 +240,42 @@ def muml_wa_parity():
     same = body == table.read_text(encoding='utf-8') + ';\n' and 'GPL-3.0' in head and 'nottingham-dataset' in head
     print(f'muml wa: docs/muml_wa_table.js matches markov.json and has the GPL-3.0 header: {same}')
     return bad + (0 if same else 1)
+
+
+MUML_WA_NET_JS = r"""
+const fs = require('fs');
+globalThis.MUMLWA = require(process.argv[1]);
+const N = require(process.argv[2]);
+const b = fs.readFileSync(process.argv[3]);
+N.load(b.buffer.slice(b.byteOffset, b.byteOffset + b.length));
+const items = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(items.map(([p, s, st]) => { const g = N.generate(p, s, st); return [g, Buffer.from(MUMLWA.toMidi(g)).toString('hex')]; })));
+"""
+
+
+def muml_wa_net_parity():
+    """v0.15: the MuML 1.0 network writer, docs/muml_wa_net.js vs terai_router.muml_wa.net (needs numpy)."""
+    from terai_router import muml_wa
+    from terai_router.muml_wa import net
+    path = ROOT / 'docs' / net.WEIGHTS_NAME
+    if not net.numpy_available() or not path.is_file():
+        print('muml wa net: SKIPPED (numpy or docs/muml-1.0-int8.bin missing)')
+        return 0
+    prompts = ['เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'sad waltz in A minor 1 minute', 'calm reel key of G 45 seconds',
+               'happy irish 6/8 key Bb 90 bpm', 'epic metal 180 bpm 2 นาที 10 วิ', 'คีย์ D ไมเนอร์ ร็อค 6/8', '',
+               'เพลงเศร้า 3/4 คีย์ F', 'folk jig D major', 'rock 10 วินาที']
+    items = [[p, s, st] for p in prompts for s, st in ((0, 'auto'), (1, 'folk'), (2, 'rock'))]
+    res = subprocess.run(['node', '-e', MUML_WA_NET_JS, str(ROOT / 'docs' / 'muml_wa.js'), str(ROOT / 'docs' / 'muml_wa_net.js'),
+                          str(path)], input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, check=True)
+    bad = 0
+    for (p, s, st), (song, mid) in zip(items, json.loads(res.stdout)):
+        py = muml_wa.generate(p, s, st, writer='net', weights=str(path))
+        if json.loads(json.dumps(py, ensure_ascii=False)) != song or muml_wa.to_midi(py).hex() != mid:
+            bad += 1
+            if bad <= 5:
+                print('MUML_WA_NET_DIFF', repr(p), s, st)
+    print(f'muml wa net: checks={len(items)} identical={len(items) - bad} diff={bad}')
+    return bad
 
 
 # v0.13: Temmo remix rules (docs/temmo/community.js vs src/terai_router/temmo/remix.py).
@@ -328,6 +364,7 @@ process.stdout.write(JSON.stringify(items.map(x => { const p = r.predict(x); ret
     tth_bad = tth_parity()
     sankpup_bad = sankpup_parity()
     muml_wa_bad = muml_wa_parity()
+    muml_wa_bad += muml_wa_net_parity()
     remix_bad = remix_parity()
     return 1 if intent_diff or norm_diff or chat_bad or web_bad or tth_bad or sankpup_bad or muml_wa_bad or remix_bad else 0
 

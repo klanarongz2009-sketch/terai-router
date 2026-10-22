@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.16.0 (2026-10-22)
+
+Repository v0.16.0, first release of the model **TERAI1BETA**. This release writes down the versioning scheme for every model: the repository stays 0.X.Y, each model has its own id (MuML 1.0 was the first, in v0.15.0). See "Versions: repository and models" in README.md.
+
+### Added
+- Model TERAI1BETA for `terai chat`: local Gemma 4 E2B (official QAT Q4_0 GGUF, CPU, llama-cpp-python) writes the replies instead of fixed templates. The existing rules are its tools: calculator, date and time, unit conversion, memory and the bundled Thai Wikipedia pack. Every fact in a reply names its source; with no source the reply says it does not know. A grounding check rejects replies with numbers no tool returned (or missing the tool's number); the model gets one retry, then the rule answer is used.
+- Image input: `terai chat --image FILE` (ask about an image, then keep chatting) and `terai vision FILE` (describe, read Thai/English text, answer a question about the image), through the Gemma 4 vision projector (mmproj).
+- `terai chat --setup` downloads the TERAI1BETA weights (about 4.3 GB: 3.35 GB model + 0.99 GB vision projector, SHA-256 checked) into `~/.cache/terai/models`. New flags: `--brain auto|terai1beta|rules`, `--model e2b|e4b`, `--threads`, `--image`, `--trace`. Environment: `TERAI_MODELS_DIR`, `TERAI_THREADS`.
+- `terai models` lists every model id; `terai --version` prints `terai-router 0.16.0 / model TERAI1BETA`. Model ids and the rule for them live in `src/terai_router/versions.py`.
+- Optional extra `llm` (llama-cpp-python).
+- Evals: `eval/brain_eval.py` on the fixed set `eval/terai1beta_cases_v15.json` (52 cases), `eval/vision_eval.py` on 12 generated test images in `eval/vision/`; `tests/test_brain.py`.
+
+### Unchanged
+- Without the model (or with `--brain rules`) the chat is the rule chat of v0.8.0 to v0.14.0: chat eval 81/81, 37/37, 16/16 and browser parity 790/790.
+- The web demo keeps the rule chat; TERAI1BETA and image reading are CLI only (a 4 GB model does not run in the demo page).
+- The repository's own 1.0 criteria. The "1.0" in MuML 1.0, MUML 1.0 HIQ and Temmo 1.0 is a model id, not the repository version.
+
+## v0.15.0 (2026-10-22)
+
+MuML 1.0 WA now writes notes with the trained MuML 1.0 network instead of the Markov chain. Markov v1 stays only as
+the fallback. Model id: MuML 1.0 (note writer `muml-1.0-net`); the repository version stays 0.x.
+
+- Network: decoder-only transformer, 4 layers, d_model 256, 4 heads, context 512, 163 MuML tokens, 3,332,352
+  parameters, trained from scratch on the Nottingham folk tunes, 30 epochs, best val loss 1.3780.
+- Weights: `docs/muml-1.0-int8.bin`, int8 with one float32 scale per row, 3,421,372 bytes, SHA-256
+  f8a6d103...144fef (`training/muml_wa/export_net.py`). Val loss of the int8 file 1.3779 (fp32: 1.3780). Not in the
+  Python package; also attached to this release.
+- Browser: `docs/muml_wa_net.js`, our own float64 forward pass with a key/value cache (no onnxruntime, no server).
+  The MuML tab gets a Writer choice (MuML 1.0 network / Markov v1) and a Write button; weights download once on
+  first use; if they fail, Markov v1 writes the song and the tab says so.
+- Python and CLI: `terai_router.muml_wa.net` (numpy) and the new `terai muml-wa` command (`--setup` downloads and
+  checks the weights, `--writer net|markov|auto`). `generate(..., writer='auto')` uses the network when numpy and the
+  weights are there.
+- Decoding: temperature 0.9, top-p 0.95, grammar mask, key guard (logit -2 outside the scale). Probabilities become
+  integer weights (parts per million) drawn with the seeded mulberry32 generator, so Python and JavaScript write the
+  same song.
+- Before/after (`eval/muml_wa_writers.py`, 10 prompts x 3 seeds): distinct 4-grams 0.757 -> 0.927, bars repeated
+  22.3% -> 1.2%, notes in key 97.6% -> 98.3%, ends on tonic 100% -> 26.7%, length/asked 1.04 -> 1.02, time per song
+  0.002 s -> 1.7 s (Python). Browser: 30-second waltz written in 1.8 s, weights parsed in about 0.5 s.
+- Tests: pytest 353 passed, 4 skipped (6 new in `tests/test_muml_wa_net.py`). Parity: MuML WA Markov v1 330/330,
+  MuML 1.0 network 30/30 (tokens, notes, `.mid` bytes), all other suites unchanged.
+- License: code MIT; the weights are learned from the GPL-3.0 Nottingham data, so they are GPL-3.0 like the Markov
+  table (DATA_LICENSE, NOTICE item 12).
+- Limits: almost no repeated bars, so no clear AABB parts; only about a quarter of songs end on the tonic; repeat
+  signs are not expanded; Python needs numpy; folk-trained, so Rock changes only the arrangement.
+
 ## v0.14.0 (2026-10-22)
 
 TERM AI, the original Terminal AI that TER-AI grew from, as a limited-time trial (`terai term`). It stops working at

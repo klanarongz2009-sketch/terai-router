@@ -125,13 +125,14 @@
     <div class="row"><span class="k">Understood</span><span class="v" id="sp-info">-</span></div>
   </section>
   <section id="pane-muml" hidden>
-    <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. A seeded Markov note writer trained on the MuML 1.0 data (Nottingham folk tunes) writes the notes; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. Same prompt and seed give the same song as <code>terai_router.muml_wa</code> in Python. The note writer is Markov v1, not the trained MuML 1.0 model yet. License: code MIT; the note table (<a href="muml_wa_table.js">muml_wa_table.js</a>, built from the <a href="https://github.com/jukedeck/nottingham-dataset">Nottingham dataset</a>) is <a href="LICENSE-GPL-3.0.txt">GPL-3.0</a>.</p>
+    <p class="sub">MuML 1.0 WA (MuML 1.0 Web Audio API): music written and played in your browser. The trained MuML 1.0 network (a 3.3M-parameter transformer trained from scratch on the Nottingham folk tunes) writes the melody, chords and rhythm right here in JavaScript; the Web Audio API synthesizes every sound from oscillators, filters and noise. No soundfont, no server, no cloud API. The weights (<a href="muml-1.0-int8.bin">muml-1.0-int8.bin</a>, 3.4 MB) download once when you first write a song; if they cannot load, the older Markov v1 writer takes over. Same prompt and seed give the same song as <code>terai muml-wa</code> in Python. License: code MIT; the weights and the Markov table (<a href="muml_wa_table.js">muml_wa_table.js</a>), both built from the <a href="https://github.com/jukedeck/nottingham-dataset">Nottingham dataset</a>, are <a href="LICENSE-GPL-3.0.txt">GPL-3.0</a>.</p>
     <textarea id="mu-in" placeholder="Describe the song in Thai or English: mood, BPM, key, length, e.g. energetic rock 140 bpm in E minor 20 seconds"></textarea>
     <div class="chips-label">Examples in English and Thai (English meaning shown in grey).</div>
     <div class="chips" id="mu-chips"></div>
     <div class="row"><span class="k">Style</span><span class="v"><select id="mu-style" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"><option value="auto">Auto (from prompt)</option><option value="folk">Folk</option><option value="rock">Rock</option></select></span></div>
+    <div class="row"><span class="k">Writer</span><span class="v"><select id="mu-wr" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"><option value="net">MuML 1.0 network (trained)</option><option value="markov">Markov v1 (instant, fallback)</option></select></span></div>
     <div class="row"><span class="k">Seed</span><span class="v"><input id="mu-seed" type="number" value="0" min="0" style="width:7em;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit"> <button type="button" class="chip" id="mu-next">New seed</button></span></div>
-    <div class="chips"><button type="button" class="chip" id="mu-play">&#9654; Play</button><button type="button" class="chip" id="mu-stop">&#9632; Stop</button><button type="button" class="chip" id="mu-wav">Download .wav</button><button type="button" class="chip" id="mu-mid">Download .mid</button></div>
+    <div class="chips"><button type="button" class="chip" id="mu-write">Write</button><button type="button" class="chip" id="mu-play">&#9654; Play</button><button type="button" class="chip" id="mu-stop">&#9632; Stop</button><button type="button" class="chip" id="mu-wav">Download .wav</button><button type="button" class="chip" id="mu-mid">Download .mid</button></div>
     <div class="card" style="padding:12px"><canvas id="mu-roll" width="680" height="160" style="width:100%;height:auto;display:block"></canvas></div>
     <div class="row"><span class="k">Understood</span><span class="v" id="mu-info">-</span></div>
     <div class="row"><span class="k">Note writer</span><span class="v" id="mu-writer">-</span></div>
@@ -236,19 +237,54 @@ EXAMPLES.forEach(([x, en]) => exampleChip('chips', x, en, t => { $('in').value =
 </script>
 <script src="muml_wa_table.js"></script>
 <script>__MUML_WA_JS__</script>
+<script>__MUML_WA_NET_JS__</script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   MUMLWA.setTable(window.MUML_WA_TABLE);
   const KEYS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
   const COLORS = { lead_folk: '#5eead4', lead_rock: '#5eead4', chords_folk: '#64748b', power_rock: '#f87171', bass_folk: '#fbbf24', bass_rock: '#fbbf24' };
-  let song = null;
-  function gen() {
-    song = MUMLWA.generate($('mu-in').value, Math.max(0, parseInt($('mu-seed').value, 10) || 0), $('mu-style').value);
+  let song = null, key = '', netState = 'idle', busy = false;
+  function args() { return [$('mu-in').value, Math.max(0, parseInt($('mu-seed').value, 10) || 0), $('mu-style').value, $('mu-wr').value]; }
+  function show(note) {
     const p = song.prompt;
     $('mu-info').textContent = `${p.style} | ${p.meter} | ${KEYS[p.tonic]} ${p.mode} | ${p.bpm} BPM | ${p.mood} | ${Math.round(MUMLWA.songSeconds(song))} s | form ${song.form}`;
-    $('mu-writer').textContent = 'Markov v1 (MuML 1.0 data). The trained MuML 1.0 network is not in the browser yet.';
+    $('mu-writer').textContent = (song.note_writer === 'muml-1.0-net' ? 'MuML 1.0 network (trained, int8 weights)' : 'Markov v1 (fallback)') + (note ? ' | ' + note : '');
     draw();
+  }
+  async function ensureNet() {
+    if (MUMLWA_NET.ready()) return true;
+    if (netState === 'failed') return false;
+    $('mu-writer').textContent = 'Downloading MuML 1.0 weights (3.4 MB, once)...';
+    const t0 = performance.now();
+    try { await MUMLWA_NET.fetchWeights('muml-1.0-int8.bin'); netState = 'ok ' + Math.round(performance.now() - t0) + ' ms'; return true; }
+    catch (e) { netState = 'failed'; console.warn(e); return false; }
+  }
+  // Markov writes instantly while you type; the network writes when you press Write or Play.
+  function gen() {
+    const a = args();
+    if (a[3] === 'markov') { song = MUMLWA.generate(a[0], a[1], a[2]); key = a.join('|'); show(''); return; }
+    if (a.join('|') !== key) $('mu-writer').textContent = 'MuML 1.0 network: press Write (or Play) to write this song.';
+  }
+  async function write() {
+    const a = args();
+    if (a.join('|') === key && song) return song;
+    if (busy) return song;
+    busy = true;
+    try {
+      if (a[3] === 'net' && await ensureNet()) {
+        $('mu-writer').textContent = 'MuML 1.0 is writing...';
+        await new Promise(r => setTimeout(r, 30));
+        const t0 = performance.now();
+        song = MUMLWA_NET.generate(a[0], a[1], a[2]);
+        key = a.join('|');
+        show(`${song.tokens.length} tokens in ${((performance.now() - t0) / 1000).toFixed(1)} s | weights ${netState}`);
+      } else {
+        song = MUMLWA.generate(a[0], a[1], a[2]); key = a.join('|');
+        show(a[3] === 'net' ? 'weights could not load, used Markov v1' : '');
+      }
+    } finally { busy = false; }
+    return song;
   }
   function draw() {
     const c = $('mu-roll'), g = c.getContext('2d');
@@ -267,17 +303,18 @@ EXAMPLES.forEach(([x, en]) => exampleChip('chips', x, en, t => { $('in').value =
   }
   [['happy folk jig', ''], ['energetic rock 140 bpm in E minor 20 seconds', ''], ['calm folk reel in G major 45 seconds', ''], ['dark rock 6/8 in D minor', ''],
    ['เพลงโฟล์คสนุกๆ จิ๊ก', 'a fun folk jig'], ['เพลงร็อกมันส์ๆ 140 bpm คีย์ E minor 20 วินาที', 'a high-energy rock song, 140 bpm, E minor, 20 seconds'], ['เพลงเศร้า วอลทซ์ คีย์ A minor', 'a sad waltz in A minor']]
-    .forEach(([t, en]) => exampleChip('mu-chips', t, en, p => { $('mu-in').value = p; gen(); }));
-  $('mu-in').addEventListener('input', gen); $('mu-seed').addEventListener('input', gen); $('mu-style').addEventListener('change', gen);
+    .forEach(([t, en]) => exampleChip('mu-chips', t, en, p => { $('mu-in').value = p; gen(); write(); }));
+  $('mu-in').addEventListener('input', gen); $('mu-seed').addEventListener('input', gen); $('mu-style').addEventListener('change', gen); $('mu-wr').addEventListener('change', gen);
   $('mu-next').addEventListener('click', () => { $('mu-seed').value = (parseInt($('mu-seed').value, 10) || 0) + 1; gen(); });
-  $('mu-play').addEventListener('click', () => { gen(); MUMLWA.play(song); });
+  $('mu-write').addEventListener('click', () => write());
+  $('mu-play').addEventListener('click', async () => { const s = await write(); if (s) MUMLWA.play(s); });
   $('mu-stop').addEventListener('click', () => MUMLWA.stop());
-  $('mu-mid').addEventListener('click', () => download('muml-wa.mid', MUMLWA.toMidi(song), 'audio/midi'));
+  $('mu-mid').addEventListener('click', async () => { const s = await write(); if (s) download('muml-wa.mid', MUMLWA.toMidi(s), 'audio/midi'); });
   $('mu-wav').addEventListener('click', async () => {
     const b = $('mu-wav'); b.disabled = true; b.textContent = 'Rendering...';
-    try { download('muml-wa.wav', await MUMLWA.renderWav(song), 'audio/wav'); } finally { b.disabled = false; b.textContent = 'Download .wav'; }
+    try { const s = await write(); download('muml-wa.wav', await MUMLWA.renderWav(s), 'audio/wav'); } finally { b.disabled = false; b.textContent = 'Download .wav'; }
   });
-  $('mu-in').value = 'happy folk jig'; gen();
+  $('mu-in').value = 'happy folk jig'; song = MUMLWA.generate('happy folk jig', 0, 'auto'); show('preview; press Write for the MuML 1.0 network'); key = '';
 })();
 </script>
 <script>
