@@ -262,6 +262,10 @@ def main(argv=None):
     if argv and argv[0] == 'models':
         from .brain.cli import models_main
         return models_main(argv[1:])
+    if argv and argv[0] == 'tagentic':
+        # Tagentic (Tagentic1, beta): prototype, not released
+        from .tagentic.cli import main as tagentic_main
+        return tagentic_main(argv[1:])
     if argv and argv[0] == 'term':
         # TERM AI limited-time trial: remove this branch on 2027-01-01 00:00:00 UTC+7 (docs/TERM-AI.md)
         from .term_ai.cli import main as term_main

@@ -15,3 +15,7 @@ venv/
 # large generated training rows; rebuild with: python training/gen_data.py
 training/train_v07.json
 bench/*.partial.json
+# Tagentic memory files are personal: keep them out of the repository
+User.md
+Memory.md
+.terai/
