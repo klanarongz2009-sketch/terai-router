@@ -163,14 +163,15 @@ def chat_main(argv=None):
     ap.add_argument('--player', default=None,
                     help="command that plays a WAV file (default: first of ffplay, paplay, aplay, afplay, mpv, "
                          "termux-media-player); 'none' only saves the files")
-    ap.add_argument('--brain', choices=['auto', 'terai1beta', 'rules'], default='auto',
-                    help='auto (default): model TERAI1BETA (local Gemma 4 writes the replies, the rules are its tools) '
-                         'when it is installed, else the rule chat; terai1beta: always the model (downloads it); '
+    ap.add_argument('--brain', choices=['auto', 'terai1', 'terai1beta', 'rules'], default='auto',
+                    help='auto (default): model TERAI1 (beta; local Gemma 4 writes the replies, the rules are its tools) '
+                         'when it is installed, else the rule chat; terai1: always the model (downloads it); '
+                         'terai1beta: old name of terai1 (deprecated alias); '
                          'rules: the rule chat only')
-    ap.add_argument('--model', default=None, help='Gemma 4 size for TERAI1BETA: e2b (default) or e4b')
+    ap.add_argument('--model', default=None, help='Gemma 4 size for TERAI1: e2b (default) or e4b')
     ap.add_argument('--threads', type=int, default=None, help='CPU threads for the model (default: all)')
-    ap.add_argument('--image', metavar='FILE', help='ask about this image first (TERAI1BETA vision), then keep chatting')
-    ap.add_argument('--setup', action='store_true', help='download the TERAI1BETA weights (text + vision) and exit')
+    ap.add_argument('--image', metavar='FILE', help='ask about this image first (TERAI1 vision), then keep chatting')
+    ap.add_argument('--setup', action='store_true', help='download the TERAI1 weights (text + vision) and exit')
     ap.add_argument('--trace', action='store_true', help='print which tool answered and the grounding check')
     _voice_arg(ap)
     a = ap.parse_args(argv)
@@ -186,7 +187,8 @@ def chat_main(argv=None):
     from .chat import Chat
     from .brain.cli import make_brain
     c = Chat(path=a.session, web=a.web, searx=a.searx)
-    engine = 'terai1beta' if (a.image and a.brain == 'auto') else a.brain
+    from .versions import MODEL_ID, resolve_engine
+    engine = 'terai1' if (a.image and a.brain == 'auto') else resolve_engine(a.brain)
     brain = make_brain(c, engine, a.model, a.threads, quiet=not sys.stdin.isatty())
     if brain is not None and a.image:
         brain.lm.vision = True
@@ -201,7 +203,7 @@ def chat_main(argv=None):
         c.forget()
     tty = sys.stdin.isatty()
     if tty:
-        print('TER-AI chat ' + __version__ + ' / model ' + ('TERAI1BETA' if brain else 'rules') + (' (web search on)' if c.web else ' (offline)') + (' (speaking with TTH)' if tth else '') + '. Session: ' + c.path + '. Ctrl-D or /quit to exit.')
+        print('TER-AI chat ' + __version__ + ' / model ' + (MODEL_ID if brain else 'rules') + (' (web search on)' if c.web else ' (offline)') + (' (speaking with TTH)' if tth else '') + '. Session: ' + c.path + '. Ctrl-D or /quit to exit.')
     pending_image = a.image
     try:
         while True:
@@ -225,13 +227,13 @@ def chat_main(argv=None):
                     image = pending_image
                 pending_image = None
                 if brain is None:
-                    print('terai> reading images needs model TERAI1BETA: terai chat --setup', flush=True)
+                    print('terai> reading images needs model TERAI1: terai chat --setup', flush=True)
                     continue
                 brain.lm.vision = True
             try:
                 answer = brain.reply(line, image=image) if brain is not None else c.reply(line)
             except Exception as e:  # model or image problem: say it and keep the chat going
-                answer = 'TERAI1BETA error: ' + str(e)
+                answer = 'TERAI1 error: ' + str(e)
             print('terai> ' + answer, flush=True)
             if a.trace and brain is not None:
                 L = brain.last

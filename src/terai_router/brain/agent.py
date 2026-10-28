@@ -1,4 +1,4 @@
-"""TERAI1BETA chat: the rules are tools, a local Gemma 4 writes the reply, a grounding check guards it.
+"""TERAI1 (beta) chat: the rules are tools, a local Gemma 4 writes the reply, a grounding check guards it.
 
 One turn:
 1. The rule chat (chat.Chat) runs first. When a tool rule answers (memory, date and time, random, text tools,
@@ -10,6 +10,11 @@ One turn:
    the tool's main number must be in the reply; a knowledge reply must overlap the source text; a reply with no
    source must say it does not know. A failed check is retried once at temperature 0, then the rule answer is
    used. The knowledge citation is added by code, never written by the model.
+5. Identity guard (v0.17.0): questions about who it is, who made it or which model it uses are answered from fixed
+   facts (TERAI1 of TER-AI, running on the open base model Gemma 4). To the user the model calls itself TERAI1;
+   "TERAI1BETA" in a reply is rewritten to "TERAI1". Any reply that says it was developed or
+   made by Google, that it is Gemma, or that TER-AI trained the model is retried once, then the fixed identity
+   answer is used.
 """
 from __future__ import annotations
 
@@ -35,14 +40,73 @@ NUM = re.compile(r'\d+(?:[.,]\d+)*')
 URL = re.compile(r'https?://|www\.', re.I)
 CITE = re.compile(r'\s*\(ที่มา: .*\)\s*$')
 
+# Identity (v0.17.0). The model's name is TERAI1 (it was TERAI1BETA in 0.16.0; "beta" is its status, not its
+# name). It calls itself "TERAI1" when it talks to the user, may say that TERAI1 is still being improved when
+# asked about its status, and the old name "TERAI1BETA" in a reply is rewritten to "TERAI1". It runs on the open
+# model Gemma 4 as its base. It must never say it was developed or made by Google, never call itself Gemma, and
+# never claim that TER-AI trained the base model. A reply that does is retried once, then replaced by the fixed
+# answer below.
+IDENTITY_RULE = (
+    'ตัวตน: คุณคือ TERAI1 โมเดลแชทของโปรเจกต์ TER-AI เรียกตัวเองว่า TERAI1 เท่านั้น ห้ามบอกว่าถูกพัฒนาหรือสร้างโดย Google '
+    'ห้ามบอกว่าตัวเองคือ Gemma และห้ามบอกว่า TER-AI ฝึกโมเดลเอง ถ้าผู้ใช้ถามว่าใช้โมเดลอะไร ให้ตอบตามจริงว่า '
+    'TERAI1 รันในเครื่องบน Gemma 4 ซึ่งเป็น open model ที่ใช้เป็นฐาน ถ้าถูกถามเรื่องสถานะ ให้ตอบว่า TERAI1 ยังอยู่ระหว่างปรับปรุง '
+    '(Identity: you are TERAI1 of the TER-AI project; call yourself TERAI1 only. Never say you were developed or made by Google, never say '
+    'you are Gemma, never say TER-AI trained the model. Asked which model you use, say you run locally on Gemma 4, '
+    'an open model used as the base. Asked about your status, say TERAI1 is still being improved.)'
+)
+IDENTITY_Q = re.compile(
+    r'(?:คุณ|เธอ|แก|นาย)\s*(?:คือ|เป็น)\s*ใคร|(?:คุณ|เธอ)\s*ชื่อ\s*อะไร|'
+    r'(?:ใคร|บริษัท\s*ไหน|ที่ไหน)\s*(?:เป็นคน|เป็นผู้)?\s*(?:พัฒนา|สร้าง|ทำ|เทรน|ฝึก|เขียน)\s*(?:ขึ้น)?\s*(?:มา)?\s*'
+    r'(?:คุณ|เธอ|นาย|แก|TER-?AI|TERAI)|'
+    r'(?:คุณ|เธอ|TER-?AI|TERAI1?BETA)\s*(?:ถูก)?\s*(?:พัฒนา|สร้าง|เทรน|ฝึก)\s*(?:ขึ้น)?\s*(?:มา)?\s*(?:โดย|จาก)?\s*'
+    r'(?:ใคร|บริษัท\s*ไหน|ที่ไหน)|'
+    r'(?:ใช้|เป็น|คือ|รัน\s*บน)\s*(?:โมเดล|model|LLM)\s*(?:อะไร|ไหน|ตัวไหน)|'
+    r'(?:คุณ|เธอ)\s*(?:คือ|เป็น|ใช่)\s*(?:gemma|เจมมา|google|กูเกิล)|'
+    r'\bwho\s+(?:are|r)\s+(?:you|u)\b|\bwhat\s+are\s+you\b|\byour\s+name\b|'
+    r'\bwho\s+(?:made|built|created|developed|trained|makes|owns)\s+(?:you|u)\b|'
+    r'\b(?:what|which)\s+(?:model|llm)\b|\bwhat\s+ai\s+are\s+you\b|\bare\s+you\s+(?:gemma|google|a\s+google)|'
+    r'(?:คุณ|เธอ|TERAI ?1)\s*(?:ยัง)?\s*(?:เป็น|อยู่)?\s*(?:รุ่น|เวอร์ชัน|ช่วง)?\s*(?:เบต้า|เบตา|beta|ทดลอง)|'
+    r'\bare\s+you\s+(?:still\s+)?(?:in\s+)?(?:a\s+)?beta\b|\bis\s+terai ?1\s+(?:still\s+)?(?:in\s+)?beta\b',
+    re.I)
+BAD_IDENTITY = re.compile(
+    r'(?:พัฒนา|สร้าง|ฝึก|เทรน|ผลิต|ออกแบบ)\s*(?:ขึ้น)?\s*(?:มา)?\s*(?:โดย|จาก)\s*(?:ทีม(?:งาน)?\s*|บริษัท\s*)?'
+    r'(?:Google|กูเกิล|กูเกิ้ล|DeepMind)|'
+    r'(?:Google|กูเกิล|กูเกิ้ล|DeepMind)\s*(?:เป็นผู้|เป็นคน)?\s*(?:พัฒนา|สร้าง|ฝึก|เทรน)\s*(?:ผม|ฉัน|ดิฉัน|เรา)|'
+    r'\b(?:developed|made|created|built|trained|designed)\s+by\s+(?:the\s+)?(?:Google|DeepMind)|'
+    r'\b(?:Google|DeepMind)\s+(?:developed|made|created|built|trained)\s+me\b|'
+    r"\bI\s*(?:am|'m|’m)\s+(?:a\s+|an\s+)?(?:Gemma|Google)|"
+    r'(?:ผม|ฉัน|ดิฉัน|เรา)\s*(?:คือ|เป็น|ชื่อ)\s*(?:โมเดล\s*)?(?:Gemma|เจมมา|Google|กูเกิล)|'
+    r'TER-?AI\s*(?:ได้\s*)?(?:ฝึก|เทรน)\s*(?:โมเดล)|เทรนโมเดลเองทั้งหมด|ฝึกโมเดลเองทั้งหมด|'
+    r'\bTER-?AI\s+(?:has\s+)?trained\s+(?:this|the|its|my|our)\b',
+    re.I)
+IDENTITY_TH = ('ผมคือ TERAI1 โมเดลแชทของโปรเจกต์ TER-AI ครับ ผมรันในเครื่องของคุณบน {base} '
+               'ซึ่งเป็น open model ที่ใช้เป็นฐาน โปรเจกต์ TER-AI ไม่ได้ฝึกโมเดลนี้เอง แต่ใช้กฎและเครื่องมือของ TER-AI ช่วยตอบ '
+               'ตอนนี้ TERAI1 ยังอยู่ระหว่างปรับปรุงครับ')
+IDENTITY_EN = ("I'm TERAI1, the chat model of the TER-AI project. I run locally on your machine on {base}, an "
+               "open model used as the base. The TER-AI project did not train this model; TER-AI's rules and tools "
+               "help me answer. TERAI1 is still being improved.")
+THAI = re.compile('[\u0e00-\u0e7f]')
+
 SYSTEM = (
-    'คุณคือ TER-AI โมเดล TERAI1BETA ผู้ช่วยภาษาไทยที่รันในเครื่องของผู้ใช้แบบ offline '
+    'คุณคือ TER-AI โมเดล TERAI1 ผู้ช่วยภาษาไทยที่รันในเครื่องของผู้ใช้แบบ offline '
     'แทนตัวเองว่า "ผม" และลงท้ายว่า "ครับ" ตอบเป็นภาษาไทยที่เป็นธรรมชาติ สั้นๆ ไม่เกินสามประโยค ไม่ใช้ markdown\n'
     'สิ่งที่คุณทำได้: คิดเลข บอกวันและเวลา แปลงหน่วย จำเรื่องที่ผู้ใช้เล่า ตอบความรู้จาก Wikipedia ภาษาไทยที่มีในเครื่อง '
     'ค้นเว็บเมื่อผู้ใช้เปิด --web และอ่านภาพ สิ่งที่ทำไม่ได้: แปลภาษา ข่าว ราคา และข้อมูลแบบ real-time\n'
     'กฎ: ข้อเท็จจริง ตัวเลข ชื่อ และวันที่ ใช้ได้เฉพาะที่อยู่ใน "ผลจากเครื่องมือ" หรือ "ความจำเกี่ยวกับผู้ใช้" เท่านั้น '
-    'ห้ามเติมข้อมูลอื่น ห้ามเดา ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่าไม่รู้ ห้ามใส่ลิงก์ ห้ามอ้างว่าทำสิ่งที่ไม่ได้ทำ'
+    'ห้ามเติมข้อมูลอื่น ห้ามเดา ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่าไม่รู้ ห้ามใส่ลิงก์ ห้ามอ้างว่าทำสิ่งที่ไม่ได้ทำ\n'
+    + IDENTITY_RULE
 )
+
+
+def spoken_name(reply: str) -> str:
+    """The model calls itself TERAI1 to the user: rewrite TERAI1BETA (and TER-AI 1 BETA spellings) to TERAI1."""
+    return re.sub(r'TER-?AI ?1 ?[-_ ]?BETA', 'TERAI1', reply, flags=re.I)
+
+
+def identity_answer(text: str = '', model: str | None = 'e2b') -> str:
+    """The fixed identity answer, in Thai for a Thai (or empty) message, else English."""
+    base = 'Gemma 4 ' + str(model or 'e2b').upper()
+    return (IDENTITY_TH if THAI.search(text or '') or not text else IDENTITY_EN).format(base=base)
 
 
 def numbers(text: str) -> set:
@@ -70,7 +134,7 @@ def strip_politeness(text: str) -> str:
 
 
 class Brain:
-    """TERAI1BETA. reply(text, image=None) -> str. ``lm`` is a LocalLM (or anything with chat/look)."""
+    """TERAI1 (beta). reply(text, image=None) -> str. ``lm`` is a LocalLM (or anything with chat/look)."""
 
     def __init__(self, chat: Chat | None = None, lm: LocalLM | None = None, seed: int = 0, history_turns: int = 3,
                  min_support: float = 0.5, **chat_kw) -> None:
@@ -88,6 +152,9 @@ class Brain:
                     s.get('location'), s.get('grade'), s.get('kv')]):
             return 'ยังไม่มี'
         return strip_politeness(self.chat._all_facts()).replace('สิ่งที่ผมจำเกี่ยวกับคุณ: ', '')
+
+    def identity_answer(self, text: str = '') -> str:
+        return identity_answer(text, getattr(self.lm, 'model', 'e2b'))
 
     def history_text(self) -> str:
         h = self.chat.state['history'][:-1][-self.history_turns:]
@@ -147,6 +214,8 @@ class Brain:
         problems = []
         if not reply.strip():
             return ['empty reply']
+        if BAD_IDENTITY.search(reply):
+            problems.append('identity: reply says it was made by Google, is Gemma, or that TER-AI trained the model')
         if URL.search(reply):
             problems.append('link in reply')
         reply = re.sub(r'TER-?AI ?1 ?BETA', 'TERAI', reply, flags=re.I)
@@ -180,6 +249,10 @@ class Brain:
             task = ('ผลจากเครื่องมือ (' + tool + '): ' + strip_politeness(CITE.sub('', evidence)) + '\n'
                     'ตอบคำถามของผู้ใช้ให้ตรงประเด็นโดยใช้ผลนี้เท่านั้น เขียนตัวเลขให้ตรงกับผลทุกตัว ไม่ต้องบอกที่มา '
                     'ถ้าผลนี้ไม่ได้ตอบสิ่งที่ถาม ให้บอกว่าข้อมูลที่มีไม่ได้บอกเรื่องนั้น')
+        elif kind == 'identity':
+            task = ('ข้อมูลตัวตนที่ถูกต้อง: ' + evidence + '\n'
+                    'ตอบคำถามของผู้ใช้เรื่องตัวตนหรือโมเดลโดยใช้ข้อมูลนี้เท่านั้น ห้ามบอกว่าถูกพัฒนาหรือสร้างโดย Google '
+                    'และห้ามบอกว่าตัวเองคือ Gemma')
         elif kind == 'no_source':
             task = ('ผลจากเครื่องมือ: ค้นแล้วไม่พบข้อมูลเรื่องนี้ (' + strip_politeness(evidence) + ')\n'
                     'บอกผู้ใช้สั้นๆ ว่าไม่รู้เรื่องนี้ เพราะไม่มีข้อมูล ห้ามเดาคำตอบ')
@@ -206,6 +279,8 @@ class Brain:
             kind = 'knowledge'
         elif tool:
             kind = 'tool'
+        elif IDENTITY_Q.search(text):  # who are you / who made you / which model: fixed facts, no planner
+            kind, evidence = 'identity', self.identity_answer(text)
         else:  # social, chitchat, router or unknown: let the model pick a tool
             kind = 'free'
             if step in ('_unknown', '_chitchat_reply', '_router'):
@@ -231,15 +306,18 @@ class Brain:
             reply = self.lm.chat(self._messages(text, kind, tool, evidence, note), max_tokens=220,
                                  temperature=temp, seed=self.seed + self.chat.state['turns'])
             reply = re.sub(r'\s+', ' ', reply).strip()
-            reply = re.sub(r'TER-?AI ?1 ?BETA', 'TER-AI', reply, flags=re.I)
+            reply = spoken_name(reply)
             problems = self.check(reply, kind, evidence, text)
             if not problems:
                 break
         fallback = bool(problems)
-        if fallback:
+        if fallback and (kind == 'identity' or any(p.startswith('identity:') for p in problems)):
+            final = self.identity_answer(text)
+        elif fallback:
             final = strip_politeness(evidence)
         else:
             final = reply + (' ' + cite if cite and not REFUSAL.search(reply) else '')
+        final = spoken_name(final)
         h = self.chat.state['history']
         if h:
             h[-1]['bot'] = final
@@ -252,10 +330,15 @@ class Brain:
 
     def _image_reply(self, text: str, image: str, t0: float) -> str:
         q = (text or '').strip() or 'อธิบายภาพนี้ และอ่านข้อความทั้งหมดที่เห็นในภาพ'
-        system = ('คุณคือ TER-AI โมเดล TERAI1BETA ตอบเป็นภาษาไทย แทนตัวเองว่าผม ลงท้ายว่าครับ '
-                  'บอกเฉพาะสิ่งที่เห็นในภาพจริง ถ้าอ่านไม่ออกหรือไม่แน่ใจให้บอกตรงๆ ห้ามเดา')
+        system = ('คุณคือ TER-AI โมเดล TERAI1 ตอบเป็นภาษาไทย แทนตัวเองว่าผม ลงท้ายว่าครับ '
+                  'บอกเฉพาะสิ่งที่เห็นในภาพจริง ถ้าอ่านไม่ออกหรือไม่แน่ใจให้บอกตรงๆ ห้ามเดา\n' + IDENTITY_RULE)
         out = self.lm.look(image, q, system=system)
         out = re.sub(r'[ \t]+', ' ', out).strip()
+        if BAD_IDENTITY.search(out):  # same guard as text replies: retry once, then the fixed answer
+            out = re.sub(r'[ \t]+', ' ', self.lm.look(image, q, system=system)).strip()
+            if BAD_IDENTITY.search(out):
+                out = self.identity_answer(text)
+        out = spoken_name(out)
         h = self.chat.state['history']
         h.append({'t': self.chat.now().isoformat(timespec='seconds'), 'user': '[ภาพ] ' + q, 'bot': out})
         self.chat.save()

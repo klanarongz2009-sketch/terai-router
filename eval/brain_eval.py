@@ -1,8 +1,11 @@
-"""TERAI1BETA vs the rule chat on the fixed Thai question set (eval/terai1beta_cases_v15.json).
+"""TERAI1 (beta) vs the rule chat on the fixed Thai question set (eval/terai1beta_cases_v15.json; the file keeps
+the model's 0.16.0 name TERAI1BETA, it is the TERAI1 test set).
 
     python eval/brain_eval.py --engine rules            # fast, no model
-    python eval/brain_eval.py --engine terai1beta       # needs llama-cpp-python + Gemma 4 E2B (terai chat --setup)
-    python eval/brain_eval.py --engine both --out eval/terai1beta_results_v15.json
+    python eval/brain_eval.py --engine terai1           # needs llama-cpp-python + Gemma 4 E2B (terai chat --setup)
+    python eval/brain_eval.py --engine both --out eval/terai1_results_v15.json
+
+--engine terai1beta (the 0.16.0 name) still works as a deprecated alias of terai1.
 
 Metrics: accuracy on cases with an expected answer; hallucination rate = share of cases where the reply states
 something with no source (must_refuse cases answered without saying it does not know, no_numbers cases with a
@@ -27,7 +30,9 @@ sys.path.insert(0, str(ROOT / 'src'))
 
 from terai_router.chat import Chat  # noqa: E402
 from terai_router.brain.agent import REFUSAL, numbers, _trigrams  # noqa: E402
+from terai_router.versions import resolve_engine  # noqa: E402
 
+# The TERAI1 test set. Its file name keeps the model's 0.16.0 name (TERAI1BETA); the data is unchanged.
 CASES = ROOT / 'eval' / 'terai1beta_cases_v15.json'
 
 
@@ -42,7 +47,7 @@ def jacc(a: str, b: str) -> float:
 
 def run(engine: str, data: dict, model: str | None = None, verbose: bool = False) -> dict:
     lm = None
-    if engine == 'terai1beta':
+    if engine == 'terai1':
         from terai_router.brain import Brain, LocalLM
         lm = LocalLM(model=model, auto_download=False)
     rows = []
@@ -111,13 +116,14 @@ def run(engine: str, data: dict, model: str | None = None, verbose: bool = False
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--engine', choices=['rules', 'terai1beta', 'both'], default='rules')
-    ap.add_argument('--model', default=None, help='Gemma 4 size for terai1beta (default e2b)')
+    ap.add_argument('--engine', choices=['rules', 'terai1', 'terai1beta', 'both'], default='rules',
+                    help='terai1beta: deprecated alias of terai1')
+    ap.add_argument('--model', default=None, help='Gemma 4 size for terai1 (default e2b)')
     ap.add_argument('--out', default=None)
     ap.add_argument('-v', '--verbose', action='store_true')
     a = ap.parse_args(argv)
     data = json.loads(CASES.read_text(encoding='utf-8'))
-    engines = ['rules', 'terai1beta'] if a.engine == 'both' else [a.engine]
+    engines = ['rules', 'terai1'] if a.engine == 'both' else [resolve_engine(a.engine)]
     res = {e: run(e, data, a.model, a.verbose) for e in engines}
     for e in engines:
         print(json.dumps(res[e]['summary'], ensure_ascii=False))

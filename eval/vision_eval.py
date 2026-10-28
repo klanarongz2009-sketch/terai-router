@@ -1,4 +1,4 @@
-"""TERAI1BETA image reading: a fixed set of generated test images (eval/vision/*.png, made by --make).
+"""TERAI1 (beta) image reading: a fixed set of generated test images (eval/vision/*.png, made by --make).
 
     python eval/vision_eval.py --make          # (re)draw the images (needs Pillow, the TLWG Loma Thai font and DejaVu Sans Mono)
     python eval/vision_eval.py --out eval/vision_results_v15.json
@@ -122,7 +122,7 @@ def main(argv=None) -> int:
     ocr = [r for r in rows if r['kind'] == 'ocr']
     th = [r for r in ocr if not r['id'].startswith('en')]
     summary = {
-        'model': 'TERAI1BETA vision (' + lm.label + ')', 'images': len(rows),
+        'model': 'TERAI1 vision (' + lm.label + ')', 'images': len(rows),
         'ocr_cer_mean': round(statistics.mean(r['cer'] for r in ocr), 4),
         'ocr_cer_thai_mean': round(statistics.mean(r['cer'] for r in th), 4),
         'ocr_exact': f"{sum(1 for r in ocr if r['cer'] == 0)}/{len(ocr)}",

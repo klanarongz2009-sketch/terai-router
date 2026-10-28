@@ -1,4 +1,4 @@
-"""CLI pieces for TERAI1BETA: `terai vision` and the model side of `terai chat`."""
+"""CLI pieces for TERAI1 (beta): `terai vision` and the model side of `terai chat`."""
 from __future__ import annotations
 
 import argparse
@@ -7,12 +7,14 @@ import resource
 import sys
 import time
 
-from ..versions import MODEL_ID, version_line
+from ..versions import MODEL_ID, resolve_engine, version_line
 from . import local as L
+from .agent import BAD_IDENTITY, IDENTITY_RULE, identity_answer, spoken_name
 
 DEFAULT_VISION_Q = 'อธิบายภาพนี้ และอ่านข้อความทั้งหมดที่เห็นในภาพ'
-VISION_SYSTEM = ('คุณคือ TER-AI โมเดล TERAI1BETA ตอบเป็นภาษาไทย (ถ้าผู้ใช้ถามเป็นภาษาอังกฤษให้ตอบภาษาอังกฤษ) '
-                 'บอกเฉพาะสิ่งที่เห็นในภาพจริง คัดลอกข้อความในภาพตามที่เขียน ถ้าอ่านไม่ออกหรือไม่แน่ใจให้บอกตรงๆ ห้ามเดา')
+VISION_SYSTEM = ('คุณคือ TER-AI โมเดล TERAI1 ตอบเป็นภาษาไทย (ถ้าผู้ใช้ถามเป็นภาษาอังกฤษให้ตอบภาษาอังกฤษ) '
+                 'บอกเฉพาะสิ่งที่เห็นในภาพจริง คัดลอกข้อความในภาพตามที่เขียน ถ้าอ่านไม่ออกหรือไม่แน่ใจให้บอกตรงๆ ห้ามเดา\n'
+                 + IDENTITY_RULE)
 
 
 def vision_main(argv=None) -> int:
@@ -46,6 +48,11 @@ def vision_main(argv=None) -> int:
         load_s = time.time() - t0
         t1 = time.time()
         out = lm.look(a.image, q, max_tokens=a.max_tokens, system=VISION_SYSTEM)
+        if BAD_IDENTITY.search(out):  # identity guard (v0.17.0): retry once, then the fixed answer
+            out = lm.look(a.image, q, max_tokens=a.max_tokens, system=VISION_SYSTEM)
+            if BAD_IDENTITY.search(out):
+                out = identity_answer(q, lm.model)
+        out = spoken_name(out)
         secs = time.time() - t1
     except (L.LLMUnavailable, FileNotFoundError, ValueError) as e:
         print('terai vision: ' + str(e), file=sys.stderr)
@@ -76,7 +83,11 @@ def models_main(argv=None) -> int:
 
 
 def make_brain(chat, engine: str, model: str | None, threads: int | None, quiet: bool):
-    """Return a Brain for `terai chat`, or None for the rule chat. engine: auto | terai1beta | rules."""
+    """Return a Brain for `terai chat`, or None for the rule chat. engine: auto | terai1 | rules
+    (terai1beta, the 0.16.0 name, still works and prints a deprecation notice)."""
+    engine = resolve_engine(engine)
+    if engine not in ('auto', 'terai1', 'rules'):
+        raise ValueError('engine must be auto, terai1 or rules, not ' + repr(engine))
     if engine == 'rules':
         return None
     if engine == 'auto' and not L.available(model or L.DEFAULT_MODEL):

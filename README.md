@@ -6,15 +6,15 @@
 
 TER-AI is an independent, AI-assisted applied R&D project for Thai-language AI systems. It combines typo-tolerant intent routing, local CPU-first chat and vision, Thai speech, SVG-based graphics, and symbolic/audio music tools, with reproducible internal evaluations, explicit model/data licensing, and a public project-continuity notice.
 
-Offline scope: the intent router, the rule chat, TERM AI and the SANKPUP offline generator run on CPU with no network connection. TTH (Wayu-Paxa-TTS-Edge), TERAI1BETA and SANKPUP "gemma" (Gemma 4 E2B on llama-cpp-python), MUML 1.0 HIQ (ACE-Step 1.5, YuE2-3B) and the MuML 1.0 network weights run locally on CPU after a one-time download. Online paths, all optional: the TTH fallback edge-tts sends the text to Microsoft, `terai chat --web` and the demo's web switch send the question to Wikipedia, and the Temmo demo tab (prototype, not released) calls online model providers with your own API key (BYOK). Made with Sesame.
+Offline scope: the intent router, the rule chat, TERM AI and the SANKPUP offline generator run on CPU with no network connection. TTH (Wayu-Paxa-TTS-Edge, and since v0.17.0 the opt-in engine TTH-MTL on OmniVoice, about 3.3 GB), TERAI1 (beta) and SANKPUP "gemma" (Gemma 4 E2B on llama-cpp-python), MUML 1.0 HIQ (ACE-Step 1.5, YuE2-3B) and the MuML 1.0 network weights run locally on CPU after a one-time download. TTH-MTL also downloads Whisper large-v3-turbo (about 1.6 GB) if you give `--ref-audio` without `--ref-text`; once cached it needs no network (`HF_HUB_OFFLINE=1` skips the Hugging Face update check, which sends the model name only). Online paths, all optional: the TTH fallback edge-tts sends the text to Microsoft, `terai chat --web` and the demo's web switch send the question to Wikipedia, and the Temmo demo tab (prototype, not released) calls online model providers with your own API key (BYOK). Made with Sesame.
 
-What is released today (v0.16.0):
+What is released today (v0.17.0):
 
 | Part | What it does | Since |
 |---|---|---|
 | Intent router | Reads one Thai or Thai-English message, fixes common typos and returns one of 15 intents with a confidence score. 1.1 MB model, no dependencies. | v0.7.0 |
-| Chat | Thai chat on your own CPU, with no network connection unless web search is switched on. Since v0.16.0 the replies are written by the local model **TERAI1BETA** (Gemma 4 E2B on CPU); the old rules (calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack) are its tools, every fact names its source, and it says "I don't know" when no source has the answer. It can also read images (`terai chat --image`). Without the model it falls back to the rule chat. Optional Wikipedia web search since v0.9.0. | v0.8.0 (model v0.16.0) |
-| TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
+| Chat | Thai chat on your own CPU, with no network connection unless web search is switched on. Since v0.16.0 the replies are written by the local model **TERAI1** (beta, Gemma 4 E2B on CPU; named TERAI1BETA before v0.17.0); the old rules (calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack) are its tools, every fact names its source, and it says "I don't know" when no source has the answer. It can also read images (`terai chat --image`). Without the model it falls back to the rule chat. Optional Wikipedia web search since v0.9.0. | v0.8.0 (model v0.16.0) |
+| TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Since v0.17.0 the opt-in engine TTH-MTL (local OmniVoice, weights non-commercial) also speaks other languages and can clone a voice; not benchmarked yet. All optional. | v0.10.0 (TTH-MTL v0.17.0) |
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
 | MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Since v0.15.0 the notes come from the trained MuML 1.0 network (3.3M-parameter transformer, int8 weights 3.4 MB, run in JavaScript); Markov v1 is the fallback. Every sound is made by the Web Audio API. | v0.12.0, network v0.15.0 |
 | MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
@@ -35,18 +35,18 @@ status  1.00  เสร็จหรือยัง
 
 The repository version and the model versions are separate. MuML 1.0 was the first model with its own id (v0.15.0); v0.16.0 writes the scheme down for every model.
 
-- **Repository (package) version:** `0.X.Y`; this release is v0.16.0. It moves with every release. The criteria for the repository's own 1.0 are unchanged (see Roadmap).
+- **Repository (package) version:** `0.X.Y`; this release is v0.17.0. It moves with every release. The criteria for the repository's own 1.0 are unchanged (see Roadmap).
 - **Model id:** each model has its own name and version, written exactly as below. A package release never changes a model id, and the "1.0" in a model id is not the repository's 1.0.
 
 | Model id | What it is | Since |
 |---|---|---|
-| TERAI1BETA | Chat model: local Gemma 4 E2B writes the replies, TER-AI's rules are its tools, reads images | v0.16.0 |
+| TERAI1 | Chat model (beta): local Gemma 4 E2B writes the replies, TER-AI's rules are its tools, reads images. Named TERAI1BETA in v0.16.0; renamed in v0.17.0, the old name still works as an alias | v0.16.0 |
 | MuML 1.0 | Note writer behind MuML 1.0 WA (trained network `muml-1.0-net` since v0.15.0) | v0.12.0 |
 | MUML 1.0 HIQ | Text-to-music audio | v0.13.0 |
 | Temmo 1.0 | Small indie game maker (prototype, not released) | - |
 | TER-AI-0.5 | Intent model inside TERM AI (limited-time trial) | v0.14.0 |
 
-`terai --version` prints both, for example `terai-router 0.16.0 / model TERAI1BETA`, and `terai models` lists every model id. The rule lives in `src/terai_router/versions.py`; a new version of one model changes only its own row there.
+`terai --version` prints both, for example `terai-router 0.17.0 / model TERAI1`, and `terai models` lists every model id. The rule lives in `src/terai_router/versions.py`; a new version of one model changes only its own row there. Model ids keep their spelling; the one exception is the v0.17.0 rename of TERAI1BETA to TERAI1 ("beta" is its status, not part of its name). `--brain terai1beta` and `--engine terai1beta` still work and print a deprecation notice.
 
 ## Why the name
 
@@ -54,7 +54,7 @@ TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI c
 
 ## Results (v0.16.0, measured 2026-10-22)
 
-Run on the v0.16.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7.
+Run on the v0.16.0 code with the scripts in this repo. Machine: AMD EPYC, 8 cores, no GPU, Python 3.13.7. The unit-test row was rerun on the v0.17.0 code; v0.17.0 changes no code path measured in the other rows except the TERAI1 identity guard (see [TERAI1](#terai1-beta-the-model-writes-the-replies-v0160)), and none of the 52 TERAI1 eval cases is an identity question. The rule chat's answer to "ใครพัฒนาคุณ" (who made you) was fixed too: it used to say TER-AI trained every model itself; it now says the rule chat and the intent router are written and trained in this project, and the TERAI1 chat runs on Gemma 4, which TER-AI did not train (`tests/test_terai1_rename.py`); chat eval 81/81 and browser parity 790/790 still hold (rerun 2026-10-28).
 
 | Check | Command | Result |
 |---|---|---|
@@ -64,8 +64,8 @@ Run on the v0.16.0 code with the scripts in this repo. Machine: AMD EPYC, 8 core
 | Chat eval, held out | `python eval/chat_eval.py eval/chat_heldout_v08.json` | 37/37 turns, 14/14 conversations |
 | Chat regressions (bugs fixed later) | `python eval/chat_eval.py eval/chat_regress_v08.json` | 16/16 turns, 3/3 conversations |
 | TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
-| Chat model TERAI1BETA vs the rule chat, fixed set of 52 cases (`eval/terai1beta_cases_v15.json`) | `python eval/brain_eval.py --engine both` | 30/30 expected-answer cases in a fixed set of 52 (rule chat 22/30); hallucination 1/52 vs 1/52; details in [TERAI1BETA](#terai1beta-the-model-writes-the-replies-v0160) |
-| Unit tests | `pytest` | 367 passed, 6 skipped (real speech and real model runs, opt-in) |
+| Chat model TERAI1 vs the rule chat, fixed set of 52 cases (`eval/terai1beta_cases_v15.json`, the file keeps the model's v0.16.0 name) | `python eval/brain_eval.py --engine both` | 30/30 expected-answer cases in a fixed set of 52 (rule chat 22/30); hallucination 1/52 vs 1/52; details in [TERAI1](#terai1-beta-the-model-writes-the-replies-v0160) |
+| Unit tests (v0.17.0, run 2026-10-28) | `pytest` | 449 passed, 7 skipped (real speech and real model runs, opt-in) |
 
 Implementation parity (v0.16.0, same run). These checks show that the browser (JavaScript) and Python versions give the same output for the same input. They measure consistency between the two implementations, not answer quality or model accuracy.
 
@@ -113,7 +113,7 @@ pip install git+https://github.com/klanarongz2009-sketch/terai-router.git
 
 From a local clone: `pip install .`
 
-Python 3.9+, no runtime dependencies for the intent router and the rule Chat. TERAI1BETA (extra `llm`), TTH and SANKPUP have optional extras, described in their sections. MUML 1.0 HIQ needs no Python extra, but `terai muml --hiq --setup` needs git, cmake and a C++17 compiler to build its engines, and ffmpeg for .mp3 output and the fade-out.
+Python 3.9+, no runtime dependencies for the intent router and the rule Chat. TERAI1 (extra `llm`), TTH and SANKPUP have optional extras, described in their sections. MUML 1.0 HIQ needs no Python extra, but `terai muml --hiq --setup` needs git, cmake and a C++17 compiler to build its engines, and ffmpeg for .mp3 output and the fade-out.
 
 ## Use
 
@@ -209,18 +209,19 @@ terai> สิ่งที่ผมจำเกี่ยวกับคุณ: �
 
 The knowledge pack (`src/terai_router/data/knowledge_th.json`, 11.9 MB, 8,192 articles) is installed with the package. It has no live data: questions about prices, news or today's results get an honest "no data" reply.
 
-### TERAI1BETA: the model writes the replies (v0.16.0)
+### TERAI1 (beta): the model writes the replies (v0.16.0)
 
-Before v0.16.0 every chat reply came from a fixed template, so replies sounded scripted (the same words for the same kind of message). TERAI1BETA keeps the rules but moves them behind a local language model:
+Before v0.16.0 every chat reply came from a fixed template, so replies sounded scripted (the same words for the same kind of message). TERAI1 (named TERAI1BETA until v0.17.0) keeps the rules but moves them behind a local language model:
 
 1. The rules pick a tool and run it: calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack (and Wikipedia web search with `--web`).
 2. Gemma 4 E2B (official QAT Q4_0 GGUF, CPU only, through llama-cpp-python) writes the reply from the tool result in natural Thai, or English when you write in English.
 3. A grounding check reads the reply: every number must come from a tool result, your message or the memory; the calculator's result must be in it; a knowledge reply must overlap its source and names the source ("ที่มา: Wikipedia ..."). With no source the model must say it does not know. A reply that fails gets one retry, then the rule answer is used.
 
 ```
-pip install "terai-router[llm] @ git+https://github.com/klanarongz2009-sketch/terai-router.git@v0.16.0"
+pip install "terai-router[llm] @ git+https://github.com/klanarongz2009-sketch/terai-router.git@v0.17.0"
 terai chat --setup                       # once: about 4.3 GB (3.35 GB model + 0.99 GB vision projector), SHA-256 checked
-terai chat                               # TERAI1BETA when installed, else the rule chat
+terai chat                               # TERAI1 when installed, else the rule chat
+terai chat --brain terai1                # always TERAI1 (--brain terai1beta: old name, still works)
 terai chat --image menu.png              # ask about an image first, then keep chatting
 terai vision sign.jpg                    # describe the image and read its Thai/English text
 terai vision receipt.png "ยอดรวมเท่าไร"   # answer a question about the image
@@ -228,11 +229,11 @@ terai chat --brain rules                 # the rule chat only (v0.8.0 to v0.14.0
 terai chat --trace                       # show which tool answered and the grounding check
 ```
 
-Weights go to `~/.cache/terai/models` (or `TERAI_MODELS_DIR`); `TERAI_THREADS` or `--threads` sets CPU threads. `--model e4b` uses Gemma 4 E4B (4.9 GB, slower). Without llama-cpp-python or the weights, `terai chat` is the rule chat and says so in its first line. The web demo keeps the rule chat: TERAI1BETA and image reading are CLI only.
+Weights go to `~/.cache/terai/models` (or `TERAI_MODELS_DIR`); `TERAI_THREADS` or `--threads` sets CPU threads. `--model e4b` uses Gemma 4 E4B (4.9 GB, slower). Without llama-cpp-python or the weights, `terai chat` is the rule chat and says so in its first line. The web demo keeps the rule chat: TERAI1 and image reading are CLI only.
 
-Measured on the fixed set `eval/terai1beta_cases_v15.json` (52 cases: 8 calculator, 4 date and time, 4 units, 4 memory, 10 knowledge with an answer in the pack, 10 questions with no source, 12 small-talk messages in 4 groups of 3 similar messages). Same machine as above (AMD EPYC, 8 cores, no GPU), Gemma 4 E2B Q4_0 on llama-cpp-python, 4 threads. Other jobs were using the CPU at the same time (load average about 15 on 8 cores), so the latency below is pessimistic; the first test run of an earlier build measured p50 2.4 s, p95 9.6 s.
+Measured on the fixed set `eval/terai1beta_cases_v15.json` (the TERAI1 test set; the file keeps the model's v0.16.0 name) (52 cases: 8 calculator, 4 date and time, 4 units, 4 memory, 10 knowledge with an answer in the pack, 10 questions with no source, 12 small-talk messages in 4 groups of 3 similar messages). Same machine as above (AMD EPYC, 8 cores, no GPU), Gemma 4 E2B Q4_0 on llama-cpp-python, 4 threads. Other jobs were using the CPU at the same time (load average about 15 on 8 cores), so the latency below is pessimistic; the first test run of an earlier build measured p50 2.4 s, p95 9.6 s.
 
-| | Rule chat (before) | TERAI1BETA |
+| | Rule chat (before) | TERAI1 |
 |---|---|---|
 | Expected-answer cases correct (30 of the 52 cases have an expected answer) | 22/30 (calculator 4/8, knowledge 6/10) | 30/30 |
 | Hallucination (a fact or number no source gave), all 52 cases | 1/52 | 1/52 |
@@ -266,6 +267,8 @@ Image reading, measured with `python eval/vision_eval.py` on 14 checks over 12 g
 | Receipt | total | correct |
 
 Text reading: mean CER 0.150 (Thai 0.165), 4 of 8 images exact. Questions: 5/6 correct. 35.8 s per image (p50, max 58.0 s), peak RAM 4.9 GB. Small or low-contrast Thai text and charts are the weak spots.
+
+**Identity (v0.17.0).** TERAI1 is the model's name; "beta" is its status (still being improved), and the old name TERAI1BETA was dropped from code, CLI and docs in v0.17.0 except as an alias. The model calls itself "TERAI1", and "TERAI1BETA" in any reply is rewritten to "TERAI1". Asked who it is, who made it or which model it uses, it answers from fixed facts: TERAI1 of the TER-AI project, running locally on Gemma 4 E2B as an open base model, which TER-AI did not train; asked about its status, it says TERAI1 is still being improved. A reply that says it was developed or made by Google, that it is Gemma, or that TER-AI trained the model ("พัฒนาโดย Google", "developed by Google", "I am Gemma", ...) is retried once, then replaced by the fixed answer. The same guard covers image replies. Tested with mock model output in `tests/test_brain_identity.py`; the v0.16.0 TERAI1 eval above was not rerun with the real model for v0.17.0 (none of its 52 cases is an identity question).
 
 ## Web search (opt-in, v0.9.0)
 
@@ -360,6 +363,44 @@ prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')   # 'สิ�
 - **Not used:** the Paxa Labs cloud API (Paxa TTS Flash). TTH is local first.
 - **Synthetic voice:** audio from TTH is machine-made. Do not present it as a real person's voice. Audio made with
   the Wayu engine is for non-commercial use (CC-BY-NC-4.0). Details and attribution: [NOTICE](NOTICE).
+
+### TTH-MTL: more languages and voice cloning (v0.17.0)
+
+TTH-MTL ("TTH หลายภาษา") is an opt-in TTH engine built on OmniVoice by k2-fsa, an open-weight zero-shot
+text-to-speech model that its authors describe as covering more than 600 languages. It runs locally on CPU and
+`--engine auto` never picks it.
+
+```bash
+# Python 3.10+, pulls in torch; the OmniVoice weights (about 3.3 GB) download on first use
+pip install "terai-router[tth,tth-mtl] @ git+https://github.com/klanarongz2009-sketch/terai-router.git@v0.17.0"
+
+terai tth --engine mtl "สวัสดีครับ ยินดีต้อนรับสู่ TER-AI" -o th.wav          # Thai, cloned from a Wayu voice
+terai tth --engine mtl --lang en "Hello from TER-AI" -o en.wav                 # other languages
+terai tth --engine mtl --ref-audio me.wav --ref-text "สวัสดีครับ ผมกำลังทดสอบเสียง" "สวัสดีครับ" -o me_th.wav
+terai tth --engine mtl --mtl-steps 32 "สวัสดีครับ" -o th32.wav                 # more diffusion steps (default 16)
+```
+
+- **Voice:** for Thai, the Wayu voice named by `--voice` reads a short Thai reference clip once (cached in
+  `~/.cache/terai/tth-mtl`) and OmniVoice clones it. Other languages, or Thai without Wayu installed, get a voice
+  designed from the voice's gender. `--ref-audio` with `--ref-text` clones your own clip instead.
+- **Text:** Thai goes through the TTH text frontend; other languages are spoken as written.
+- **Downloads and network:** first use downloads `k2-fsa/OmniVoice` from Hugging Face (about 3.3 GB: 2.45 GB
+  model, 0.81 GB audio tokenizer); none of it is in this repository. `--ref-audio` without `--ref-text` also
+  downloads Whisper large-v3-turbo (`openai/whisper-large-v3-turbo`, MIT, about 1.6 GB) to transcribe the clip.
+  Once cached it runs with no network. When a network is available, huggingface_hub asks Hugging Face whether the
+  weights changed (model name only, never your text or audio); set `HF_HUB_OFFLINE=1` to skip that.
+- **License:** omnivoice code Apache-2.0. OmniVoice weights CC-BY-NC (non-commercial, attribution required,
+  because of training data such as Emilia). The audio tokenizer in the same repository (Higgs Audio 2 by Boson
+  AI) is under the Boson Higgs Audio 2 Community License, based on the Meta Llama 3 Community License; it forbids
+  using its output to improve another large language model. Audio made with TTH-MTL is for non-commercial use.
+  Required attribution: "Built with Higgs Materials licensed from Boson AI USA, Inc., Copyright Boson AI USA,
+  Inc., All Rights Reserved and Meta Llama 3 licensed under the Meta Llama 3 Community License, Copyright Meta
+  Platforms, Inc., All Right Reserved." Details: [NOTICE](NOTICE) item 15.
+- **Not benchmarked yet:** this repository has no speech quality (CER), speed or memory measurement of TTH-MTL
+  for v0.17.0. `tests/test_tth_mtl.py` checks the engine's wiring with a fake model; the real-model test in
+  `tests/test_tth_real.py` runs only with `TERAI_TTH_REAL=1 TERAI_TTH_MTL_REAL=1`.
+- **Voice cloning:** clone only your own voice or a voice whose owner agreed. Audio is machine-made; do not
+  present it as a real person's voice.
 
 ## SANKPUP: pictures from code (v0.11.0)
 
@@ -542,7 +583,7 @@ Since v0.10.0 the chat mode can speak its replies ("Speak replies (TTH)", off by
 
 ```
 pip install -e ".[dev,train]"
-pytest                          # 353 pass, 4 skipped (real speech and real model runs, opt-in)
+pytest                          # v0.17.0: 449 pass, 7 skipped (real speech and real model runs, opt-in)
 python eval/parity.py           # JS vs Python: router, chat, mocked web search, TTH text frontend, SANKPUP offline, MuML WA
 python training/muml_wa/build_table.py             # rebuild the MuML WA note table (needs MuML 1.0 tunes.json)
 python eval/sankpup_gemma_bench.py --model e2b     # SANKPUP + Gemma 4: valid-SVG rate and latency
@@ -560,14 +601,14 @@ python bench/bench_typhoon.py   # Typhoon comparison (downloads about 2.5 GB)
 
 Planned:
 
-- The repository's 1.0 criteria are unchanged by the model ids (TERAI1BETA, MuML 1.0, MUML 1.0 HIQ, Temmo 1.0); the repository stays 0.X.Y until they are met.
+- The repository's 1.0 criteria are unchanged by the model ids (TERAI1, MuML 1.0, MUML 1.0 HIQ, Temmo 1.0); the repository stays 0.X.Y until they are met.
 - v1.0 will add more languages, starting with English, each with its own training data, frozen test set and a 90% accuracy bar.
 
 In progress (not released):
 
 - MuML 1.0 training code and a CLI that writes from the network outside MuML 1.0 WA: the training scripts are not in
   this repository yet (only the export script `training/muml_wa/export_net.py` is).
-- TTH-MTL: more voices and languages for TTH. A prototype engine is in this repository (`terai tth --engine mtl`, local OmniVoice, weights CC-BY-NC, about 3.3 GB, opt-in, extra `tth-mtl`); not released.
+- TTH-MTL benchmark: TTH-MTL is released in v0.17.0 (see [TTH-MTL](#tth-mtl-more-languages-and-voice-cloning-v0170)), but no speech quality, speed or memory measurement of it is in this repository yet.
 - Temmo 1.0: an AI that makes small indie games. A prototype (not released) is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
 Ending:
@@ -577,17 +618,17 @@ Ending:
 ## FAQ
 
 ### Does the model have a context window?
-Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model. With TERAI1BETA (v0.16.0) the Gemma 4 model sees only the current message, the tool result, the user memory and the last 3 turns, inside a 4,096-token window; the history itself still lives in `Chat`.
+Not in the LLM sense. The intent classifier reads one message at a time and keeps no history inside the model. `Chat` (v0.8.0) is what keeps the conversation: it stores the history (last 200 turns), the facts the user told it and the context for follow-ups such as "แล้ว 5 ล่ะ", and saves them to a JSON session file, so the memory survives a restart. There is no token limit, because there is no language model. With TERAI1 (v0.16.0) the Gemma 4 model sees only the current message, the tool result, the user memory and the last 3 turns, inside a 4,096-token window; the history itself still lives in `Chat`.
 
 ### Can I download the model?
-Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH, SANKPUP, MUML 1.0 HIQ and TERAI1BETA models are downloaded separately (on first use, or with `terai muml --hiq --setup` / `terai chat --setup`) and keep their own licenses (see below).
+Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/terai-router.git` or download this repository. The intent model is one 1.1 MB JSON file (`src/terai_router/data/model.json`) that runs offline on CPU, with no GPU and no internet connection. The optional TTH, SANKPUP, MUML 1.0 HIQ and TERAI1 models are downloaded separately (on first use, or with `terai muml --hiq --setup` / `terai chat --setup`) and keep their own licenses (see below).
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
 - Intent accuracy 97.6% (121/124) on the TER-AI v0.7 frozen test set, against 44.4% (55/124) for Typhoon2 1B instruct asked zero-shot (v0.7.0 comparison)
 - Intent model latency 0.169 ms per message on one CPU thread (v0.16.0 results, measured 2026-10-22, AMD EPYC, Python 3.13.7); the model file is 1.1 MB
 - The intent model is our own, trained from scratch, not a wrapper around another company's model
-- The intent router and the rule chat run offline on CPU; TTH, TERAI1BETA, SANKPUP "gemma" and MUML 1.0 HIQ run on CPU after a one-time weight download; the online paths (edge-tts fallback, `--web` Wikipedia search, Temmo BYOK) are optional
+- The intent router and the rule chat run offline on CPU; TTH, TERAI1, SANKPUP "gemma" and MUML 1.0 HIQ run on CPU after a one-time weight download; the online paths (edge-tts fallback, `--web` Wikipedia search, Temmo BYOK) are optional
 - Browser/Python parity: `eval/parity.py` checks that the JavaScript demo and the Python code give identical output; this is consistency between implementations, not model quality
 
 ### Where can I contact the team?
@@ -605,8 +646,12 @@ Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its o
 | MuML 1.0 WA note table and MuML 1.0 network weights (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json`, its web copy `docs/muml_wa_table.js`, and `docs/muml-1.0-int8.bin` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |
 | Wayu-Paxa-TTS-Edge weights (TTH engine "wayu", by Paxa Labs / Wayu Research) | downloaded from Hugging Face on first use | CC-BY-NC-4.0 plus the Wayu Research Acceptable Use terms ([NOTICE](NOTICE) item 1) | No | **No.** Non-commercial only; credit Paxa Labs / Wayu Research. Audio made with this engine is non-commercial too |
 | wayu-tts inference code | installed by the `tth` extra | Apache-2.0 ([NOTICE](NOTICE) item 1) | No | Yes |
+| OmniVoice weights (TTH engine "mtl", TTH-MTL, by k2-fsa) | downloaded from Hugging Face on first use (`k2-fsa/OmniVoice`) | CC-BY-NC ([NOTICE](NOTICE) item 15) | No | No |
+| Higgs Audio 2 audio tokenizer (inside `k2-fsa/OmniVoice`, by Boson AI) | downloaded with the OmniVoice weights | Boson Higgs Audio 2 Community License, based on the Meta Llama 3 Community License; attribution required ([NOTICE](NOTICE) item 15) | No | Only within that license's terms; audio made with TTH-MTL stays non-commercial because of the weights |
+| omnivoice inference code | installed by the `tth-mtl` extra | Apache-2.0 ([NOTICE](NOTICE) item 15) | No | Yes |
+| Whisper large-v3-turbo (only for `--ref-audio` without `--ref-text`) | downloaded by omnivoice on that first use | MIT | No | Yes |
 | edge-tts (TTH engine "edge", online fallback) | installed by the `tth` or `tth-edge` extra | library LGPL-3.0; it sends text to Microsoft's online read-aloud service, whose voices follow Microsoft's terms ([NOTICE](NOTICE) item 2) | No | Library: yes. The Microsoft service and voices: only as Microsoft's terms allow; TER-AI grants nothing for them |
-| Gemma 4 weights and vision projector (SANKPUP engine "gemma" and model TERAI1BETA, by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
+| Gemma 4 weights and vision projector (SANKPUP engine "gemma" and model TERAI1, by Google DeepMind) | downloaded from Hugging Face on first use into `~/.cache/terai/models` | Apache License 2.0, as stated on Google's Gemma 4 license page ([NOTICE](NOTICE) item 4) | No | Yes |
 | llama-cpp-python, resvg-py (wrapping resvg), Pillow | installed by the `sankpup` / `sankpup-gemma` / `llm` extras | MIT; MIT (resvg Apache-2.0); MIT-CMU ([NOTICE](NOTICE) items 5 and 6) | No | Yes |
 | ACE-Step 1.5 weights and GGUF conversions (MUML 1.0 HIQ engine "ace", by ACE Studio and StepFun) | downloaded by `terai muml --hiq --setup` | MIT ([NOTICE](NOTICE) item 8) | No | Yes |
 | Qwen3-Embedding-0.6B (ACE-Step text encoder) | downloaded by `--setup` | Apache License 2.0 ([NOTICE](NOTICE) item 9) | No | Yes |

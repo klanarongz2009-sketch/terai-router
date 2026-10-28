@@ -6,20 +6,25 @@ TTH turns a Thai (or Thai-English) message into speech. It has two parts:
    way it should be spoken (numbers, times, versions, maths symbols, acronyms, the ครับ/ค่ะ slash, links and
    citations), and `chunk()` cuts it into short pieces. The same frontend is ported to `docs/tth.js` and
    checked for identical output by `eval/parity.py`.
-2. Pluggable speech engines, both optional:
+2. Pluggable speech engines, all optional:
    - `wayu`: Wayu-Paxa-TTS-Edge, an 82M open-weight Thai model by Paxa Labs / Wayu Research (Kokoro-based),
      run locally on CPU. Install with the `tth` extra (Python 3.10+; see README). The weights
      are downloaded from Hugging Face (`wayu-ai/wayu-paxa-tts-edge`) on first use and are NOT part of this
      repository. Weights license: CC-BY-NC-4.0 (non-commercial, attribution to Paxa Labs / Wayu Research).
    - `edge`: edge-tts, an online Microsoft text-to-speech service (sends the text to Microsoft). Used as the
      fallback when Wayu is not installed or fails. Install with `pip install edge-tts`.
-   - `mtl` (TTH-MTL, "TTH หลายภาษา", prototype, not released): OmniVoice by k2-fsa, an open-weight zero-shot TTS for 600+
-     languages (Thai included), run locally on CPU. Opt in with `engine='mtl'` (it is never picked by `auto`:
-     about 3.3 GB of weights and much slower than Wayu on CPU). Install with the `tth-mtl` extra (Python
-     3.10+). The weights (`k2-fsa/OmniVoice`) are downloaded from Hugging Face on first use and are NOT part of
-     this repository. Code Apache-2.0; weights CC-BY-NC (non-commercial, because of its training data such as
-     Emilia). For Thai it clones a short Thai reference clip that Wayu reads (or your own `ref_audio`); other
-     languages are spoken with `lang='en'`, `lang='ja'`, ... and skip the Thai text frontend.
+   - `mtl` (TTH-MTL, "TTH หลายภาษา", released in v0.17.0): OmniVoice by k2-fsa, an open-weight zero-shot TTS
+     that its authors describe as covering 600+ languages (Thai included), run locally on CPU. Opt in with
+     `engine='mtl'`; it is never picked by `auto` (about 3.3 GB of weights). No speed or quality benchmark of
+     TTH-MTL is in this repository yet. Install with the `tth-mtl` extra (Python 3.10+). The weights
+     (`k2-fsa/OmniVoice`) are downloaded from Hugging Face on first use and are NOT part of this repository;
+     once cached it runs without a network connection (set `HF_HUB_OFFLINE=1` to skip the update check).
+     Code Apache-2.0; weights CC-BY-NC (non-commercial, because of its training data such as Emilia); the
+     bundled audio tokenizer (`audio_tokenizer/`, Higgs Audio 2 by Boson AI) is under the Boson Higgs Audio 2
+     Community License (see NOTICE item 15). For Thai it clones a short Thai reference clip that Wayu reads
+     (or your own `ref_audio`); a `ref_audio` without `ref_text` makes OmniVoice download Whisper
+     large-v3-turbo (MIT) to transcribe it. Other languages are spoken with `lang='en'`, `lang='ja'`, ... and
+     skip the Thai text frontend.
 
     >>> from terai_router.tth import prepare, chunk
     >>> prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')

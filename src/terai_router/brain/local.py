@@ -1,4 +1,4 @@
-"""Local Gemma 4 for TERAI1BETA: text replies and image reading on CPU through llama-cpp-python.
+"""Local Gemma 4 for TERAI1 (beta): text replies and image reading on CPU through llama-cpp-python.
 
 Weights: the official Google QAT Q4_0 GGUF (same files as SANKPUP) plus the vision projector (mmproj) for images.
 Both are downloaded on first use into ``$TERAI_MODELS_DIR`` (default ``~/.cache/terai/models``) and checked against
@@ -26,7 +26,7 @@ MMPROJ = {
                        "7498a37cb619e55f2fcf87eb931f56e99389ed6d432e4c5c66110694c0d65578", "vision projector for e4b"),
 }
 
-INSTALL_HINT = ("TERAI1BETA needs llama-cpp-python: pip install \"terai-router[llm] @ "
+INSTALL_HINT = ("TERAI1 needs llama-cpp-python: pip install \"terai-router[llm] @ "
                 "git+https://github.com/klanarongz2009-sketch/terai-router.git\" (then terai chat --setup)")
 
 
@@ -63,7 +63,7 @@ def _download_spec(spec, quiet=False) -> Path:
 
 
 def setup(model: str = DEFAULT_MODEL, vision: bool = True, quiet: bool = False) -> list:
-    """Download the weights TERAI1BETA needs. Returns the local paths."""
+    """Download the weights TERAI1 needs. Returns the local paths."""
     paths = [G.download(model, quiet=quiet)]
     if vision and model in MMPROJ:
         paths.append(_download_spec(MMPROJ[model], quiet=quiet))
@@ -122,7 +122,7 @@ class LocalLM:
         if not path.is_file():
             if not self.auto_download:
                 raise LLMUnavailable(f"Gemma 4 weights not found at {path}; run: terai chat --setup")
-            print("TERAI1BETA: downloading the Gemma 4 weights (first use)", file=sys.stderr)
+            print("TERAI1: downloading the Gemma 4 weights (first use)", file=sys.stderr)
             path = G.download(self.model)
         kw = {}
         if self.vision:

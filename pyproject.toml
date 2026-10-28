@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "terai-router"
-version = "0.16.0"
+version = "0.17.0"
 description = "Offline Thai intent router that tolerates typos. Small, CPU-only, no dependencies. Made with Sesame."
 readme = "README.md"
 license = "MIT"
@@ -43,7 +43,7 @@ tth-edge = ["edge-tts>=6.1"]
 tth-mtl = ["omnivoice>=0.2.1 ; python_version >= '3.10'"]
 sankpup = ["resvg-py>=0.1.5", "Pillow>=9"]
 sankpup-gemma = ["resvg-py>=0.1.5", "Pillow>=9", "llama-cpp-python>=0.3.36"]
-# llm: model TERAI1BETA for terai chat / terai vision (local Gemma 4 through llama-cpp-python; weights Apache-2.0,
+# llm: model TERAI1 (beta) for terai chat / terai vision (local Gemma 4 through llama-cpp-python; weights Apache-2.0,
 #      downloaded from Hugging Face by `terai chat --setup`, never shipped here).
 llm = ["llama-cpp-python>=0.3.36"]
 

@@ -1,4 +1,4 @@
-"""TERAI1BETA (brain/) without the real model: a fake client stands in for Gemma 4."""
+"""TERAI1 (brain/) without the real model: a fake client stands in for Gemma 4."""
 import json
 import subprocess
 import sys
@@ -32,15 +32,16 @@ def brain(*replies):
 
 
 def test_version_line_has_repo_and_model():
-    assert MODEL_ID == 'TERAI1BETA'
-    assert version_line() == f'terai-router {__version__} / model TERAI1BETA'
+    assert MODEL_ID == 'TERAI1'
+    assert version_line() == f'terai-router {__version__} / model TERAI1'
     assert __version__.startswith('0.')  # the repository stays 0.X.Y; 1.0 criteria unchanged
-    assert MODELS[0]['id'] == 'TERAI1BETA'
+    assert MODELS[0]['id'] == 'TERAI1'
 
 
 def test_cli_version_prints_both():
     out = subprocess.run([sys.executable, '-m', 'terai_router.cli', '--version'], capture_output=True, text=True)
-    assert 'model TERAI1BETA' in (out.stdout + out.stderr)
+    assert 'model TERAI1' in (out.stdout + out.stderr)
+    assert 'TERAI1BETA' not in (out.stdout + out.stderr)
 
 
 def test_numbers_normalises_commas_and_thai_digits():

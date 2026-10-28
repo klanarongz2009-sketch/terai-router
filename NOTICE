@@ -113,8 +113,8 @@ wrapper. The model and runtime below are downloaded or built separately and keep
 
 MUML 1.0 HIQ does not fine-tune or redistribute these weights and does not call any cloud API.
 
-TERAI1BETA (chat model and image reading, `terai chat` / `terai vision`, since v0.16.0)
-TERAI1BETA is TER-AI's rules used as tools by Google's Gemma 4. No weights are fine-tuned or redistributed here.
+TERAI1 (beta; chat model and image reading, `terai chat` / `terai vision`, since v0.16.0; named TERAI1BETA until v0.17.0)
+TERAI1 is TER-AI's rules used as tools by Google's Gemma 4. No weights are fine-tuned or redistributed here.
 
 14. Gemma 4 E2B (default) or E4B, by Google DeepMind, official QAT Q4_0 GGUF builds plus the vision projector
    (gemma-4-E2B-it-mmproj.gguf / gemma-4-E4B-it-mmproj.gguf): https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf
@@ -123,7 +123,7 @@ TERAI1BETA is TER-AI's rules used as tools by Google's Gemma 4. No weights are f
    SHA-256; they are never committed to this repository. Runtime: llama-cpp-python (item 5), installed by the
    "llm" extra. Use of Gemma also follows Google's Gemma terms and prohibited use policy linked from that page.
 
-TTH-MTL (TTH engine "mtl", "TTH หลายภาษา", prototype, not released, optional, runs locally)
+TTH-MTL (TTH engine "mtl", "TTH หลายภาษา", released in v0.17.0, optional and opt-in, runs locally after a download)
 15. OmniVoice by k2-fsa (Han Zhu, Lingxuan Ye, Wei Kang, Zengwei Yao, Liyong Guo, Fangjun Kuang, Zhifeng Han,
    Weiji Zhuang, Long Lin, Daniel Povey)
    Code: https://github.com/k2-fsa/OmniVoice, Apache-2.0. Installed from PyPI ("omnivoice") by the "tth-mtl" extra.
@@ -132,6 +132,26 @@ TTH-MTL (TTH engine "mtl", "TTH หลายภาษา", prototype, not releas
    Commercial use is NOT permitted and attribution is required. The weights are downloaded from Hugging Face by
    the omnivoice package on first use and are never stored in or shipped with this repository. Audio made with
    the "mtl" engine is therefore for non-commercial use only.
+   Audio tokenizer: the same Hugging Face repository ships audio_tokenizer/ (about 0.8 GB of the 3.3 GB), the
+   Higgs Audio 2 tokenizer by Boson AI, under its own "Boson Higgs Audio 2 Community License" (based on the Meta
+   Llama 3 Community License): https://huggingface.co/k2-fsa/OmniVoice/blob/main/audio_tokenizer/LICENSE
+   That license requires this attribution, which TER-AI gives because its "mtl" engine uses these materials:
+   "Built with Higgs Materials licensed from Boson AI USA, Inc., Copyright Boson AI USA, Inc., All Rights
+   Reserved and Meta Llama 3 licensed under the Meta Llama 3 Community License, Copyright Meta Platforms, Inc.,
+   All Right Reserved."
+   "Higgs Audio 2 is licensed under the Boson Higgs Audio 2 Community License, Copyright (c) Boson AI USA,
+   Inc. All Rights Reserved." "Meta Llama 3 is licensed under the Meta Llama 3 Community License, Copyright (c)
+   Meta Platforms, Inc. All Rights Reserved."
+   The same license forbids using the Higgs materials or their output to improve any other large language
+   model, and adds conditions for services with more than 100,000 annual active users; read it before any use
+   beyond personal, non-commercial work.
+   Downloads and network: first use needs internet to download the weights. Once they are cached the engine
+   runs without a network connection; when a network is available the omnivoice package (through
+   huggingface_hub) asks Hugging Face whether the weights changed, sending the model name only, never your text
+   or audio. Set HF_HUB_OFFLINE=1 to skip that check. A --ref-audio clip given without --ref-text makes
+   omnivoice download Whisper large-v3-turbo (https://huggingface.co/openai/whisper-large-v3-turbo, MIT,
+   about 1.6 GB) to transcribe the clip; pass --ref-text to avoid that download.
+   Benchmarks: no speech quality, speed or memory measurement of TTH-MTL is in this repository for v0.17.0.
    OmniVoice's own disclaimer prohibits unauthorized voice cloning, voice impersonation, fraud and scams. By
    default TTH-MTL clones only a synthetic Thai clip read by the Wayu engine (item 1), so Wayu's CC-BY-NC-4.0
    terms apply to that audio too; clone your own voice only with --ref-audio, and never someone else's without

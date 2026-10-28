@@ -1,4 +1,4 @@
-"""TERAI1BETA: the TER-AI model with a local language model.
+"""TERAI1 (beta; named TERAI1BETA in 0.16.0): the TER-AI model with a local language model.
 
 A small local Gemma 4 (E2B, quantized, CPU) writes the chat replies and reads images. The rule-based parts of TER-AI
 (calculator, date and time, unit conversion, memory, the Thai Wikipedia pack, web search) are its tools: their

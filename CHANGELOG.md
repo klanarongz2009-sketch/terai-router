@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.17.0 (2026-10-28)
+
+Repository v0.17.0. TTH-MTL is released, and the chat model TERAI1BETA is renamed to **TERAI1** ("beta" is its status, not part of its name). The model itself is unchanged.
+
+### Added
+- TTH-MTL released: `terai tth --engine mtl` (opt-in, extra `tth-mtl`), OmniVoice by k2-fsa on CPU, more languages (`--lang`) and voice cloning (`--ref-audio`, `--ref-text`, `--mtl-steps`). First use downloads `k2-fsa/OmniVoice` (about 3.3 GB); `--ref-audio` without `--ref-text` also downloads Whisper large-v3-turbo (about 1.6 GB). No quality, speed or memory benchmarks are in the repository yet. License: OmniVoice weights CC-BY-NC and the Higgs Audio 2 tokenizer under the Boson Higgs Audio 2 Community License, so audio made with TTH-MTL is non-commercial only; NOTICE item 15 has the terms and the required attribution.
+- TERAI1 identity guard: the system prompt (chat and image reading) gives the model fixed facts about itself (TERAI1 of the TER-AI project, runs locally on the open model Gemma 4 E2B as its base, not trained by TER-AI, still being improved). A reply that says it was developed by Google, that it is Gemma, or that TER-AI trained the model gets one retry, then the fixed identity answer. "TERAI1BETA" in any reply is rewritten to "TERAI1". `tests/test_brain_identity.py` (mock model output).
+- `tests/test_terai1_rename.py`: new names, old aliases and the rule chat identity answer.
+
+### Changed
+- Model id TERAI1BETA renamed to TERAI1 in code, CLI and docs (`terai --version` prints `terai-router 0.17.0 / model TERAI1`). Docs say "TERAI1 (beta)" where the status matters. This is the one exception to the rule that model ids keep their spelling, written into `src/terai_router/versions.py`.
+- New names: `terai chat --brain terai1`, `eval/brain_eval.py --engine terai1`, `make_brain(..., 'terai1', ...)`. The old names `terai1beta` still work and print a deprecation notice; `versions.MODEL_ID_ALIASES` maps TERAI1BETA to TERAI1.
+- Rule chat: the answer to "ใครพัฒนาคุณ" (who made you) said TER-AI trained every model itself. It now says the rule chat and the intent router are written and trained in this project, and the TERAI1 chat runs on Gemma 4, which TER-AI did not train. The web demo (`docs/index.html`) was rebuilt with the same answer. No frozen chat fixture asserted the old wording.
+
+### Unchanged
+- The eval data: `eval/terai1beta_cases_v15.json` keeps its file name (the original name of the TERAI1 test set) and content. The model evals were not rerun; none of the 52 cases is an identity question.
+- Chat eval 81/81 and browser parity 790/790 (rerun 2026-10-28). Older CHANGELOG entries keep the name TERAI1BETA.
+
 ## v0.16.0 (2026-10-22)
 
 Repository v0.16.0, first release of the model **TERAI1BETA**. This release writes down the versioning scheme for every model: the repository stays 0.X.Y, each model has its own id (MuML 1.0 was the first, in v0.15.0). See "Versions: repository and models" in README.md.
