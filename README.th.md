@@ -190,7 +190,8 @@ terai tth --engine mtl --mtl-steps 32 "สวัสดีครับ" -o th32.w
 
 แต่ละส่วนใช้ license ต่างกัน ข้อความเต็มอยู่ใน [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) และ [NOTICE](NOTICE) ถ้าสรุปตรงนี้ไม่ตรงกับไฟล์เหล่านั้น ให้ยึดไฟล์เป็นหลัก ตารางเต็มอยู่ใน [README ภาษาอังกฤษ](README.md#license)
 
-- **Code ทั้งหมด:** MIT ใช้เชิงพาณิชย์ได้
+- **Code:** MIT ใช้เชิงพาณิชย์ได้ ยกเว้นไฟล์ใหม่ที่ใช้ TER-AI License 1.0 ตามข้อถัดไป
+- **Code ใหม่ที่ใช้ TER-AI License 1.0 ([LICENSE-TER-AI.md](LICENSE-TER-AI.md)):** ใช้กับไฟล์ใหม่ที่มีบรรทัด `SPDX-License-Identifier: LicenseRef-TER-AI-1.0` บนหัวไฟล์เท่านั้น ไฟล์ที่ release ถึง v0.17.0 ยังเป็น MIT ใช้เชิงพาณิชย์ได้ เทรน AI ได้ ต้องให้เครดิต "TER-AI (klanarongz2009-sketch)" ไฟล์ที่ถูกแก้ต้องใช้ license เดิมและเปิด source license นี้ไม่เปลี่ยน license ของข้อมูล GPL-3.0, ชุดความรู้ CC BY-SA 4.0 และ weights ของโมเดลที่ห้ามใช้เชิงพาณิชย์
 - **โมเดล intent และข้อมูลของโปรเจกต์ (รวมโมเดลและข้อมูลของ TERM AI):** MIT ใช้เชิงพาณิชย์ได้
 - **ชุดความรู้จาก Wikipedia ภาษาไทย:** CC BY-SA 4.0 ใช้เชิงพาณิชย์ได้ แต่ต้องให้เครดิตผู้เขียน Wikipedia และแจกต่อด้วย license เดียวกัน
 - **ตารางโน้ตและ weights ของโมเดล MuML 1.0 ใน MuML 1.0 WA (จาก Nottingham Music Database, `docs/muml-1.0-int8.bin`):** GPL-3.0 ใช้เชิงพาณิชย์ได้ตามเงื่อนไขของ GPL-3.0
@@ -205,4 +206,4 @@ terai tth --engine mtl --mtl-steps 32 "สวัสดีครับ" -o th32.w
 - **acestep.cpp และ yue2.cpp:** MIT build จาก source ตอน `--setup`
 - **edge-tts:** library เป็น LGPL-3.0 แต่ส่งข้อความไปที่บริการอ่านออกเสียงออนไลน์ของ Microsoft เสียงที่ได้ใช้ตามเงื่อนไขของ Microsoft
 
-Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009)
+Copyright (c) 2026 Klanarong Tammakatuek (klanarongz2009-sketch)

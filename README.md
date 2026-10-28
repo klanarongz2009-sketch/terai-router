@@ -637,11 +637,12 @@ Email: klanarongz2009@gmail.com
 
 ## License
 
-Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Each part keeps its own license. The full texts and attributions are in [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) and [NOTICE](NOTICE); if this table and those files ever differ, those files win.
+Copyright (c) 2026 Klanarong Tammakatuek (klanarongz2009-sketch). Each part keeps its own license. The full texts and attributions are in [LICENSE](LICENSE), [DATA_LICENSE](DATA_LICENSE) and [NOTICE](NOTICE); if this table and those files ever differ, those files win.
 
 | Part | Files | License | In this repository? | Commercial use? |
 |---|---|---|---|---|
 | Code (Python, JavaScript, web demo, scripts) | everything not listed below | MIT ([LICENSE](LICENSE)) | Yes | Yes |
+| New code under the TER-AI License 1.0 | only new files that carry `SPDX-License-Identifier: LicenseRef-TER-AI-1.0` at the top; no file released up to v0.17.0 | TER-AI License 1.0 ([LICENSE-TER-AI.md](LICENSE-TER-AI.md)). AI training allowed; credit "TER-AI (klanarongz2009-sketch)" required; a modified file must stay under the same license with its source available. It does not change the GPL-3.0 data, the CC BY-SA 4.0 knowledge pack or the non-commercial model weights below | Yes | Yes |
 | Intent model and other project data | `src/terai_router/data/model.json`, `typo_pairs.json`, `chitchat_th.json`; TERM AI trial: `src/terai_router/term_ai/data/model.json`, `train_data.json` | MIT (written or trained for this project, [DATA_LICENSE](DATA_LICENSE)) | Yes | Yes |
 | Thai knowledge pack (from Thai Wikipedia) | `src/terai_router/data/knowledge_th.json` and its web copy `docs/knowledge_th.json` | CC BY-SA 4.0 ([DATA_LICENSE](DATA_LICENSE)) | Yes | Yes, with attribution to Wikipedia contributors and the same license on shared copies |
 | MuML 1.0 WA note table and MuML 1.0 network weights (from the Nottingham Music Database via [jukedeck/nottingham-dataset](https://github.com/jukedeck/nottingham-dataset)) | `src/terai_router/muml_wa/data/markov.json`, its web copy `docs/muml_wa_table.js`, and `docs/muml-1.0-int8.bin` | GPL-3.0 (full text in `LICENSE-GPL-3.0.txt` next to each file; [DATA_LICENSE](DATA_LICENSE), [NOTICE](NOTICE) item 7) | Yes | Yes, under GPL-3.0: shared copies of these files must stay GPL-3.0 with their source named |

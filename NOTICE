@@ -1,8 +1,10 @@
 TER-AI (terai-router)
-Copyright (c) 2026 Clanarong Tammaketuek (klanarongz2009). Made with Sesame.
+Copyright (c) 2026 Klanarong Tammakatuek (klanarongz2009-sketch). Made with Sesame.
+Klanarong Tammakatuek is the same person as the earlier spelling Clanarong Tammaketuek used in releases up to v0.17.0.
 
-The code in this repository is MIT licensed (see LICENSE). The knowledge pack is CC BY-SA 4.0 and the MuML 1.0 WA
-note table is GPL-3.0 (see DATA_LICENSE and the MuML section at the end of this file).
+The code in this repository is MIT licensed (see LICENSE), except new files that carry the header
+`SPDX-License-Identifier: LicenseRef-TER-AI-1.0`, which are under the TER-AI License 1.0 (see LICENSE-TER-AI.md).
+The knowledge pack is CC BY-SA 4.0 and the MuML 1.0 WA note table is GPL-3.0 (see DATA_LICENSE and the MuML section at the end of this file).
 This file lists third-party work that TTH, the text-to-speech part of TER-AI, can use. None of it is included in
 this repository; each part is installed or downloaded separately and keeps its own license.
 
