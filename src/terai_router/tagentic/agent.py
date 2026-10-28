@@ -108,8 +108,9 @@ class Tagentic:
 
     # ----------------------------------------------------------------------------------------------- model
     def _ask(self, messages: list, schema: dict) -> str:
+        # stop_on_json: generation ends at the closing brace of the step object (no trailing tokens)
         return self.lm.chat(messages, max_tokens=STEP_TOKENS, temperature=self.temperature, seed=self.seed,
-                            json_schema=schema)
+                            json_schema=schema, stop_on_json=True)
 
     @staticmethod
     def _compress(messages: list, base: int) -> None:

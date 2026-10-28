@@ -35,6 +35,33 @@ MODEL_NAME = 'Tagentic'
 STATUS = 'Tagentic1, beta, prototype, not released'
 
 
+def tuned_threads(cpus: Optional[int] = None) -> tuple:
+    """(generation threads, batch/prefill threads) for llama.cpp on a shared VM.
+
+    Measured on the 8-vCPU VM (2026-10-28): with all 8 threads, one generated token took 2-4 s, because the
+    per-token barriers stall whenever any other process takes a core; with 6 it was ~18-24 tokens/s. Prefill was
+    fastest with 7 (about 90 tokens/s against 55 with 8). Leave one or two cores free.
+    """
+    n = cpus or os.cpu_count() or 1
+    if n <= 3:
+        return n, n
+    return n - 2, n - 1
+
+
+def make_lm(args):
+    """The local Gemma 4 model with the Tagentic settings (env TERAI_TAGENTIC_THREADS / _THREADS_BATCH override)."""
+    from ..brain import local as L
+    gen, batch = tuned_threads()
+    gen = args.threads or int(os.environ.get('TERAI_TAGENTIC_THREADS') or 0) or gen
+    batch = int(os.environ.get('TERAI_TAGENTIC_THREADS_BATCH') or 0) or (args.threads or batch)
+    return L.LocalLM(model=args.model, threads=gen, threads_batch=batch, n_ctx=args.ctx, flash_attn=True)
+
+
+def lm_key(args) -> tuple:
+    """What makes two runs need the same loaded model (used by the persistent server)."""
+    return (args.model, args.threads, args.ctx)
+
+
 def make_confirm(yes: bool, stream_in=None, stream_out=None) -> Optional[Callable[[str, str], bool]]:
     if yes:
         return lambda tool, summary: True
@@ -260,10 +287,7 @@ def main(argv=None, lm=None, stdin=None, stdout=None) -> int:
         trace_out.flush()
 
     def factory():
-        model = lm
-        if model is None:
-            from ..brain import local as L
-            model = L.LocalLM(model=args.model, threads=args.threads, n_ctx=args.ctx)
+        model = lm if lm is not None else make_lm(args)
         box = Toolbox(ws, home=home, confirm=make_confirm(args.yes, sin), yes=args.yes,
                       tool_timeout=args.tool_timeout)
         return Tagentic(model, box, home=home, max_steps=args.max_steps, timeout=args.timeout, on_step=on_step)
