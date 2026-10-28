@@ -13,6 +13,13 @@ TTH turns a Thai (or Thai-English) message into speech. It has two parts:
      repository. Weights license: CC-BY-NC-4.0 (non-commercial, attribution to Paxa Labs / Wayu Research).
    - `edge`: edge-tts, an online Microsoft text-to-speech service (sends the text to Microsoft). Used as the
      fallback when Wayu is not installed or fails. Install with `pip install edge-tts`.
+   - `mtl` (TTH-MTL, "TTH หลายภาษา", prototype, not released): OmniVoice by k2-fsa, an open-weight zero-shot TTS for 600+
+     languages (Thai included), run locally on CPU. Opt in with `engine='mtl'` (it is never picked by `auto`:
+     about 3.3 GB of weights and much slower than Wayu on CPU). Install with the `tth-mtl` extra (Python
+     3.10+). The weights (`k2-fsa/OmniVoice`) are downloaded from Hugging Face on first use and are NOT part of
+     this repository. Code Apache-2.0; weights CC-BY-NC (non-commercial, because of its training data such as
+     Emilia). For Thai it clones a short Thai reference clip that Wayu reads (or your own `ref_audio`); other
+     languages are spoken with `lang='en'`, `lang='ja'`, ... and skip the Thai text frontend.
 
     >>> from terai_router.tth import prepare, chunk
     >>> prepare('12 × 7 = 84 ครับ/ค่ะ', polite='ค่ะ')
@@ -41,6 +48,13 @@ DEFAULT_WAYU = {'f': 'f_young_clear', 'm': 'm_young_clear'}
 MAX_CHARS = 90  # longer single chunks made Wayu misread words in a 2026-10-17 test (fine when said alone)
 GAP_SECONDS = 0.25
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
+
+MTL_MODEL = 'k2-fsa/OmniVoice'
+MTL_STEPS = 16  # diffusion steps per chunk; OmniVoice's default is 32 (slower on CPU)
+MTL_REF_TEXT = {'f': 'สวัสดีค่ะ ยินดีที่ได้รู้จัก วันนี้เรามาฟังเสียงภาษาไทยกัน',
+                'm': 'สวัสดีครับ ยินดีที่ได้รู้จัก วันนี้เรามาฟังเสียงภาษาไทยกัน'}
+MTL_INSTRUCT = {'f': 'female, young adult', 'm': 'male, young adult'}
+MTL_SAMPLE_RATE = 24000
 
 
 def is_edge_voice(voice):
@@ -448,7 +462,126 @@ class EdgeEngine:
             raise TTHError('edge-tts produced no audio')
 
 
-ENGINES = ('wayu', 'edge')
+class MtlEngine:
+    """TTH-MTL: local OmniVoice (k2-fsa, https://github.com/k2-fsa/OmniVoice), multilingual zero-shot TTS.
+
+    Code Apache-2.0; weights CC-BY-NC (non-commercial). The `omnivoice` package is optional (extra `tth-mtl`);
+    `OmniVoice.from_pretrained` downloads the weights from Hugging Face on first use (about 3.3 GB:
+    model.safetensors 2.45 GB + audio_tokenizer 0.81 GB) and caches them there, never in this repository.
+
+    Voice: for Thai, a Wayu voice name selects which Wayu voice reads the short Thai reference clip that OmniVoice
+    clones (rendered once and cached in ~/.cache/terai/tth-mtl). With `ref_audio` (+ `ref_text`) it clones your
+    own clip instead. Other languages, or Thai without Wayu, get a voice designed from the gender (`MTL_INSTRUCT`).
+    """
+    name = 'mtl'
+    online = False
+    output = '.wav'
+
+    def __init__(self, model=MTL_MODEL, lang='th', ref_audio=None, ref_text=None, num_step=MTL_STEPS,
+                 cache_dir=None, wayu=None):
+        self.model = model
+        self.lang = lang
+        self.ref_audio = ref_audio
+        self.ref_text = ref_text
+        self.num_step = int(num_step)
+        self.cache_dir = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'terai', 'tth-mtl')
+        self.wayu = wayu
+        self._ov = None
+        self._prompts = {}
+
+    @staticmethod
+    def available():
+        return importlib.util.find_spec('omnivoice') is not None
+
+    def voice_for(self, voice):
+        if voice in WAYU_VOICES:
+            return voice
+        return DEFAULT_WAYU[voice_gender(voice)]
+
+    def load(self):
+        if self._ov is None:
+            import contextlib
+            import logging
+            import sys
+            import warnings
+            with warnings.catch_warnings(), contextlib.redirect_stdout(sys.stderr):
+                warnings.simplefilter('ignore')
+                logging.getLogger('omnivoice').setLevel(logging.ERROR)
+                from omnivoice import OmniVoice
+                try:
+                    import torch
+                    dtype = torch.float32  # bfloat16/float16 are slower or unsupported on most CPUs
+                except ImportError:
+                    dtype = None
+                self._ov = OmniVoice.from_pretrained(self.model, device_map='cpu', dtype=dtype)
+        return self._ov
+
+    def reference(self, voice):
+        """(audio path, transcript) of the clip to clone, or None to design a voice from its gender."""
+        if self.ref_audio:
+            return self.ref_audio, self.ref_text
+        if self.lang != 'th':  # a Thai reference clip would give other languages a Thai accent
+            return None
+        wayu = self.wayu if self.wayu is not None else WayuEngine()
+        if not wayu.available():
+            return None
+        text = MTL_REF_TEXT[voice_gender(voice)]
+        path = os.path.join(self.cache_dir, 'ref-%s.wav' % voice)
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            os.makedirs(self.cache_dir, exist_ok=True)
+            tmp = path + '.tmp.wav'
+            wayu.synthesize([text], voice, 1.0, 0, tmp)
+            os.replace(tmp, path)
+        return path, text
+
+    def _prompt_kwargs(self, voice):
+        if voice not in self._prompts:
+            ref = self.reference(voice)
+            if ref is None:
+                self._prompts[voice] = {'instruct': MTL_INSTRUCT[voice_gender(voice)]}
+            else:
+                prompt = self.load().create_voice_clone_prompt(ref_audio=ref[0], ref_text=ref[1])
+                self._prompts[voice] = {'voice_clone_prompt': prompt}
+        return self._prompts[voice]
+
+    def synthesize(self, chunks, voice, speed, seed, out):
+        import warnings
+        import numpy as np
+        from omnivoice.models.omnivoice import OmniVoiceGenerationConfig
+        try:
+            import torch
+        except ImportError:  # only used for the sampling seed
+            torch = None
+        model = self.load()
+        kw = self._prompt_kwargs(voice)
+        cfg = OmniVoiceGenerationConfig(num_step=self.num_step)
+        sr = int(getattr(model, 'sampling_rate', MTL_SAMPLE_RATE) or MTL_SAMPLE_RATE)
+        gap = np.zeros(int(GAP_SECONDS * sr), dtype=np.float32)
+        clips = []
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            for i, piece in enumerate(chunks):
+                if torch is not None:
+                    torch.manual_seed(seed + i)
+                extra = {'speed': speed} if speed != 1.0 else {}
+                audio = model.generate(text=piece, language=self.lang, generation_config=cfg, **kw, **extra)[0]
+                if clips:
+                    clips.append(gap)
+                clips.append(np.asarray(audio, dtype=np.float32).reshape(-1))
+        audio = np.concatenate(clips) if clips else np.zeros(0, dtype=np.float32)
+        if audio.size == 0:
+            raise TTHError('mtl produced no audio')
+        if out.lower().endswith('.wav'):
+            write_wav(out, audio, sr)
+        else:
+            with tempfile.TemporaryDirectory() as d:
+                wav = os.path.join(d, 'tth.wav')
+                write_wav(wav, audio, sr)
+                _convert(wav, out)
+
+
+ENGINES = ('wayu', 'edge', 'mtl')
+FALLBACK_ENGINES = ('wayu', 'edge')  # Thai engines tried after the first one fails; mtl is opt-in only
 
 
 class TTH:
@@ -457,17 +590,27 @@ class TTH:
         TTH().synthesize('สวัสดีครับ/ค่ะ', 'hello.wav')
         TTH(engine='edge', voice='th-TH-NiwatNeural', speed=1.1).synthesize(text, 'out.mp3')
 
-    engine: 'auto' (Wayu if installed, then edge-tts), 'wayu' or 'edge'.
+    engine: 'auto' (Wayu if installed, then edge-tts), 'wayu', 'edge' or 'mtl' (TTH-MTL, OmniVoice; opt-in).
     voice: a Wayu voice (f_young_clear, m_young_clear, ...) or an edge-tts voice (th-TH-PremwadeeNeural, ...).
            When an engine cannot use the voice, it takes its own voice of the same gender.
     fallback: when the first engine is missing or fails, try the other one.
     polite: 'ครับ' or 'ค่ะ' for TER-AI's ครับ/ค่ะ slash; by default it follows the voice's gender.
+    lang: 'th' (default). Any other OmniVoice language code ('en', 'ja', 'lo', ...) needs engine='mtl'; the text
+          is then spoken as written (no Thai frontend) and there is no fallback, since Wayu and edge read Thai.
+    ref_audio / ref_text: a clip (and its transcript) for TTH-MTL to clone instead of the Wayu reference voice.
     """
 
     def __init__(self, engine='auto', voice=None, speed=1.0, polite=None, fallback=True, max_chars=MAX_CHARS,
-                 seed=0, engines=None):
+                 seed=0, engines=None, lang='th', ref_audio=None, ref_text=None, mtl_steps=MTL_STEPS):
         if engine not in ('auto',) + ENGINES:
-            raise ValueError('engine must be auto, wayu or edge')
+            raise ValueError('engine must be auto, wayu, edge or mtl')
+        lang = (lang or 'th').strip()
+        if lang != 'th' and engine != 'mtl':
+            raise ValueError('lang %r needs engine mtl (TTH-MTL); wayu and edge speak Thai only' % lang)
+        if ref_audio is not None and not os.path.exists(ref_audio):
+            raise ValueError('ref_audio not found: %s' % ref_audio)
+        if int(mtl_steps) < 1:
+            raise ValueError('mtl_steps must be at least 1')
         speed = float(speed)
         if not SPEED_MIN <= speed <= SPEED_MAX:
             raise ValueError('speed must be between %.1f and %.1f' % (SPEED_MIN, SPEED_MAX))
@@ -481,7 +624,13 @@ class TTH:
         self.fallback = fallback
         self.max_chars = max_chars
         self.seed = seed
-        self.engines = engines if engines is not None else {'wayu': WayuEngine(), 'edge': EdgeEngine()}
+        self.lang = lang
+        if engines is None:
+            wayu = WayuEngine()
+            engines = {'wayu': wayu, 'edge': EdgeEngine(),
+                       'mtl': MtlEngine(lang=lang, ref_audio=ref_audio, ref_text=ref_text, num_step=mtl_steps,
+                                        wayu=wayu)}
+        self.engines = engines
 
     def order(self):
         """Engine names to try, in order."""
@@ -489,11 +638,16 @@ class TTH:
             first = 'edge' if is_edge_voice(self.voice) else 'wayu'
         else:
             first = self.engine
-        rest = [e for e in ENGINES if e != first]
+        if self.lang != 'th':
+            return [first]
+        rest = [e for e in FALLBACK_ENGINES if e != first]
         return [first] + (rest if self.fallback else [])
 
     def plan(self, text):
         """The spoken text and its chunks, without making audio."""
+        if self.lang != 'th':  # TTH-MTL in another language: speak the text as written
+            spoken = re.sub(r'[ \t]+', ' ', text).strip()
+            return spoken, chunk(spoken, self.max_chars)
         spoken = prepare(text, self.polite)
         return spoken, chunk(spoken, self.max_chars)
 
@@ -533,7 +687,7 @@ def speak(text, out, **kw):
 
 
 def installed_engines():
-    return {'wayu': WayuEngine.available(), 'edge': EdgeEngine.available()}
+    return {'wayu': WayuEngine.available(), 'edge': EdgeEngine.available(), 'mtl': MtlEngine.available()}
 
 
 PLAYERS = [['ffplay', '-nodisp', '-autoexit', '-loglevel', 'quiet'], ['paplay'], ['aplay', '-q'], ['afplay'],

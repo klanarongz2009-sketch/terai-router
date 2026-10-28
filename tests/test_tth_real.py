@@ -1,6 +1,9 @@
 """Real TTH synthesis. Skipped unless TERAI_TTH_REAL=1 (needs the tth extra; Wayu downloads ~315 MB once).
 
     TERAI_TTH_REAL=1 python -m pytest tests/test_tth_real.py -q
+
+TTH-MTL (needs the tth-mtl extra; OmniVoice downloads ~3.3 GB once, minutes per sentence on CPU) is also
+skipped unless TERAI_TTH_MTL_REAL=1.
 """
 import os
 import shutil
@@ -8,7 +11,7 @@ import subprocess
 
 import pytest
 
-from terai_router.tth import TTH, WayuEngine, duration
+from terai_router.tth import TTH, MtlEngine, WayuEngine, duration
 
 pytestmark = pytest.mark.skipif(os.environ.get('TERAI_TTH_REAL') != '1', reason='set TERAI_TTH_REAL=1 to run')
 
@@ -26,3 +29,12 @@ def test_real_wayu(tmp_path):
                                 'csv=p=0', out], capture_output=True, text=True).stdout.strip()
         assert probe == '24000,1'
         assert abs(duration(out) - r['seconds']) < 0.05
+
+
+@pytest.mark.skipif(os.environ.get('TERAI_TTH_MTL_REAL') != '1' or not MtlEngine.available(),
+                    reason='set TERAI_TTH_MTL_REAL=1 with omnivoice installed')
+def test_real_mtl_english(tmp_path):
+    out = str(tmp_path / 'mtl.wav')
+    r = TTH(engine='mtl', lang='en', fallback=False).synthesize('Hello from TER-AI.', out)
+    assert r['engine'] == 'mtl' and r['online'] is False and 0.5 < r['seconds'] < 10.0
+    assert abs(duration(out) - r['seconds']) < 0.05

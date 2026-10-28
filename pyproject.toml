@@ -33,11 +33,14 @@ dev = ["pytest"]
 # tth: local Wayu-Paxa-TTS-Edge (inference code Apache-2.0; weights CC-BY-NC-4.0, non-commercial, downloaded from
 #      Hugging Face on first use, never shipped here) plus the edge-tts fallback. Needs Python 3.10+ (pulls torch).
 # tth-edge: only the online edge-tts fallback (Microsoft service), small.
+# tth-mtl: TTH-MTL, local OmniVoice by k2-fsa (code Apache-2.0; weights CC-BY-NC, non-commercial, about 3.3 GB,
+#          downloaded from Hugging Face on first use, never shipped here). Multilingual. Needs Python 3.10+ (torch).
 tth = [
     "wayu-tts @ git+https://github.com/wayu-research/wayu-tts-inference@07ab898d516649313926f0b843b809a962f993ad ; python_version >= '3.10'",
     "edge-tts>=6.1",
 ]
 tth-edge = ["edge-tts>=6.1"]
+tth-mtl = ["omnivoice>=0.2.1 ; python_version >= '3.10'"]
 sankpup = ["resvg-py>=0.1.5", "Pillow>=9"]
 sankpup-gemma = ["resvg-py>=0.1.5", "Pillow>=9", "llama-cpp-python>=0.3.36"]
 # llm: model TERAI1BETA for terai chat / terai vision (local Gemma 4 through llama-cpp-python; weights Apache-2.0,

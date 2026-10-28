@@ -560,7 +560,7 @@ In progress (not released):
 
 - MuML 1.0 training code and a CLI that writes from the network outside MuML 1.0 WA: the training scripts are not in
   this repository yet (only the export script `training/muml_wa/export_net.py` is).
-- TTH-MTL: more and better Thai voices for TTH. Not in this repository yet.
+- TTH-MTL: more voices and languages for TTH. A prototype engine is in this repository (`terai tth --engine mtl`, local OmniVoice, weights CC-BY-NC, about 3.3 GB, opt-in, extra `tth-mtl`); not released.
 - Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
 Ending:

@@ -122,3 +122,21 @@ TERAI1BETA is TER-AI's rules used as tools by Google's Gemma 4. No weights are f
    as item 4. `terai chat --setup` downloads them on first use into ~/.cache/terai/models and checks the published
    SHA-256; they are never committed to this repository. Runtime: llama-cpp-python (item 5), installed by the
    "llm" extra. Use of Gemma also follows Google's Gemma terms and prohibited use policy linked from that page.
+
+TTH-MTL (TTH engine "mtl", "TTH หลายภาษา", prototype, not released, optional, runs locally)
+15. OmniVoice by k2-fsa (Han Zhu, Lingxuan Ye, Wei Kang, Zengwei Yao, Liyong Guo, Fangjun Kuang, Zhifeng Han,
+   Weiji Zhuang, Long Lin, Daniel Povey)
+   Code: https://github.com/k2-fsa/OmniVoice, Apache-2.0. Installed from PyPI ("omnivoice") by the "tth-mtl" extra.
+   Model weights: https://huggingface.co/k2-fsa/OmniVoice (about 3.3 GB). The model card states: "The pre-trained
+   model is licensed under the CC-BY-NC due to constraints from its training data (e.g., Emilia)."
+   Commercial use is NOT permitted and attribution is required. The weights are downloaded from Hugging Face by
+   the omnivoice package on first use and are never stored in or shipped with this repository. Audio made with
+   the "mtl" engine is therefore for non-commercial use only.
+   OmniVoice's own disclaimer prohibits unauthorized voice cloning, voice impersonation, fraud and scams. By
+   default TTH-MTL clones only a synthetic Thai clip read by the Wayu engine (item 1), so Wayu's CC-BY-NC-4.0
+   terms apply to that audio too; clone your own voice only with --ref-audio, and never someone else's without
+   their consent.
+   Paper: "OmniVoice: Towards Omnilingual Zero-Shot Text-to-Speech with Diffusion Language Models",
+   arXiv:2604.00688 (2026).
+   No audio from ElevenLabs or Gemini TTS was used to build or tune TTH-MTL: their terms forbid using output to
+   train or improve other models and require users to be 18 or older.

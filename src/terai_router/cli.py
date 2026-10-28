@@ -10,6 +10,7 @@
   terai chat --speak            also speak each reply with TTH (needs a TTH engine; plays it if a player exists)
   terai tth "ข้อความ" -o out.wav  TTH: Thai text-to-speech (Wayu local engine, edge-tts fallback)
   terai tth --dry-run "..."     print what TTH would say, chunk by chunk, without making audio
+  terai tth --engine mtl "..."  TTH-MTL: OmniVoice local engine, Thai and 600+ other languages (--lang en, ja, ...)
   terai temmo "idea" -o out     Temmo 1.0: build a complete small HTML5 game (BYOK; no key = local Gemma 4)
   terai muml --hiq "เพลงลูกทุ่ง 130 bpm" -o song.mp3  MUML 1.0 HIQ: text-to-music audio (ACE-Step 1.5, CPU)
   terai term                    TERM AI, the original Terminal AI: limited-time trial, stops at 2027-01-01 00:00:00 UTC+7
@@ -43,16 +44,23 @@ def _voice_arg(ap):
                     help='Wayu voice (default %s; see terai tth --list-voices) or an edge-tts voice such as '
                          'th-TH-PremwadeeNeural' % DEFAULT_VOICE)
     ap.add_argument('--speed', type=float, default=1.0, help='speaking speed, 0.5 to 2.0 (default 1.0)')
-    ap.add_argument('--engine', choices=['auto', 'wayu', 'edge'], default='auto',
-                    help='auto (default): Wayu if installed, else edge-tts')
+    ap.add_argument('--engine', choices=['auto', 'wayu', 'edge', 'mtl'], default='auto',
+                    help='auto (default): Wayu if installed, else edge-tts; mtl: TTH-MTL (OmniVoice, opt-in)')
+    ap.add_argument('--lang', default='th',
+                    help='language of the text (default th); other codes such as en, ja, lo need --engine mtl')
+    ap.add_argument('--ref-audio', default=None, help='TTH-MTL: a voice clip to clone (default: a Wayu voice)')
+    ap.add_argument('--ref-text', default=None, help='TTH-MTL: the transcript of --ref-audio')
+    ap.add_argument('--mtl-steps', type=int, default=None,
+                    help='TTH-MTL diffusion steps per chunk (default 16; 32 is OmniVoice\'s default, slower)')
     ap.add_argument('--no-fallback', action='store_true', help='do not try the other engine when one fails')
     ap.add_argument('--polite', choices=['ครับ', 'ค่ะ'], default=None,
                     help='polite particle for replies: the male (ครับ) or female (ค่ะ) form (default: from the voice gender)')
 
 
 def _make_tth(a):
-    from .tth import TTH
-    return TTH(engine=a.engine, voice=a.voice, speed=a.speed, polite=a.polite, fallback=not a.no_fallback)
+    from .tth import MTL_STEPS, TTH
+    return TTH(engine=a.engine, voice=a.voice, speed=a.speed, polite=a.polite, fallback=not a.no_fallback,
+               lang=a.lang, ref_audio=a.ref_audio, ref_text=a.ref_text, mtl_steps=a.mtl_steps or MTL_STEPS)
 
 
 def tth_main(argv=None):
@@ -60,7 +68,9 @@ def tth_main(argv=None):
     ap = argparse.ArgumentParser(prog='terai tth',
                                  description='TTH: Thai text-to-speech for TER-AI. Local engine Wayu-Paxa-TTS-Edge '
                                              '(weights CC-BY-NC-4.0 by Paxa Labs, downloaded from Hugging Face on '
-                                             'first use); fallback edge-tts (online Microsoft service).')
+                                             'first use); fallback edge-tts (online Microsoft service); opt-in '
+                                             'TTH-MTL --engine mtl (OmniVoice by k2-fsa, weights CC-BY-NC, '
+                                             'multilingual).')
     ap.add_argument('text', nargs='*', help="text to speak; '-' reads stdin")
     ap.add_argument('-o', '--out', default='tth.wav', help='output file, .wav or .mp3 (default tth.wav)')
     ap.add_argument('-f', '--file', help='read the text from this UTF-8 file')
@@ -79,6 +89,8 @@ def tth_main(argv=None):
         print('edge (online, Microsoft):')
         for v, g in T.EDGE_VOICES.items():
             print('  %s  (%s)' % (v, 'female' if g == 'f' else 'male'))
+        print('mtl (TTH-MTL, local OmniVoice, CC-BY-NC weights): any Wayu voice name picks the Thai reference '
+              'voice it clones; --ref-audio clones your own clip')
         return 0
     if a.engines:
         for k, v in T.installed_engines().items():

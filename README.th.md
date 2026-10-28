@@ -144,7 +144,7 @@ terai term --trial-info         # ดูเวลาที่หมดอาย�
 ## กำลังทำ (ยังไม่ release)
 
 - **MuML 1.0 (training code):** สคริปต์ train โมเดล MuML 1.0 ยังไม่อยู่ใน repo ตอนนี้มีแค่สคริปต์ export weights (`training/muml_wa/export_net.py`)
-- **TTH-MTL:** เสียงไทยของ TTH ที่มากขึ้นและดีขึ้น ยังไม่อยู่ใน repo
+- **TTH-MTL:** เสียงและภาษาของ TTH ที่มากขึ้น มี prototype engine อยู่ใน repo แล้ว (`terai tth --engine mtl`, OmniVoice ในเครื่อง, weights CC-BY-NC ประมาณ 3.3 GB, ต้องเปิดใช้เอง, extra `tth-mtl`) ยังไม่ release
 - **Temmo 1.0:** AI สร้างเกม indie ขนาดเล็ก มี prototype อยู่ใน repo และในแท็บ Temmo ของหน้า demo พร้อมเกมตัวอย่าง 1 เกมที่สร้างด้วย Gemma 4 E2B ในเครื่อง
 
 ## กำลังจะถอดออก
