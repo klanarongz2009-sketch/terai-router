@@ -4,14 +4,16 @@
 
 > **Limited-time trial: TERM AI, the original Terminal AI, is back until 2027-01-01 00:00:00 Asia/Bangkok (UTC+7).** Try it with `terai term` ([v0.14.0](https://github.com/klanarongz2009-sketch/terai-router/releases/tag/v0.14.0), [announcement](https://github.com/klanarongz2009-sketch/terai-router/issues/6)). At that moment it stops running and is removed from the repository. [Details](#term-ai-the-original-terminal-ai-limited-time-trial-v0140)
 
-TER-AI is a free set of Thai AI tools that runs offline on an ordinary CPU, with no GPU and no cloud API. Made with Sesame.
+TER-AI is an independent, AI-assisted applied R&D project for Thai-language AI systems. It combines typo-tolerant intent routing, local CPU-first chat and vision, Thai speech, SVG-based graphics, and symbolic/audio music tools, with reproducible internal evaluations, explicit model/data licensing, and a public project-continuity notice.
+
+Offline scope: the intent router, the rule chat, TERM AI and the SANKPUP offline generator run on CPU with no network connection. TTH (Wayu-Paxa-TTS-Edge), TERAI1BETA and SANKPUP "gemma" (Gemma 4 E2B on llama-cpp-python), MUML 1.0 HIQ (ACE-Step 1.5, YuE2-3B) and the MuML 1.0 network weights run locally on CPU after a one-time download. Online paths, all optional: the TTH fallback edge-tts sends the text to Microsoft, `terai chat --web` and the demo's web switch send the question to Wikipedia, and the Temmo demo tab (prototype, not released) calls online model providers with your own API key (BYOK). Made with Sesame.
 
 What is released today (v0.16.0):
 
 | Part | What it does | Since |
 |---|---|---|
 | Intent router | Reads one Thai or Thai-English message, fixes common typos and returns one of 15 intents with a confidence score. 1.1 MB model, no dependencies. | v0.7.0 |
-| Chat | Offline Thai chat. Since v0.16.0 the replies are written by the local model **TERAI1BETA** (Gemma 4 E2B on CPU); the old rules (calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack) are its tools, every fact names its source, and it says "I don't know" when no source has the answer. It can also read images (`terai chat --image`). Without the model it falls back to the rule chat. Optional Wikipedia web search since v0.9.0. | v0.8.0 (model v0.16.0) |
+| Chat | Thai chat on your own CPU, with no network connection unless web search is switched on. Since v0.16.0 the replies are written by the local model **TERAI1BETA** (Gemma 4 E2B on CPU); the old rules (calculator, date and time, unit conversion, memory, the bundled Thai Wikipedia pack) are its tools, every fact names its source, and it says "I don't know" when no source has the answer. It can also read images (`terai chat --image`). Without the model it falls back to the rule chat. Optional Wikipedia web search since v0.9.0. | v0.8.0 (model v0.16.0) |
 | TTH | Reads Thai aloud with a local open-weight voice model (Wayu-Paxa-TTS-Edge), with edge-tts as an online fallback. Both optional. | v0.10.0 |
 | SANKPUP | Makes pictures by writing SVG code (local Gemma 4 or a built-in offline generator), sanitizes it and renders PNG or JPG. Not an image model. | v0.11.0 |
 | MuML 1.0 WA | Writes and plays music in the browser from a Thai or English prompt. Since v0.15.0 the notes come from the trained MuML 1.0 network (3.3M-parameter transformer, int8 weights 3.4 MB, run in JavaScript); Markov v1 is the fallback. Every sound is made by the Web Audio API. | v0.12.0, network v0.15.0 |
@@ -56,20 +58,25 @@ Run on the v0.16.0 code with the scripts in this repo. Machine: AMD EPYC, 8 core
 
 | Check | Command | Result |
 |---|---|---|
-| Intent accuracy, frozen test set (124 sentences) | `python training/evaluate.py` | 97.6% (121/124), 0.169 ms per message (1 thread) |
-| Intent accuracy, held-out set (112 sentences) | `python training/evaluate.py` | 99.1% (111/112), 0.26 ms per message (1 thread) |
+| Intent accuracy, TER-AI v0.7 frozen test set (124 sentences, `eval/test_set.json`) | `python training/evaluate.py` | 97.6% (121/124), 0.169 ms per message (1 thread) |
+| Intent accuracy, TER-AI v0.7 held-out set (112 sentences, `eval/heldout_v07.json`) | `python training/evaluate.py` | 99.1% (111/112), 0.26 ms per message (1 thread) |
 | Chat eval, frozen (written before the Chat code) | `python eval/chat_eval.py eval/chat_eval_v08.json` | 81/81 turns, 18/18 conversations |
 | Chat eval, held out | `python eval/chat_eval.py eval/chat_heldout_v08.json` | 37/37 turns, 14/14 conversations |
 | Chat regressions (bugs fixed later) | `python eval/chat_eval.py eval/chat_regress_v08.json` | 16/16 turns, 3/3 conversations |
+| TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
+| Chat model TERAI1BETA vs the rule chat, fixed set of 52 cases (`eval/terai1beta_cases_v15.json`) | `python eval/brain_eval.py --engine both` | 30/30 expected-answer cases in a fixed set of 52 (rule chat 22/30); hallucination 1/52 vs 1/52; details in [TERAI1BETA](#terai1beta-the-model-writes-the-replies-v0160) |
+| Unit tests | `pytest` | 367 passed, 6 skipped (real speech and real model runs, opt-in) |
+
+Implementation parity (v0.16.0, same run). These checks show that the browser (JavaScript) and Python versions give the same output for the same input. They measure consistency between the two implementations, not answer quality or model accuracy.
+
+| Check | Command | Result |
+|---|---|---|
 | Browser vs Python, intent router | `python eval/parity.py` | 607/607 sentences same intent and text, max confidence difference 6.66e-16 |
 | Browser vs Python, chat | `python eval/parity.py` | 790/790 turns identical; 24/24 with mocked web search |
 | Browser vs Python, TTH text frontend | `python eval/parity.py` | 1,700/1,700 checks identical |
 | Browser vs Python, SANKPUP offline generator | `python eval/parity.py` | 688/688 checks identical (byte-identical SVG) |
 | Browser vs Python, MuML 1.0 WA | `python eval/parity.py` | Markov v1 330/330 and MuML 1.0 network 30/30 songs identical (tokens, notes and `.mid` bytes); web note table matches `markov.json` byte for byte |
-| Browser vs Python, Temmo remix rules | `python eval/parity.py` | 42/42 cases identical |
-| TERM AI intent model (trial), leave-one-out on its 149 training sentences | `python -m terai_router.term_ai.intent_model eval` | 67.8% (101/149) |
-| Chat model TERAI1BETA vs the rule chat, fixed set of 52 cases | `python eval/brain_eval.py --engine both` | correct 30/30 vs 22/30, hallucination 1/52 vs 1/52; details in [TERAI1BETA](#terai1beta-the-model-writes-the-replies-v0160) |
-| Unit tests | `pytest` | 367 passed, 6 skipped (real speech and real model runs, opt-in) |
+| Browser vs Python, Temmo remix rules (Temmo is a prototype, not released) | `python eval/parity.py` | 42/42 cases identical |
 
 MUML 1.0 HIQ end to end (measured 2026-10-21 for v0.13.0, unchanged since; same machine, 8 vCPU, 8 GB RAM, `/usr/bin/time -v`). Thai test song: 4 lyric lines, seed 42, YuE2-3B Q5_K_M, 32 steps. CER is measured with the Thai ASR `airesearch/wav2vec2-large-xlsr-53-th` on the mixed song (music not separated), so it is a rough intelligibility signal, not a lyrics score:
 
@@ -223,11 +230,11 @@ terai chat --trace                       # show which tool answered and the grou
 
 Weights go to `~/.cache/terai/models` (or `TERAI_MODELS_DIR`); `TERAI_THREADS` or `--threads` sets CPU threads. `--model e4b` uses Gemma 4 E4B (4.9 GB, slower). Without llama-cpp-python or the weights, `terai chat` is the rule chat and says so in its first line. The web demo keeps the rule chat: TERAI1BETA and image reading are CLI only.
 
-Measured on the fixed set `eval/terai1beta_cases_v15.json` (52 cases: 8 calculator, 4 date and time, 4 units, 4 memory, 10 knowledge with an answer in the pack, 10 questions with no source, 12 small-talk messages in 4 groups of 3 similar messages). Same machine as above, Gemma 4 E2B Q4_0, 4 threads. Other jobs were using the CPU at the same time (load average about 15 on 8 cores), so the latency below is pessimistic; the first test run of an earlier build measured p50 2.4 s, p95 9.6 s.
+Measured on the fixed set `eval/terai1beta_cases_v15.json` (52 cases: 8 calculator, 4 date and time, 4 units, 4 memory, 10 knowledge with an answer in the pack, 10 questions with no source, 12 small-talk messages in 4 groups of 3 similar messages). Same machine as above (AMD EPYC, 8 cores, no GPU), Gemma 4 E2B Q4_0 on llama-cpp-python, 4 threads. Other jobs were using the CPU at the same time (load average about 15 on 8 cores), so the latency below is pessimistic; the first test run of an earlier build measured p50 2.4 s, p95 9.6 s.
 
 | | Rule chat (before) | TERAI1BETA |
 |---|---|---|
-| Answer correct (30 cases with a known answer) | 22/30 (calculator 4/8, knowledge 6/10) | 30/30 |
+| Expected-answer cases correct (30 of the 52 cases have an expected answer) | 22/30 (calculator 4/8, knowledge 6/10) | 30/30 |
 | Hallucination (a fact or number no source gave), all 52 cases | 1/52 | 1/52 |
 | Says "I don't know" when no source has the answer | 9/10 | 9/10 |
 | Small talk: different replies inside each group of 3 similar messages | 6/12 | 12/12 |
@@ -561,7 +568,7 @@ In progress (not released):
 - MuML 1.0 training code and a CLI that writes from the network outside MuML 1.0 WA: the training scripts are not in
   this repository yet (only the export script `training/muml_wa/export_net.py` is).
 - TTH-MTL: more voices and languages for TTH. A prototype engine is in this repository (`terai tth --engine mtl`, local OmniVoice, weights CC-BY-NC, about 3.3 GB, opt-in, extra `tth-mtl`); not released.
-- Temmo 1.0: an AI that makes small indie games. A prototype is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
+- Temmo 1.0: an AI that makes small indie games. A prototype (not released) is in this repository and in the Temmo tab of the live demo, with one sample game made by local Gemma 4 E2B.
 
 Ending:
 
@@ -577,10 +584,11 @@ Yes. Install with `pip install git+https://github.com/klanarongz2009-sketch/tera
 
 ### Why choose TER-AI?
 - Built for Thai, including typos and speech-to-text errors
-- 97.6% accuracy on its frozen test set, against 44.4% for a 1B general model asked zero-shot (v0.7.0 comparison)
-- About 0.17 ms per message on one CPU thread (measured 2026-10-21) and 1.1 MB in size, so it runs on small devices
+- Intent accuracy 97.6% (121/124) on the TER-AI v0.7 frozen test set, against 44.4% (55/124) for Typhoon2 1B instruct asked zero-shot (v0.7.0 comparison)
+- Intent model latency 0.169 ms per message on one CPU thread (v0.16.0 results, measured 2026-10-22, AMD EPYC, Python 3.13.7); the model file is 1.1 MB
 - The intent model is our own, trained from scratch, not a wrapper around another company's model
-- Everything released runs offline on CPU; the browser demo and its parity checks keep the JavaScript and Python versions identical
+- The intent router and the rule chat run offline on CPU; TTH, TERAI1BETA, SANKPUP "gemma" and MUML 1.0 HIQ run on CPU after a one-time weight download; the online paths (edge-tts fallback, `--web` Wikipedia search, Temmo BYOK) are optional
+- Browser/Python parity: `eval/parity.py` checks that the JavaScript demo and the Python code give identical output; this is consistency between implementations, not model quality
 
 ### Where can I contact the team?
 Email: klanarongz2009@gmail.com
