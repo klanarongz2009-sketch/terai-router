@@ -6,16 +6,24 @@ This is an advance notice. TER-AI is an indie project run by one person, so it c
 
 ## Why the project may pause or close
 
-- **Paused for a while (personal reasons):** the maintainer starts school around November 2, 2026. Updates, issue replies and releases may slow down or stop for a time.
+- **Paused while the maintainer is at boarding school (personal reasons):** the maintainer is a boarding-school student and starts school around November 2, 2026. While at school, he is not allowed to use a phone or personal devices. Maintainer replies, updates and releases stop during that time and resume only when he is home. See [Maintainer availability and urgent reports](#maintainer-availability-and-urgent-reports).
 - **Closed without a stated reason:** the project may close without an explanation.
 - **A legal claim about models or data:** some optional models and data used by TER-AI have their own licenses (see the [license table](README.md#license) and [NOTICE](NOTICE)). If there is a legal claim about any of them, the affected part, or the whole project, may be taken down.
 - **Generated music that sounds like a real song:** MUML 1.0 HIQ and MuML 1.0 WA make new music from a prompt, but output can happen to sound close to an existing song (melody, lyrics or style). If a rights holder files a claim, the music features, the demo, or the whole project may be taken down.
 - **Other generated output causes a problem:** a TTH voice that sounds like a real person, a SANKPUP picture close to a protected logo or character, or a chat answer that is wrong or harmful may lead to a complaint and a takedown.
 - **An upstream model or service changes:** a model's license may change, its weights may be removed from its host, or an online service (for example edge-tts or the Wikipedia API) may stop working. The parts that depend on it may break or be removed.
 - **A platform action:** GitHub may disable the repository, the demo site or the wiki after a report (for example a DMCA notice) or a policy change.
-- **A security problem:** if a serious vulnerability is found and cannot be fixed in time, the affected part or the project may be pulled.
+- **A security problem:** if a serious vulnerability is found and cannot be fixed in time, or the maintainer cannot reach the project's systems to fix it, the affected part or the project may be pulled as soon as he has access.
 - **No time or no resources:** school, health, cost (see [Cost and free services](#cost-and-free-services)) or loss of interest may stop the project.
 - **Closed for good:** in the worst case, the project may be closed permanently.
+
+## Maintainer availability and urgent reports
+
+- **No access while at school:** the maintainer is a boarding-school student. While at school, he is not allowed to use a phone or personal devices, so he has no access to technology, the project's systems, its accounts or its contact channels. Access returns only when he is home.
+- **Urgent reports wait:** during that time, a complaint, legal notice, security report, takedown request, platform report or any other urgent contact may not be read, answered or acted on until the maintainer is home. The delay can be long.
+- **Urgent action comes first:** if a report needs urgent action, the maintainer may close, suspend or take down the affected part, or the whole project, as soon as he has access. This can happen without an in-depth review of the report and without a full explanation.
+- **No guarantees:** there is no guaranteed response time and no guarantee of service continuity.
+- **The issue bot is not the maintainer:** an automated bot (GET IDEAS) may still reply to GitHub Issues while the maintainer is away. The bot is not the maintainer. It does not receive or handle legal notices, security reports or takedown requests. A reply from the bot does not mean the maintainer has seen the issue.
 
 ## Cost and free services
 
@@ -46,11 +54,11 @@ Depending on the reason, some or all of these may happen:
 
 ## What you should do
 
-- Nothing here is a promise of support, updates or uptime.
+- Nothing here is a promise of support, updates, uptime or a response time.
 - If you depend on TER-AI, keep your own copy of the version you use, and of any model weights you are allowed to keep.
 - Check that music, voices and pictures you make do not copy someone else's work before you publish them.
 - Before commercial use, read the [license table](README.md#license) again.
 
 ## How you will hear about it
 
-When possible, a pause or closure will be announced at the top of the README and in this file. If the project closes without a stated reason, there may be no announcement.
+When possible, a pause or closure will be announced at the top of the README and in this file. If the project closes without a stated reason, there may be no announcement. A takedown after an urgent report may happen before any announcement.
