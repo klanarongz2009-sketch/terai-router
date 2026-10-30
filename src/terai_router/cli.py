@@ -38,6 +38,20 @@ DEFAULT_SESSION = os.path.join('~', '.terai', 'session.json')
 DEFAULT_SPEAK_DIR = os.path.join('~', '.terai', 'tth')
 
 
+def _parse_chat_command(line):
+    """Parse only the chat CLI's existing explicit slash commands; other text stays chat text."""
+    parts = line.split(maxsplit=2)
+    if not parts:
+        return None
+    if len(parts) == 1 and parts[0] in ('/quit', '/exit'):
+        return ('exit',)
+    if parts[0] == '/image':
+        if len(parts) < 2:
+            return ('usage',)
+        return ('image', parts[1], parts[2] if len(parts) == 3 else '')
+    return None
+
+
 def _voice_arg(ap):
     from .tth import DEFAULT_VOICE
     ap.add_argument('--voice', default=None,
@@ -214,18 +228,22 @@ def chat_main(argv=None):
             line = line.strip()
             if not line:
                 continue
-            if line in ('/quit', '/exit'):
+            command = _parse_chat_command(line)
+            if command and command[0] == 'exit':
                 break
+            if command and command[0] == 'usage':
+                print('terai> usage: /image FILE [QUESTION]', flush=True)
+                continue
             if not tty:
                 print('you> ' + line)
             image = None
-            if pending_image or line.startswith('/image '):
-                if line.startswith('/image '):
-                    parts = line[7:].strip().split(None, 1)
-                    image, line = parts[0], (parts[1] if len(parts) > 1 else '')
-                else:
-                    image = pending_image
+            if command and command[0] == 'image':
+                _, image, line = command
                 pending_image = None
+            elif pending_image:
+                image = pending_image
+                pending_image = None
+            if image:
                 if brain is None:
                     print('terai> reading images needs model TERAI1: terai chat --setup', flush=True)
                     continue
