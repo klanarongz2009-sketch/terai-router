@@ -20,6 +20,8 @@ What is in the latest release (v0.18.0-alpha; alpha evaluation tooling, existing
 | MUML 1.0 HIQ | Text-to-music audio (.mp3/.wav) on CPU from a Thai or English prompt, with optional lyrics. ACE-Step 1.5 for instrumentals and English songs, YuE2-3B for Thai lyrics; weights download once with `--setup`. Slow on CPU, Thai lyrics only partly intelligible. | v0.13.0 |
 | TERM AI (limited-time trial) | The original Terminal AI that TER-AI grew from: a Thai terminal chatbot made of rules plus the first own model, TER-AI-0.5. Offline, no dependencies. **Trial: stops working at 2027-01-01 00:00:00 Asia/Bangkok (UTC+7) and will be removed from the repository then.** | v0.14.0 |
 
+TERAI1CIBETA is an unreleased v0.1 prototype (not part of v0.18.0-alpha): a local, read-only defensive mode for authorized source-code review and user-provided log/alert triage, using TERAI1’s existing Gemma base. Its name is the owner’s wordplay `CIBER + BETA → CIBETA`; it is not a separately trained foundation model. See [prototype scope and limitations](docs/TERAI1CIBETA.md). It has no cyber-specific model evaluation yet.
+
 Live demo: https://klanarongz2009-sketch.github.io/terai-router/ · Repository: https://github.com/klanarongz2009-sketch/terai-router · Wiki: https://github.com/klanarongz2009-sketch/terai-router/wiki
 
 Licenses differ by part: the code is MIT, but some data and optional models are not. Check the [license table](#license) before commercial use.

@@ -274,6 +274,9 @@ def main(argv=None):
         return chat_main(argv[1:])
     if argv and argv[0] == 'tth':
         return tth_main(argv[1:])
+    if argv and argv[0] == 'cibeta':
+        from .cibeta.cli import main as cibeta_main
+        return cibeta_main(argv[1:])
     if argv and argv[0] == 'vision':
         from .brain.cli import vision_main
         return vision_main(argv[1:])
@@ -310,7 +313,7 @@ def main(argv=None):
             return 2
         return muml_main(argv[1:])
     ap = argparse.ArgumentParser(prog='terai', description='TER-AI: offline Thai intent router that tolerates typos (made with Sesame). '
-                                 'Subcommands: chat, vision, models, tth, sankpup, muml, muml-wa, temmo, term')
+                                 'Subcommands: chat, vision, cibeta, models, tth, sankpup, muml, muml-wa, temmo, term')
     ap.add_argument('text', nargs='*', help="text to classify; '-' reads lines from stdin")
     ap.add_argument('--json', action='store_true', help='print JSON')
     ap.add_argument('--threshold', type=float, default=0.0, help="below this confidence print 'unknown'")

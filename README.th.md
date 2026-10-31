@@ -22,6 +22,8 @@ TER-AI เป็นโครงการวิจัยและพัฒนา 
 | MUML 1.0 HIQ | สร้างเพลงเป็นไฟล์เสียงจริง (.mp3/.wav) บน CPU จากคำสั่งภาษาไทยหรืออังกฤษ ใส่เนื้อร้องได้ ใช้ ACE-Step 1.5 กับเพลงบรรเลงและเพลงอังกฤษ และ YuE2-3B กับเนื้อไทย โหลด weights ครั้งเดียวด้วย `terai muml --hiq --setup` ยังช้าบน CPU และเนื้อไทยฟังออกแค่บางส่วน | v0.13.0 |
 | TERM AI (ทดลองใช้แบบจำกัดเวลา) | Terminal AI ตัวดั้งเดิมที่ TER-AI เติบโตมาจาก เป็น chatbot ภาษาไทยใน terminal ที่ใช้กฎกับโมเดลตัวแรกของโปรเจกต์ TER-AI-0.5 รันออฟไลน์ ไม่ต้องลง library เพิ่ม **ใช้ได้ถึง 2027-01-01 00:00:00 เวลาประเทศไทย (UTC+7) แล้วจะถอดออกจาก repo** | v0.14.0 |
 
+TERAI1CIBETA เป็น prototype v0.1 ที่ยังไม่ release และไม่ใช่ส่วนหนึ่งของ v0.18.0-alpha: โหมดวิเคราะห์เชิงป้องกันแบบ local/read-only สำหรับตรวจ source code ที่มีสิทธิ์ตรวจ และคัดแยก log/alert ที่ผู้ใช้ส่งให้ โดยใช้ Gemma ฐานเดิมของ TERAI1 ชื่อนี้มาจากการเล่นคำของเจ้าของ `CIBER + BETA → CIBETA`; ไม่ใช่ foundation model ที่ฝึกแยก ยังไม่มีผลประเมินด้าน cyber โดยเฉพาะ ดู [ขอบเขตและข้อจำกัดของ prototype](docs/TERAI1CIBETA.md)
+
 - หน้า demo: https://klanarongz2009-sketch.github.io/terai-router/
 - Repository: https://github.com/klanarongz2009-sketch/terai-router
 - Wiki: https://github.com/klanarongz2009-sketch/terai-router/wiki
