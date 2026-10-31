@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 from . import memory as M
+from .context import workspace_context
 from .tools import PendingAction, Toolbox
 from .trace import NOTE_MAX, THINK_MAX, Step, Trace, shorten
 
@@ -103,6 +104,7 @@ class Tagentic:
     def system_prompt(self) -> str:
         files = self.files if self.files is not None else M.load_memory(self.home)
         return (M.system_text(files)
+                + '\n\n' + workspace_context(self.tools.ws)
                 + f'\n\n===== workspace =====\nroot: {self.tools.ws.root}\n'
                 + 'tools (exact names and arguments):\n' + self.tools.describe())
 

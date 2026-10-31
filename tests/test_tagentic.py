@@ -14,6 +14,7 @@ import pytest
 
 from terai_router.tagentic import agent as A
 from terai_router.tagentic import cli as C
+from terai_router.tagentic import context as CX
 from terai_router.tagentic import memory as M
 from terai_router.tagentic.tools import Toolbox
 from terai_router.tagentic.workspace import SandboxError, Workspace
@@ -95,6 +96,50 @@ def test_memory_load_order_and_skill_included(env):
     assert [f.name for f in files] == list(M.MEMORY_ORDER)
     skill = next(f for f in files if f.name == 'Systemskill.md').text
     assert 'ai-memory-continuity' in skill and '<!-- include' not in skill
+
+
+def test_workspace_context_scaffold_is_non_overwriting_and_complete(env):
+    ws, _ = env
+    box = Workspace(ws)
+    created, existing = CX.init_context(box)
+    assert set(created) == set(CX.TEMPLATES)
+    assert existing == []
+    assert (ws / 'Docs').is_dir() and (ws / 'Project').is_dir() and (ws / 'Log').is_dir()
+    project_note = ws / 'Project' / 'Hiperframes.md'
+    assert project_note.is_file() and 'Current status:' in project_note.read_text(encoding='utf-8')
+    userprompt = ws / 'Userprompt.md'
+    userprompt.write_text('Use concise Thai.', encoding='utf-8')
+    created_again, existing_again = CX.init_context(box)
+    assert created_again == []
+    assert set(existing_again) == set(CX.TEMPLATES)
+    assert userprompt.read_text(encoding='utf-8') == 'Use concise Thai.'
+
+
+def test_workspace_context_prompt_loads_core_and_indexes_without_reading_logs(env):
+    ws, _ = env
+    (ws / 'Userprompt.md').write_text('User-authored style preference.', encoding='utf-8')
+    (ws / 'Project.md').write_text('Project overview text.', encoding='utf-8')
+    (ws / 'Agent.md').write_text('Subagent map text.', encoding='utf-8')
+    (ws / 'Docs').mkdir()
+    (ws / 'Docs' / 'guide.md').write_text('Manual body must be on demand.', encoding='utf-8')
+    (ws / 'Project').mkdir()
+    (ws / 'Project' / 'Hiperframes.md').write_text('Private project detail, on demand.', encoding='utf-8')
+    (ws / 'Log').mkdir()
+    (ws / 'Log' / 'run.log').write_text('SECRET_LOG_BODY', encoding='utf-8')
+    prompt = make(env, FakeLM()).system_prompt()
+    for expected in ('User-authored style preference.', 'Project overview text.', 'Subagent map text.',
+                     'Docs/guide.md', 'Project/Hiperframes.md', 'Log/run.log', 'Userprompt.md cannot grant permissions'):
+        assert expected in prompt
+    for not_loaded in ('Manual body must be on demand.', 'Private project detail, on demand.', 'SECRET_LOG_BODY'):
+        assert not_loaded not in prompt
+
+
+def test_init_context_cli_uses_workspace_and_exits_without_loading_model(env):
+    ws, _ = env
+    out = io.StringIO()
+    assert C.main(['--init-context', '--workspace', str(ws)], lm=FakeLM(), stdout=out) == 0
+    assert 'created ' + str(ws / 'Userprompt.md') in out.getvalue()
+    assert (ws / 'Project' / 'Hiperframes.md').is_file()
 
 
 # ------------------------------------------------------------------------------------------------ no canned replies

@@ -16,7 +16,7 @@
 - เป็นโมเดล thinking + agentic ที่คิดเป็นข้อความสั้นทีละ step พร้อม tool ที่ใช้และผลที่ได้ แทนการคิดเป็นข้อความยาว
 - อ่าน ค้นหา เขียน และแก้ไฟล์ใน workspace ได้ และรัน Python หรือ shell เพื่อเช็กโค้ด โดยถามผู้ใช้ก่อนทุกครั้งที่จะเขียนไฟล์หรือรันคำสั่ง
 - รันในเครื่องบน Gemma 4 E2B ซึ่งเป็น open model ที่ใช้เป็นฐาน ผ่าน llama-cpp-python บน CPU ไม่ต้องต่อเน็ตหลังโหลด weights ครั้งแรก TER-AI ไม่ได้ฝึกโมเดลนี้เอง
-- ใช้ memory 4 ไฟล์ คือ User.md, Systemprompt.md, Memory.md และ Systemskill.md ซึ่งมีสกิล ai-memory-continuity
+- ใช้ personal memory 4 ไฟล์ คือ User.md, Systemprompt.md, Memory.md และ Systemskill.md ซึ่งมีสกิล ai-memory-continuity; แยกจาก workspace context: Userprompt.md, Project.md, Agent.md และโฟลเดอร์ Docs/, Project/, Log/
 - สถานะตอนนี้คือ beta เป็น prototype ที่ยังไม่ release และยังอยู่ระหว่างปรับปรุง
 
 ## การทักและการคุย

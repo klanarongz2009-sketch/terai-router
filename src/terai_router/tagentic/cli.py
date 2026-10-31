@@ -3,6 +3,7 @@
     terai tagentic "อ่าน README แล้วสรุป"            one task, then exit
     terai tagentic                                 session: the model greets first, then you chat and give tasks
     terai tagentic --init                          create User.md and Memory.md in the memory folder
+    terai tagentic --init-context                  scaffold Userprompt.md, project/agent context, Docs/, Log/, Project/
     terai tagentic --show-memory                   show the four memory files in load order
     terai tagentic --setup                         download the Gemma 4 E2B weights
 
@@ -239,6 +240,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument('--threads', type=int, default=None)
     ap.add_argument('--ctx', type=int, default=8192, help='context length (default 8192)')
     ap.add_argument('--init', action='store_true', help='create User.md and Memory.md, then exit')
+    ap.add_argument('--init-context', action='store_true', help='create workspace context files/folders without overwriting, then exit')
     ap.add_argument('--show-memory', action='store_true', help='print the four memory files in load order, then exit')
     ap.add_argument('--setup', action='store_true', help='download the Gemma 4 weights, then exit')
     ap.add_argument('--session', default=None, help='relay mode: session name (stored under <memory folder>/sessions)')
@@ -272,14 +274,25 @@ def main(argv=None, lm=None, stdin=None, stdout=None) -> int:
             print(p, file=out)
         return 0
 
-    from .agent import Tagentic
-    from .tools import Toolbox
     from .workspace import SandboxError, Workspace
     try:
         ws = Workspace(args.workspace)
     except SandboxError as e:
         print(f'{MODEL_NAME}: {e}', file=sys.stderr)
         return 2
+    if args.init_context:
+        from .context import init_context
+        created, existing = init_context(ws)
+        for name in created:
+            print(f'created {ws.root / name}', file=out)
+        for name in existing:
+            print(f'already exists (unchanged) {ws.root / name}', file=out)
+        if not created and not existing:
+            print(f'context folders already ready: {ws.root}', file=out)
+        return 0
+
+    from .agent import Tagentic
+    from .tools import Toolbox
     trace_out = sys.stderr if args.json else out
 
     def on_step(step: Step) -> None:
