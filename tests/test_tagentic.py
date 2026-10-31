@@ -107,12 +107,42 @@ def test_workspace_context_scaffold_is_non_overwriting_and_complete(env):
     assert (ws / 'Docs').is_dir() and (ws / 'Project').is_dir() and (ws / 'Log').is_dir()
     project_note = ws / 'Project' / 'Hiperframes.md'
     assert project_note.is_file() and 'Current status:' in project_note.read_text(encoding='utf-8')
+    originals = {name: (ws / name).read_bytes() for name in CX.TEMPLATES}
+    # Re-running the initializer must preserve every existing starter, not just one file.
     userprompt = ws / 'Userprompt.md'
-    userprompt.write_text('Use concise Thai.', encoding='utf-8')
+    userprompt.write_text('Keep this exact custom text. ไทย\n', encoding='utf-8')
+    originals['Userprompt.md'] = userprompt.read_bytes()
     created_again, existing_again = CX.init_context(box)
     assert created_again == []
     assert set(existing_again) == set(CX.TEMPLATES)
-    assert userprompt.read_text(encoding='utf-8') == 'Use concise Thai.'
+    assert {name: (ws / name).read_bytes() for name in CX.TEMPLATES} == originals
+
+
+def test_workspace_context_loads_relevant_reference_through_file_tool(env):
+    ws, _ = env
+    (ws / 'Docs').mkdir()
+    (ws / 'Docs' / 'agent-guide.md').write_text('DOC_BODY_ONLY_ON_DEMAND', encoding='utf-8')
+    (ws / 'Project').mkdir()
+    (ws / 'Project' / 'Hiperframes.md').write_text('PROJECT_BODY_NOT_SELECTED', encoding='utf-8')
+    (ws / 'Log').mkdir()
+    (ws / 'Log' / 'run.log').write_text('LOG_BODY_NOT_SELECTED', encoding='utf-8')
+    lm = FakeLM(step('read_file', {'path': 'Docs/agent-guide.md'}, 'อ่านคู่มือที่เกี่ยวข้อง'),
+                final('อ่านคู่มือแล้ว'))
+
+    result = make(env, lm).run('อ่าน Docs/agent-guide.md แล้วสรุป')
+
+    initial = lm.calls[0]['messages']
+    system_prompt = next(m['content'] for m in initial if m['role'] == 'system')
+    assert 'Docs/agent-guide.md' in system_prompt
+    assert 'PROJECT_BODY_NOT_SELECTED' not in system_prompt
+    assert 'LOG_BODY_NOT_SELECTED' not in system_prompt
+    assert 'DOC_BODY_ONLY_ON_DEMAND' not in system_prompt
+    later_contents = '\n'.join(m['content'] for m in lm.calls[1]['messages'])
+    assert 'DOC_BODY_ONLY_ON_DEMAND' in later_contents
+    assert 'PROJECT_BODY_NOT_SELECTED' not in later_contents
+    assert 'LOG_BODY_NOT_SELECTED' not in later_contents
+    assert result.trace.steps[0].tool == 'read_file' and result.trace.steps[0].ok
+    assert result.final == 'อ่านคู่มือแล้ว'
 
 
 def test_workspace_context_prompt_loads_core_and_indexes_without_reading_logs(env):
