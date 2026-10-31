@@ -159,6 +159,23 @@ def test_static_python_eval_check_recovers_missed_finding():
     assert "not exhaustive" in out["limitations"][-1]
 
 
+def test_static_eval_severity_and_summary_override_duplicate_model_classification():
+    source = "def calculate(user_input):\n    return eval(user_input)\n"
+    model_finding = finding(line=2, excerpt="return eval(user_input)")
+    model_finding["category"] = "code-execution"
+    model_finding["severity"] = "critical"
+    model_finding["title"] = "Critical dynamic-code vulnerability"
+    out = CibetaAnalyzer(FakeLM(report([model_finding], summary="Critical eval vulnerability found."))).analyze(
+        "source_review", source, "fixture.py"
+    )
+
+    assert len(out["findings"]) == 1
+    assert out["findings"][0]["category"] == "unsafe-eval"
+    assert out["findings"][0]["severity"] == "high"
+    assert "critical" not in out["summary"].lower()
+    assert any("canonical classification" in item for item in out["limitations"])
+
+
 def test_static_python_eval_check_does_not_flag_literal_eval_or_comment():
     safe = "import ast\n# eval(user_input) is not executed here\ndef f(x):\n    return ast.literal_eval(x)\n"
     out = CibetaAnalyzer(FakeLM(report())).analyze("source_review", safe)

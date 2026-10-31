@@ -215,6 +215,22 @@ def _is_success_only(finding: Dict[str, Any], lines: List[str]) -> bool:
     return all(_AUTH_SUCCESS.search(line) and not _AUTH_FAILURE.search(line) for line in cited)
 
 
+def _duplicates_rule_finding(finding: Dict[str, Any], rule: Dict[str, Any]) -> bool:
+    """Recognize a model restatement without letting its category/severity replace a rule."""
+    if not set(finding.get("evidence_lines", [])).intersection(rule.get("evidence_lines", [])):
+        return False
+    if finding.get("category") == rule.get("category"):
+        return True
+    if rule.get("category") == "unsafe-eval":
+        cited_text = " ".join((
+            str(finding.get("evidence_excerpt", "")),
+            str(finding.get("title", "")),
+            str(finding.get("explanation", "")),
+        ))
+        return re.search(r"\beval\s*\(", cited_text, re.IGNORECASE) is not None
+    return False
+
+
 def _fallback_report(mode: str, rule_findings: List[Dict[str, Any]], error: CibetaOutputError) -> Dict[str, Any]:
     limitations = [
         str(error),
@@ -274,20 +290,36 @@ class CibetaAnalyzer:
             else:
                 kept.append(finding)
 
-        # Prefer deterministic evidence for a matching rule rather than duplicating the same cited line.
-        rule_lines = {tuple(item["evidence_lines"]) for item in rule_findings}
-        combined = rule_findings + [item for item in kept if tuple(item["evidence_lines"]) not in rule_lines]
+        # A model duplicate must not override a narrow rule's deterministic category/severity.
+        # Match both category and overlapping evidence so distinct findings on one line survive.
+        rule_duplicates = 0
+        model_only: List[Dict[str, Any]] = []
+        for finding in kept:
+            duplicate = any(_duplicates_rule_finding(finding, rule) for rule in rule_findings)
+            if duplicate:
+                rule_duplicates += 1
+            else:
+                model_only.append(finding)
+        combined = rule_findings + model_only
         limitations = list(parsed["limitations"])
         if suppressed:
             limitations.append("A model suggestion was suppressed because it cited only comments or successful-login entries, which are not security findings by themselves.")
+        if rule_duplicates:
+            limitations.append("A duplicate model finding was omitted so the narrow deterministic finding remains the canonical classification.")
         if rule_findings:
             limitations.append("Narrow deterministic checks supplement the model; they are not exhaustive and do not establish exploitability or an incident.")
         if not combined and (parsed["abstained"] or suppressed):
             summary = "No model finding passed evidence checks and the conservative filters; this is not a guarantee that the input is safe."
             abstained = True
+        elif rule_findings and mode == "source_review":
+            summary = "A narrow local code check found the potential pattern shown below; verify context and reachability before treating it as a vulnerability."
+            abstained = False
+        elif rule_findings:
+            summary = "A narrow local log check found a repeated pattern in the supplied excerpt; it does not establish cause or compromise."
+            abstained = False
         else:
             summary = parsed["summary"]
-            abstained = parsed["abstained"] and not bool(rule_findings)
+            abstained = parsed["abstained"]
         return {
             "product": PRODUCT_NAME,
             "mode": mode,
