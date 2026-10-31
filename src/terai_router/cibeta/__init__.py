@@ -301,7 +301,10 @@ class CibetaAnalyzer:
             else:
                 model_only.append(finding)
         combined = rule_findings + model_only
-        limitations = list(parsed["limitations"])
+        # Model-authored caveats can contradict canonical rule findings (for example,
+        # asserting a confirmed RCE beside a qualified potential eval() finding).
+        # When narrow checks fire, report only code-authored limitations below.
+        limitations = [] if rule_findings else list(parsed["limitations"])
         if suppressed:
             limitations.append("A model suggestion was suppressed because it cited only comments or successful-login entries, which are not security findings by themselves.")
         if rule_duplicates:

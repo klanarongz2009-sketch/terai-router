@@ -165,15 +165,18 @@ def test_static_eval_severity_and_summary_override_duplicate_model_classificatio
     model_finding["category"] = "code-execution"
     model_finding["severity"] = "critical"
     model_finding["title"] = "Critical dynamic-code vulnerability"
-    out = CibetaAnalyzer(FakeLM(report([model_finding], summary="Critical eval vulnerability found."))).analyze(
-        "source_review", source, "fixture.py"
-    )
+    unsupported_model_caveat = "This is a high-severity vulnerability (Remote Code Execution) due to eval() on untrusted input."
+    out = CibetaAnalyzer(FakeLM(report(
+        [model_finding], summary="Critical eval vulnerability found.", limitations=[unsupported_model_caveat]
+    ))).analyze("source_review", source, "fixture.py")
 
     assert len(out["findings"]) == 1
     assert out["findings"][0]["category"] == "unsafe-eval"
     assert out["findings"][0]["severity"] == "high"
     assert "critical" not in out["summary"].lower()
+    assert unsupported_model_caveat not in out["limitations"]
     assert any("canonical classification" in item for item in out["limitations"])
+    assert any("not exhaustive" in item and "do not establish exploitability" in item for item in out["limitations"])
 
 
 def test_static_python_eval_check_does_not_flag_literal_eval_or_comment():
