@@ -8,7 +8,7 @@ TER-AI is an independent, AI-assisted applied R&D project for Thai-language AI s
 
 Offline scope: the intent router, the rule chat, TERM AI and the SANKPUP offline generator run on CPU with no network connection. TTH (Wayu-Paxa-TTS-Edge, and since v0.17.0 the opt-in engine TTH-MTL on OmniVoice, about 3.3 GB), TERAI1 (beta) and SANKPUP "gemma" (Gemma 4 E2B on llama-cpp-python), MUML 1.0 HIQ (ACE-Step 1.5, YuE2-3B) and the MuML 1.0 network weights run locally on CPU after a one-time download. TTH-MTL also downloads Whisper large-v3-turbo (about 1.6 GB) if you give `--ref-audio` without `--ref-text`; once cached it needs no network (`HF_HUB_OFFLINE=1` skips the Hugging Face update check, which sends the model name only). Online paths, all optional: the TTH fallback edge-tts sends the text to Microsoft, `terai chat --web` and the demo's web switch send the question to Wikipedia, and the Temmo demo tab (prototype, not released) calls online model providers with your own API key (BYOK). Made with Sesame.
 
-What is released today (v0.17.0):
+What is in the latest release (v0.18.0-alpha; alpha evaluation tooling, existing components unchanged):
 
 | Part | What it does | Since |
 |---|---|---|
@@ -35,7 +35,7 @@ status  1.00  เสร็จหรือยัง
 
 The repository version and the model versions are separate. MuML 1.0 was the first model with its own id (v0.15.0); v0.16.0 writes the scheme down for every model.
 
-- **Repository (package) version:** `0.X.Y`; this release is v0.17.0. It moves with every release. The criteria for the repository's own 1.0 are unchanged (see Roadmap).
+- **Repository (package) version:** `0.X.Y`; the latest alpha release is v0.18.0-alpha (PEP 440 package version `0.18.0a0`). It moves with every release. The criteria for the repository's own 1.0 are unchanged (see Roadmap).
 - **Model id:** each model has its own name and version, written exactly as below. A package release never changes a model id, and the "1.0" in a model id is not the repository's 1.0.
 
 | Model id | What it is | Since |
@@ -46,11 +46,15 @@ The repository version and the model versions are separate. MuML 1.0 was the fir
 | Temmo 1.0 | Small indie game maker (prototype, not released) | - |
 | TER-AI-0.5 | Intent model inside TERM AI (limited-time trial) | v0.14.0 |
 
-`terai --version` prints both, for example `terai-router 0.17.0 / model TERAI1`, and `terai models` lists every model id. The rule lives in `src/terai_router/versions.py`; a new version of one model changes only its own row there. Model ids keep their spelling; the one exception is the v0.17.0 rename of TERAI1BETA to TERAI1 ("beta" is its status, not part of its name). `--brain terai1beta` and `--engine terai1beta` still work and print a deprecation notice.
+`terai --version` prints both, for example `terai-router 0.18.0a0 / model TERAI1`, and `terai models` lists every model id. The rule lives in `src/terai_router/versions.py`; a new version of one model changes only its own row there. Model ids keep their spelling; the one exception is the v0.17.0 rename of TERAI1BETA to TERAI1 ("beta" is its status, not part of its name). `--brain terai1beta` and `--engine terai1beta` still work and print a deprecation notice.
 
 ## Why the name
 
 TER comes from the Thai word "เธอ" (you), and it works both ways: TER-AI calls the user เธอ, and the user calls TER-AI เธอ.
+
+## Reproducible evaluation (v0.18.0-alpha)
+
+Run `python eval/router_report.py` to reproduce the intent-router scorecard on the frozen v0.7 test and held-out sets. It prints dataset hashes, total and macro accuracy, per-category/per-intent results, confidence and feature coverage; `--threshold 0.80` adds an explicitly uncalibrated selective-coverage diagnostic. This is an internal router evaluation only, not a live-model or independent benchmark. See [the evaluation guide](docs/AI_EVALUATION.md) for component-specific measures, safe comparisons, and limitations.
 
 ## Results (v0.16.0, measured 2026-10-22)
 

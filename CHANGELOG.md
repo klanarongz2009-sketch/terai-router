@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.18.0-alpha (2026-10-31)
+
+Alpha release: a reproducible, local-only intent-router scorecard and project-wide evaluation/safety guidance. No model weights, intents, runtime behavior, or external benchmark claims are changed by this release.
+
+### Added
+- `eval/router_report.py`: score the production router on the frozen v0.7 test and held-out sets; report their SHA-256, overall and macro accuracy, category/intent breakdowns, confidence/feature coverage, and an optional thresholded diagnostic. No network calls or new runtime dependencies.
+- `docs/AI_EVALUATION.md`: component-specific evaluation measures, reproducibility and local-cost reporting, careful interpretation of the public Gemini 4 Carbon claims, and safe boundaries for code/cyber testing.
+- Tests for scorecard dataset integrity, metrics, optional threshold reporting, and malformed inputs.
+
+### Limits
+- The scorecard evaluates intent classification only. It does not run the live Gemma model, speech, vision, SVG, audio, cloud models or cyber benchmarks, and its existing internal test sets are not independent external evidence.
+- Package metadata uses the PEP 440 alpha version `0.18.0a0`; the matching repository tag/release is `v0.18.0-alpha`.
+
 ## v0.17.0 (2026-10-28)
 
 Repository v0.17.0. TTH-MTL is released, and the chat model TERAI1BETA is renamed to **TERAI1** ("beta" is its status, not part of its name). The model itself is unchanged.
